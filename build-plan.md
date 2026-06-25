@@ -192,13 +192,15 @@ carried into Phase 5:
 **Prerequisite:** Phase 4.
 
 **Work:**
-- **Real-agent executor MCP access** (carried from Phase 4) — wire `overlay run` so binary adapters
-  (`claude-code`/`codex`) get MCP access to `overlay serve` (e.g. write an MCP server config and point
-  the agent at it), so a real triage agent reaches `propose-memory` instead of only the self-launching
-  harness.
-- **Runtime predicate scoring** (carried from Phase 4) — evaluate a workflow's `expected_artifacts`
-  predicates in `overlay run` and populate `predicate_results`/`score`, so trajectories are
-  predicate-scored rather than exit-code-scored.
+- **Real-agent executor MCP access** — ✅ done for `claude-code` (Agent-Overlay `1fa7a9d`): `overlay run`
+  writes a transient MCP config pointing at `overlay serve` and invokes
+  `claude -p … --strict-mcp-config --mcp-config … --allowedTools mcp__overlay__… --permission-mode dontAsk`.
+  Remaining follow-up: **Codex per-run MCP injection** (different mechanism — `codex mcp` / `codex exec -c`),
+  intentionally deferred. The live `claude` proof is a manual step (it egresses workspace content to the
+  external CLI); the deterministic harness covers the wiring.
+- **Runtime predicate scoring** — ✅ done (Agent-Overlay `498a62c`): `overlay run` evaluates a workflow's
+  `expected_artifacts` and populates real `predicate_results`/`score` (workspace-relative, so
+  Runner-dispatched triage scores correctly).
 - **Wrapper-mode policy enforcement** for `overlay run` (OS-level sandboxing — bwrap / sandbox-exec)
   so policies move from advisory to enforced on execution surfaces.
 - **HTTP/SSE MCP transport** in addition to stdio, for remote and multi-client setups.
