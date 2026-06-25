@@ -192,12 +192,12 @@ carried into Phase 5:
 **Prerequisite:** Phase 4.
 
 **Work:**
-- **Real-agent executor MCP access** — ✅ done for `claude-code` (Agent-Overlay `1fa7a9d`): `overlay run`
-  writes a transient MCP config pointing at `overlay serve` and invokes
-  `claude -p … --strict-mcp-config --mcp-config … --allowedTools mcp__overlay__… --permission-mode dontAsk`.
-  Remaining follow-up: **Codex per-run MCP injection** (different mechanism — `codex mcp` / `codex exec -c`),
-  intentionally deferred. The live `claude` proof is a manual step (it egresses workspace content to the
-  external CLI); the deterministic harness covers the wiring.
+- **Real-agent executor MCP access** — ✅ done for both executors. `overlay run` writes a transient,
+  host-specific MCP config pointing at the same `overlay serve` and invokes the agent headlessly:
+  `claude-code` (Agent-Overlay `1fa7a9d`) via `claude -p … --mcp-config … --allowedTools mcp__overlay__…
+  --permission-mode dontAsk`; `codex` (Agent-Overlay `ca4c882`) via `codex exec --json
+  -c mcp_servers.overlay.* -a never -s workspace-write`. The live agent proofs are manual (they egress
+  workspace content to the external CLIs); the deterministic harness covers the wiring.
 - **Runtime predicate scoring** — ✅ done (Agent-Overlay `498a62c`): `overlay run` evaluates a workflow's
   `expected_artifacts` and populates real `predicate_results`/`score` (workspace-relative, so
   Runner-dispatched triage scores correctly).
