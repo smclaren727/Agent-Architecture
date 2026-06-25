@@ -101,7 +101,7 @@ the Runner keeps only the "how."
 Runner's event sources are generalized **data-plane** folders — and the corpus folders Vault edits are
 exactly such a source. A `capture/` (or inbox) directory in the workspace is watched by Runner: when a
 note lands there (dropped by a human in Vault, or by any tool), a `file-created` trigger fires a
-triage workflow. The originally-planned Loxley vault integration becomes **one instance** of this
+triage workflow. The originally-planned Agent-Vault integration becomes **one instance** of this
 general pattern — Runner watching a data-plane folder and firing overlay workflows
 ([`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) Phase 4). The agent's output
 (e.g. a memory proposal) then surfaces back in Vault's review queue, closing the loop.

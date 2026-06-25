@@ -160,7 +160,7 @@ units run the daemon on Linux and macOS.
   files a **memory proposal** (not a canonical write).
 - Vault surfaces that proposal in its review queue **and** surfaces the Runner-driven run's trajectory
   and predicate-scored outcome.
-- The originally-planned Loxley vault integration
+- The originally-planned Agent-Vault integration
   ([`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) Phase 4) is realized as one
   instance of this general "Runner watches a data-plane folder" pattern.
 
@@ -187,7 +187,7 @@ fired workflow, a captured trajectory, and a memory proposal awaiting review in 
 - **Knowledge vaults & generalized retrieval.** Let Vault open *multiple* knowledge vaults / arbitrary
   folders beyond the overlay corpus, and **generalize Overlay's index** so agents retrieve that content
   through the single agent lens — served as **world-knowledge**, kept distinct from doctrine. This
-  supersedes the held Loxley HTTP-bridge plan: Overlay indexes the folder directly. (See
+  supersedes the held Agent-Vault HTTP-bridge plan: Overlay indexes the folder directly. (See
   [agent-overlay.md](agent-overlay.md) → "The single agent lens".)
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well; retire the Electron `apps/desktop` once parity is reached.

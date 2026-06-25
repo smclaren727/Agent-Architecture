@@ -50,7 +50,7 @@ resources plus `search-overlay` / `search-memory`; writing is the proposal/tool 
 
 Retrieval **generalizes beyond Overlay's own canonical types to arbitrary vault folders.** When Vault
 opens a knowledge vault, Overlay indexes and serves it too — so agents get one retrieval path for
-everything, and the earlier plan to bridge a separate knowledge store over HTTP (the held Loxley
+everything, and the earlier plan to bridge a separate knowledge store over HTTP (the held Agent-Vault
 integration) is **superseded**: Overlay indexes the folder directly.
 
 **Two content classes, one server.** Overlay serves two kinds of content and keeps them distinct:
