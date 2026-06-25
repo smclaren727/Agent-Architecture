@@ -2,7 +2,7 @@
 
 > **Audience:** anyone working on any of the three repositories.
 > **Status:** authoritative architecture overview. Per-repo detail lives in the sibling docs linked
-> at the bottom; product detail for Overlay lives in [`docs/agent-overlay-prd.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/agent-overlay-prd.md).
+> at the bottom; product detail for Overlay lives in [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md).
 
 ## Thesis
 
@@ -23,7 +23,7 @@ markdown/YAML files.
 The corpus — a workspace conventionally at `~/overlay/` — is the single source of truth. Everything
 else (indexes, served MCP resources, compiled views, trajectories) is *derived from* it and never
 authoritative. This mirrors Overlay's design principle: **plain text wins; databases and indexes are
-derived, never authoritative** (see [`docs/agent-overlay-prd.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/agent-overlay-prd.md) §16).
+derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) §16).
 
 ## The three repositories
 
@@ -37,7 +37,7 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](https://github
 
 `@overlay/*` is a **library**. Both siblings depend on it; **Overlay depends on neither.** This is
 the same rule the trigger system was designed around
-([`agent-overlay-trigger-system-decisions.md`](https://github.com/smclaren727/agent-overlay/blob/main/agent-overlay-trigger-system-decisions.md),
+([`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md),
 Decision 1), generalized to all three repos. Keep the arrow straight and the system stays a set of
 composable tools; reverse it — put an editor or a watcher daemon *inside* Overlay — and you have
 reinvented a framework that runs you instead of a library you call.
@@ -71,7 +71,7 @@ honors the same write discipline Overlay's own writers do:
 - **Schema validation:** validate canonical types against `@overlay/core` schemas before saving.
 - **Propose, don't write (memory):** memory changes go through the proposal queue
   (`memory/proposals/`), never as silent canonical writes. Humans approve. (See
-  [`docs/memory-cli.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/memory-cli.md).)
+  [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
 
 ### 2. MCP seam — agents ⇄ Overlay (`overlay serve`)
 The live surface. Overlay exposes the corpus as MCP **resources** (`overlay://memory/...`,
@@ -81,7 +81,7 @@ The live surface. Overlay exposes the corpus as MCP **resources** (`overlay://me
 embedded agent — consumes the identical surface. This is the **single agent lens**, in *and* out:
 retrieval generalizes to any open vault, and Overlay serves two distinct content classes — **doctrine**
 (governs behavior) and **world-knowledge** (facts about the operator's world, never instructions). (See
-[agent-overlay.md](agent-overlay.md) → "The single agent lens"; [`docs/mcp-client-setup.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/mcp-client-setup.md).)
+[agent-overlay.md](agent-overlay.md) → "The single agent lens"; [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).)
 
 ### 3. Trigger read seam — Runner ⇄ Overlay (read-only)
 Runner asks Overlay "what triggers are declared?" exactly the way a session asks "what skills exist?"
@@ -89,13 +89,13 @@ Runner asks Overlay "what triggers are declared?" exactly the way a session asks
 resources. **Runner never writes doctrine.** It turns those validated declarations into live watchers
 and timers by a deterministic **parse → validate → reconcile** step — **no LLM in the provisioning
 path** (see [agent-runner.md](agent-runner.md) → "From declaration to live state"). (See
-[`docs/triggers.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/triggers.md).)
+[`docs/triggers.md`](../Agent-Overlay/docs/triggers.md).)
 
 ### 4. Execution seam — Runner ⇄ executors ⇄ Overlay
 Runner's one capability is to resolve a binding and invoke a named **executor**
 (`claude-code` / `codex` / `direct` / `harness`) against a named **workflow**. The executor's session
 pulls doctrine back through the MCP seam and records a **trajectory** via the shared `OVERLAY_RUN_ID`
-(see [`docs/trajectories.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trajectories.md)). The cheap, no-LLM path is just `executor: direct` —
+(see [`docs/trajectories.md`](../Agent-Overlay/docs/trajectories.md)). The cheap, no-LLM path is just `executor: direct` —
 an executor *choice*, never a Runner built-in.
 
 ## End-to-end examples
@@ -130,6 +130,6 @@ becomes canonical memory served identically to every other client.
 - **[build-plan.md](build-plan.md)** — the phased, full-horizon multi-repo build plan.
 
 Background and canonical detail:
-[`docs/agent-overlay-prd.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/agent-overlay-prd.md) ·
-[`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) ·
-[`agent-overlay-trigger-system-decisions.md`](https://github.com/smclaren727/agent-overlay/blob/main/agent-overlay-trigger-system-decisions.md)
+[`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) ·
+[`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) ·
+[`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md)

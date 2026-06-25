@@ -2,8 +2,8 @@
 
 > The trigger/execution plane. Standalone repository. This consolidates the existing trigger
 > architecture into the three-repo frame; it does not duplicate it. Read alongside
-> [`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) and
-> [`agent-overlay-trigger-system-decisions.md`](https://github.com/smclaren727/agent-overlay/blob/main/agent-overlay-trigger-system-decisions.md).
+> [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) and
+> [`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md).
 
 ## Role: the loop, and nothing else
 
@@ -12,7 +12,7 @@ file-watch, HTTP, or manual invocation — and then dispatches. It owns the loop
 and depends on Overlay as a library. A trigger system *is* the loop, and the loop belongs outside the
 overlay by design: putting a watcher/timer daemon inside Overlay would convert a library-you-call into
 a framework-that-runs-you, the exact inversion the project rejects
-([decisions doc](https://github.com/smclaren727/agent-overlay/blob/main/agent-overlay-trigger-system-decisions.md), Decision 1).
+([decisions doc](../Agent-Overlay/agent-overlay-trigger-system-decisions.md), Decision 1).
 
 The Runner has a **single dispatch path** and no actions of its own:
 
@@ -26,7 +26,7 @@ corpus (a workflow + an executor choice), never as a built-in capability of the 
 ## Repo shape
 
 Illustrative — its internals are not overlay doctrine (from
-[`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) Phase 3):
+[`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) Phase 3):
 
 ```
 agent-runner/                   # its own git repo; depends on @overlay/* as a library
@@ -50,12 +50,12 @@ them funnels into the *same* `dispatch.ts`. Adding an event source never adds an
 - **Trigger read seam (read-only).** Runner reads declarations through Overlay's narrow seam —
   `overlay triggers list` or `overlay://triggers[/{id}]` — exactly as a session asks "what skills
   exist?". It validates nothing of its own; `overlay validate --strict` already checks that each
-  binding's `run.workflow` and `run.executor` resolve. (See [`docs/triggers.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/triggers.md).)
+  binding's `run.workflow` and `run.executor` resolve. (See [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md).)
 - **Execution seam.** Runner invokes a named executor — `claude-code`, `codex`, `direct`, or
   `harness` — against the named workflow, reusing `overlay run`/adapters for judgment paths and the
   `direct` adapter for the cheap deterministic path. The executor session pulls doctrine back over
   MCP and the run is captured as a trajectory via `OVERLAY_RUN_ID`. (See
-  [`docs/trajectories.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trajectories.md), [`docs/harness-adapters.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/harness-adapters.md).)
+  [`docs/trajectories.md`](../Agent-Overlay/docs/trajectories.md), [`docs/harness-adapters.md`](../Agent-Overlay/docs/harness-adapters.md).)
 
 ## From declaration to live state (the reconcile model)
 
@@ -103,7 +103,7 @@ exactly such a source. A `capture/` (or inbox) directory in the workspace is wat
 note lands there (dropped by a human in Vault, or by any tool), a `file-created` trigger fires a
 triage workflow. The originally-planned Agent-Vault integration becomes **one instance** of this
 general pattern — Runner watching a data-plane folder and firing overlay workflows
-([`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) Phase 4). The agent's output
+([`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) Phase 4). The agent's output
 (e.g. a memory proposal) then surfaces back in Vault's review queue, closing the loop.
 
 ## Multi-runner, one doctrine
@@ -114,7 +114,7 @@ the system supports one doctrine across many executors.
 
 ## Guardrails (drift detectors)
 
-Verbatim intent from the [decisions doc](https://github.com/smclaren727/agent-overlay/blob/main/agent-overlay-trigger-system-decisions.md). If any of
+Verbatim intent from the [decisions doc](../Agent-Overlay/agent-overlay-trigger-system-decisions.md). If any of
 these is violated, the model has drifted back toward a framework:
 
 - **No built-in actions.** The Runner accumulates no capabilities of its own. The cheap, no-LLM path

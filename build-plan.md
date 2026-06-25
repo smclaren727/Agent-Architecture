@@ -11,7 +11,7 @@ load-bearing rule — `@overlay/*` is the library; Overlay depends on neither si
 Phases are sequenced by dependency, not calendar. Phase _N_ names its prerequisite.
 
 The trigger-specific phases here are the multi-repo framing of the roadmap already captured in
-[`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md); that doc remains the detailed
+[`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md); that doc remains the detailed
 reference for Runner internals.
 
 ---
@@ -51,7 +51,7 @@ Vault or Runner yet.
   as public API: confirm every export the siblings need is actually exported, documented, and covered
   by tests. Adopt a versioning policy so breaking changes are visible across repos.
 - Harden the trigger seam only as far as a real consumer will need it (the "Phase 2 candidate scope"
-  in [`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md): richer event matching,
+  in [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md): richer event matching,
   optional static per-trigger `inputs`, schedule timezone validation). Pull each item in **only** when
   Runner actually exercises it — not speculatively.
 - **Define the agent-collaboration conventions spec** — provenance (human vs. agent authorship), stable
@@ -122,7 +122,7 @@ built in parallel once the contract is stable.
 **Dependency arrows:** `Agent-Runner ──imports──▶ @overlay/*`; `Agent-Runner ──read seam──▶ overlay://triggers`;
 `Agent-Runner ──invokes──▶ executors ──MCP──▶ overlay serve`. Never the reverse.
 
-**Work (internally phased, from [`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md)):**
+**Work (internally phased, from [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md)):**
 1. **Consume the seam.** Read trigger declarations through `overlay triggers list` / `overlay://triggers`.
    No watching yet — prove the Runner can see doctrine.
 2. **Single dispatch path.** Implement exactly one capability: resolve a binding → invoke the named
@@ -161,7 +161,7 @@ units run the daemon on Linux and macOS.
 - Vault surfaces that proposal in its review queue **and** surfaces the Runner-driven run's trajectory
   and predicate-scored outcome.
 - The originally-planned Agent-Vault integration
-  ([`docs/trigger-system-build-plan.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trigger-system-build-plan.md) Phase 4) is realized as one
+  ([`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) Phase 4) is realized as one
   instance of this general "Runner watches a data-plane folder" pattern.
 
 **Guardrail:** the loop must be explainable entirely from the corpus — the trigger binding, the

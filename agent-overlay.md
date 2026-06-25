@@ -1,7 +1,7 @@
 # Agent-Overlay — role & interfaces
 
 > Overlay's place in the three-repo system. For the full product vision and schemas, see
-> [`docs/agent-overlay-prd.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/agent-overlay-prd.md) (canonical) — this doc does not restate it.
+> [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) (canonical) — this doc does not restate it.
 > For the system-wide picture, see [README.md](README.md).
 
 ## Role: the doctrine/serve plane and the shared library
@@ -32,12 +32,12 @@ A stateless stdio MCP server that reads the canonical files on each request and 
 
 *Who consumes it:* **Vault's embedded agents** (just another MCP client) and the **executor sessions
 that Runner launches** (Claude Code / Codex connect their own `overlay serve` child). See
-[`docs/mcp-client-setup.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/mcp-client-setup.md).
+[`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).
 
 ### Execution surface — `overlay run` + trajectory store
 Wraps an executor subprocess, propagates `OVERLAY_RUN_ID`, and captures an append-only **trajectory**
 (metadata + `events.jsonl` + stdout/stderr) under `trajectories/YYYY-MM/`. See
-[`docs/trajectories.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/trajectories.md).
+[`docs/trajectories.md`](../Agent-Overlay/docs/trajectories.md).
 
 *Who consumes it:* **Runner**, whose single dispatch path invokes an executor against a workflow and
 relies on Overlay to record the run. **Vault** reads trajectories back to surface run history.
@@ -87,11 +87,11 @@ Phase 1).
 
 - **To Runner — a narrow read seam.** `overlay triggers list` and read-only `overlay://triggers[/{id}]`.
   Runner reads declarations; it never writes doctrine. Triggers are entry points, so they are not
-  orphan-checked. (See [`docs/triggers.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/triggers.md).)
+  orphan-checked. (See [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md).)
 - **To Vault — a write discipline.** Vault may write the corpus directly, but under Overlay's rules:
   atomic `.tmp`-rename, schema validation before save, and **memory via the proposal queue only**
   (agents and editors *propose*; humans *approve*). There is no path that lets an agent silently
-  mutate canonical memory. (See [`docs/memory-cli.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/memory-cli.md).)
+  mutate canonical memory. (See [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
 
 ## Non-goals (Overlay)
 
@@ -99,10 +99,10 @@ Phase 1).
   lives in Vault.
 - **Not a loop.** No `overlay watch` subcommand, ever — a long-lived watcher daemon inside Overlay
   would reverse the dependency arrow and turn the library into a framework
-  ([`agent-overlay-trigger-system-decisions.md`](https://github.com/smclaren727/agent-overlay/blob/main/agent-overlay-trigger-system-decisions.md),
+  ([`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md),
   Decision 1).
 - **No dependency on the siblings.** Overlay must build, test, and ship with neither Vault nor Runner
   present.
 
-See the 13 design principles in [`docs/agent-overlay-prd.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/agent-overlay-prd.md) §16 — they all
+See the 13 design principles in [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) §16 — they all
 apply unchanged here.

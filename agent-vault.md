@@ -69,7 +69,7 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   surfaced for accept / reject / supersede, *showing the conflict-similarity warnings Overlay already
   computes* (`@overlay/core` `memory/similarity.ts`). This is the human-approval step that keeps
   canonical memory disciplined — given a real interface instead of a CLI. (See
-  [`docs/memory-cli.md`](https://github.com/smclaren727/agent-overlay/blob/main/docs/memory-cli.md).)
+  [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
 - **An embedded agent surface** — in the spirit of wikiwise's embedded terminal — whose agents
   connect to Overlay's MCP server. The in-app AI therefore sees *exactly* the same doctrine as Claude
   Code or any other client: same skills, same policy, same memory. It edits the corpus as a
