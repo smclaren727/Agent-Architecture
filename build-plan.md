@@ -170,6 +170,19 @@ workflow, and the executor choice are all doctrine. No step hides behavior insid
 **Done when:** dropping a file in Vault's capture folder results, with no further human action, in a
 fired workflow, a captured trajectory, and a memory proposal awaiting review in Vault.
 
+**Status:** proven live by the black-box acceptance harness
+([`acceptance/capture-triage-loop.mjs`](acceptance/capture-triage-loop.mjs)) on the deterministic
+`triage-capture-harness` executor. Two scope decisions were recorded while closing this phase, both
+carried into Phase 5:
+
+1. **Real-agent MCP wiring is deferred.** `overlay run` does not yet inject MCP server config into
+   binary adapters (`claude-code`/`codex`), so only the self-launching harness reaches the
+   `propose-memory` tool. The `capture-triage` fixture therefore binds the harness executor; a real
+   agent executor is a Phase 5 item.
+2. **Outcome scoring is exit-code-based.** `overlay run` scores a run on the adapter exit code, not the
+   workflow's `expected_artifacts` predicates. Runtime predicate evaluation (via the exported
+   `evaluatePredicates` / `scorePredicateEvaluations`) is a tracked Phase 5 enhancement.
+
 ---
 
 ## Phase 5 — Hardening
@@ -179,6 +192,13 @@ fired workflow, a captured trajectory, and a memory proposal awaiting review in 
 **Prerequisite:** Phase 4.
 
 **Work:**
+- **Real-agent executor MCP access** (carried from Phase 4) — wire `overlay run` so binary adapters
+  (`claude-code`/`codex`) get MCP access to `overlay serve` (e.g. write an MCP server config and point
+  the agent at it), so a real triage agent reaches `propose-memory` instead of only the self-launching
+  harness.
+- **Runtime predicate scoring** (carried from Phase 4) — evaluate a workflow's `expected_artifacts`
+  predicates in `overlay run` and populate `predicate_results`/`score`, so trajectories are
+  predicate-scored rather than exit-code-scored.
 - **Wrapper-mode policy enforcement** for `overlay run` (OS-level sandboxing — bwrap / sandbox-exec)
   so policies move from advisory to enforced on execution surfaces.
 - **HTTP/SSE MCP transport** in addition to stdio, for remote and multi-client setups.
