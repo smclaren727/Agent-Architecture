@@ -201,9 +201,14 @@ carried into Phase 5:
 - **Runtime predicate scoring** — ✅ done (Agent-Overlay `498a62c`): `overlay run` evaluates a workflow's
   `expected_artifacts` and populates real `predicate_results`/`score` (workspace-relative, so
   Runner-dispatched triage scores correctly).
-- **Wrapper-mode policy enforcement** for `overlay run` (OS-level sandboxing — bwrap / sandbox-exec)
-  so policies move from advisory to enforced on execution surfaces.
-- **HTTP/SSE MCP transport** in addition to stdio, for remote and multi-client setups.
+- **Wrapper-mode policy enforcement** for `overlay run` — ✅ done (Agent-Overlay `dcb19e0`+`8d1840b`):
+  opt-in `--enforce` wraps local process adapters in a policy-derived OS sandbox (bwrap on Linux,
+  sandbox-exec on macOS) with a minimal runtime base; claude-code/codex are pass-through. Proven on the
+  NixOS node both ways — an allowed enforced run executes (reads `/proc`, writes the workspace) and a
+  denied path (`/etc/passwd`) is blocked (ENOENT) inside the sandbox.
+- **HTTP/SSE MCP transport** — ✅ done (Agent-Overlay `0899843`): `overlay serve --transport http`
+  (StreamableHTTP at `/mcp`, `--host`/`--port`, DNS-rebinding protection, localhost default); stdio
+  remains the default. Verified live with a real SDK HTTP client reading resources + tools.
 - **Multi-runner** in practice — ✅ runner deployed and proven on a NixOS node (systemd user unit; full
   capture→triage→proposal loop with a predicate-scored trajectory; SIGKILL→restart verified). Scoped by
   design to a **single server runner fed by Syncthing-synced vaults** — edits replicate to the server and
