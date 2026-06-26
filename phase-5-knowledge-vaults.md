@@ -40,7 +40,7 @@ step. Indexing is deterministic (no LLM). No runtime "act on world-knowledge" be
 
 ## Decomposition (sequential; small commits; verify each)
 
-### 5.1 — Overlay: world-knowledge index + retrieval (the foundation; lands first)
+### 5.1 — Overlay: world-knowledge index + retrieval (the foundation; lands first) — ✅ DONE (Agent-Overlay `a8be490`)
 - **Config:** overlay config declares knowledge-vault folder paths (e.g. `knowledge_vaults: [path,...]`) —
   schema + loader + validation.
 - **Index (deterministic, no LLM):** ingest those folders as a new `world-knowledge`
