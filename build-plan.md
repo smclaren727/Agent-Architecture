@@ -219,6 +219,9 @@ carried into Phase 5:
   through the single agent lens — served as **world-knowledge**, kept distinct from doctrine. This
   supersedes the held Agent-Vault HTTP-bridge plan: Overlay indexes the folder directly. (See
   [agent-overlay.md](agent-overlay.md) → "The single agent lens".)
+  - **Prerequisite — Phase 5.0 (Vault UI rebuild):** before this, Agent-Vault's UI is rebuilt in React
+    behind a view-module seam (registry + router + shared context) so new views are cheap. Detailed,
+    execution-ready plan: `Agent-Vault/Docs/phase-5.0-view-seam.md`.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well; retire the Electron `apps/desktop` once parity is reached.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
