@@ -1,0 +1,87 @@
+# Phase 5 (#5) — Knowledge vaults + generalized retrieval
+
+The last big stream. Vault opens *multiple* knowledge vaults / arbitrary `.md` folders beyond the
+overlay corpus, and Overlay generalizes its index to serve that content as **world-knowledge** through
+the **single agent lens** — kept distinct from doctrine. The Phase 5.0 view-seam (Agent-Vault) is the
+prerequisite and is done.
+
+## Grounding (current state)
+
+- Overlay's search index is **doctrine-scoped**: `WorkspaceSearchKind` =
+  `memory-section | memory-fact | workflow | skill | prompt | standard`
+  (`Agent-Overlay/packages/core/src/search/index.ts`); the MCP `search-overlay` tool searches "overlay
+  doctrine".
+- There is **no world-knowledge content class yet** — only the boundary in
+  `Agent-Overlay/docs/agent-collaboration-conventions.md` ("Corpus Boundary": doctrine governs,
+  world-knowledge informs; world-knowledge may be indexed + cited but must not silently become doctrine).
+- Agent-Vault is single-corpus today, now with a React view-module seam (new views are cheap).
+
+## Core concept
+
+A **knowledge vault** = an arbitrary folder of markdown that (a) Vault opens/edits **loosely** (no
+doctrine schema), and (b) Overlay **indexes + serves as world-knowledge** via MCP, distinct from
+doctrine. Overlay indexes the folder **directly** (this supersedes the held Agent-Vault HTTP-bridge plan).
+
+## Decisions (locked from the architecture)
+
+- **World-knowledge is a distinct content class** — indexed, searchable, citable, but **never
+  auto-promoted to doctrine** (policy/workflow/skill/standard/trigger/memory) without human review;
+  promotion goes through the existing propose-don't-write path.
+- **Overlay indexes knowledge-vault folders directly** (config declares the paths). No HTTP bridge.
+- **Knowledge vaults are loose** (any `.md`, no schema); the **doctrine corpus stays schema-validated**.
+- **Single agent lens** — agents retrieve doctrine + world-knowledge through one MCP search surface, with
+  world-knowledge **labeled distinctly**.
+
+## Fixed boundary / guardrail
+
+World-knowledge **informs**, doesn't **govern**. It is served labeled-distinct from doctrine and **never
+silently becomes** policy/workflow/skill/standard/trigger/memory — promotion is a human-reviewed propose
+step. Indexing is deterministic (no LLM). No runtime "act on world-knowledge" behavior (retrieval only).
+
+## Decomposition (sequential; small commits; verify each)
+
+### 5.1 — Overlay: world-knowledge index + retrieval (the foundation; lands first)
+- **Config:** overlay config declares knowledge-vault folder paths (e.g. `knowledge_vaults: [path,...]`) —
+  schema + loader + validation.
+- **Index (deterministic, no LLM):** ingest those folders as a new `world-knowledge`
+  `WorkspaceSearchKind` — plain markdown, chunked, no doctrine schema (loose). Doctrine kinds unchanged;
+  reuse the existing chunking/search machinery.
+- **Serve via MCP:** extend `search-overlay` (and/or add `search-knowledge`) so agents retrieve
+  world-knowledge, results **labeled `world-knowledge`**, distinct from doctrine kinds; kind-filtering
+  works. (A world-knowledge MCP resource class is optional.)
+- **Enforce the boundary:** world-knowledge is retrieval-only; no path writes it into doctrine; document
+  that promotion goes through the propose flow.
+- It's the contract Vault (5.2) + agents consume.
+
+### 5.2 — Vault: multi-vault editor (after 5.1's contract is set)
+- Open *multiple* knowledge vaults / arbitrary `.md` folders beyond the single overlay corpus — a vault
+  switcher / multi-root model — as new views in the React seam, alongside the doctrine corpus.
+- **Loose handling** for non-conforming markdown (world-knowledge vaults aren't schema-validated like the
+  doctrine corpus). The doctrine corpus keeps its validation path.
+
+### 5.3 — Integration + acceptance
+- An agent retrieves world-knowledge through the single lens (distinct from doctrine); Vault edits a
+  knowledge vault; Overlay re-indexes it; the boundary holds (world-knowledge can't silently become
+  doctrine). Extend the cross-repo acceptance harness.
+
+## Verification per slice
+
+- Overlay: `pnpm build`, `pnpm typecheck`, targeted + full tests (isolated HOME), `overlay validate
+  --strict` on the template, `pnpm docs:check`, core public-API snapshot updated if exports change,
+  CHANGELOG entry.
+- Vault: `web` build, `node --test`, the React Playwright smoke.
+- Always: the cross-repo acceptance harness
+  (`Agent-Architecture/acceptance/capture-triage-loop.mjs`) stays green.
+
+## Pause for a human decision when
+
+- A slice would weaken the doctrine/world-knowledge boundary (e.g. any path that lets world-knowledge
+  become doctrine without human review) — flag it.
+- A subjective design fork arises (e.g. the multi-vault UX model, or the world-knowledge ranking/merge
+  with doctrine in one result set).
+
+## Done when
+
+Overlay serves an arbitrary markdown folder as world-knowledge through the single MCP lens (distinct from
+doctrine); Vault opens + edits multiple knowledge vaults loosely; an agent retrieves world-knowledge and
+the doctrine/world-knowledge boundary is enforced and explainable.
