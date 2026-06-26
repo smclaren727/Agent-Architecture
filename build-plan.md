@@ -204,8 +204,11 @@ carried into Phase 5:
 - **Wrapper-mode policy enforcement** for `overlay run` (OS-level sandboxing — bwrap / sandbox-exec)
   so policies move from advisory to enforced on execution surfaces.
 - **HTTP/SSE MCP transport** in addition to stdio, for remote and multi-client setups.
-- **Multi-runner** in practice — systemd on a Linux/NixOS node and launchd on a Mac reading the same
-  bindings.
+- **Multi-runner** in practice — ✅ runner deployed and proven on a NixOS node (systemd user unit; full
+  capture→triage→proposal loop with a predicate-scored trajectory; SIGKILL→restart verified). Scoped by
+  design to a **single server runner fed by Syncthing-synced vaults** — edits replicate to the server and
+  one runner acts on them, which avoids second-node double-fire. The launchd path stays templated
+  (`Agent-Runner/units/com.overlay.runner.plist`); a literal second node is deferred.
 - **Knowledge vaults & generalized retrieval.** Let Vault open *multiple* knowledge vaults / arbitrary
   folders beyond the overlay corpus, and **generalize Overlay's index** so agents retrieve that content
   through the single agent lens — served as **world-knowledge**, kept distinct from doctrine. This
