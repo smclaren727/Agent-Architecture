@@ -227,6 +227,11 @@ carried into Phase 5:
     **✅ done (2026-06-27)** — all three slices landed and verified; the doctrine/world-knowledge boundary
     is proven by `acceptance/world-knowledge-loop.mjs`. Vault now stands alone as a multi-vault editor
     with Overlay as an optional plug-in.
+- **Overlay UI re-platform (Electron → local web app).** Rebuild Overlay's `apps/desktop` UI on the same
+  local-web-app + view-seam pattern Vault uses (Vite/React/TS/Tailwind/shadcn + a `node:http` server over
+  `/api/*` + SSE) and **remove Electron entirely** — the prerequisite for Overlay's Tauri wrap. The backend
+  is already feature-modular; this is a transport swap (IPC → HTTP/SSE) + a renderer decomposition. Plan:
+  [overlay-ui-replatform.md](overlay-ui-replatform.md).
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well; retire the Electron `apps/desktop` once parity is reached.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
