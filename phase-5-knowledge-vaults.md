@@ -1,5 +1,12 @@
 # Phase 5 (#5) — Knowledge vaults + generalized retrieval
 
+**✅ STATUS (2026-06-27): COMPLETE.** 5.1 (Overlay world-knowledge index/retrieval), 5.2 (Vault
+multi-vault editor — data layer, optional-overlay, switcher UI), and 5.3 (integration + acceptance) all
+landed and verified; see the per-slice ✅ markers below. Overlay serves arbitrary markdown folders as
+world-knowledge through the single lens distinct from doctrine; Vault is a standalone multi-vault editor
+that opens loose knowledge vaults; the doctrine/world-knowledge boundary is enforced and proven by
+`acceptance/world-knowledge-loop.mjs`.
+
 The last big stream. Vault opens *multiple* knowledge vaults / arbitrary `.md` folders beyond the
 overlay corpus, and Overlay generalizes its index to serve that content as **world-knowledge** through
 the **single agent lens** — kept distinct from doctrine. The Phase 5.0 view-seam (Agent-Vault) is the
@@ -53,7 +60,7 @@ step. Indexing is deterministic (no LLM). No runtime "act on world-knowledge" be
   that promotion goes through the propose flow.
 - It's the contract Vault (5.2) + agents consume.
 
-### 5.2 — Vault: multi-vault editor (after 5.1's contract is set)
+### 5.2 — Vault: multi-vault editor (after 5.1's contract is set) — ✅ DONE (Agent-Vault `76ed58c` data layer, `f4e24ad` overlay-optional, `20a7841` switcher UI)
 - Open *multiple* knowledge vaults / arbitrary `.md` folders beyond the single overlay corpus — a vault
   switcher / multi-root model — as new views in the React seam, alongside the doctrine corpus.
 - **Loose handling** for non-conforming markdown (world-knowledge vaults aren't schema-validated like the
@@ -81,10 +88,16 @@ Slicing: **5.2.1** server data layer (Vault-owned registry + multi-root loose in
 scoping API; backward-compatible defaults) → **5.2.2** overlay corpus optional (graceful absence) →
 **5.2.3** switcher + "All vaults" UI on the React seam.
 
-### 5.3 — Integration + acceptance
+### 5.3 — Integration + acceptance — ✅ DONE (Agent-Vault `377bb61` vault-scoped write API; Agent-Overlay `8eb304d` CLI --kind fix; Agent-Architecture `acceptance/world-knowledge-loop.mjs`)
 - An agent retrieves world-knowledge through the single lens (distinct from doctrine); Vault edits a
   knowledge vault; Overlay re-indexes it; the boundary holds (world-knowledge can't silently become
   doctrine). Extend the cross-repo acceptance harness.
+- Realized by: a vault-scoped raw markdown read/write API in Vault (`GET/PUT /api/vaults/:id/files/...`,
+  loose-only writes) and a black-box `acceptance/world-knowledge-loop.mjs` proving all five points
+  (served / distinct-from-doctrine / Vault-edit / Overlay-re-read / boundary-holds). Surfaced + fixed a
+  dead `--kind` flag in Overlay's search CLI (the world-knowledge lens was unreachable via the CLI).
+- **Follow-up (not blocking):** the in-browser editor does not yet save edits to a loose vault — the
+  write path exists as the `/api/vaults/:id/files` API; wiring the React editor to it is deferred polish.
 
 ## Verification per slice
 
