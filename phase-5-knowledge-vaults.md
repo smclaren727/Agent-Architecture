@@ -59,6 +59,28 @@ step. Indexing is deterministic (no LLM). No runtime "act on world-knowledge" be
 - **Loose handling** for non-conforming markdown (world-knowledge vaults aren't schema-validated like the
   doctrine corpus). The doctrine corpus keeps its validation path.
 
+**Decisions (resolved with human, 2026-06-26):**
+- **Vault stands alone.** Agent-Vault is the base and must work with no Overlay; Overlay is an *optional
+  plug-in* to Vault (doctrine + world-knowledge), the way Runner plugs into Overlay. Dependency arrows:
+  Vault alone → Overlay adds to Vault → Runner adds to Overlay.
+- **Vault owns the vault list (Vault-managed registry).** Vault does **not** read Overlay's
+  `knowledge_vaults` as its source of truth (that would make Vault depend on Overlay). Overlay's
+  `knowledge_vaults` stays Overlay's own config; 5.3 coordinates the two at the **folder level** (point
+  Overlay at a folder Vault manages → edit in Vault → Overlay re-indexes), not by one reading the other.
+- **UX model: switcher + "All vaults"** — a shell picker scopes views to one vault or spans all, each row
+  tagged by vault.
+- **Loose vs. validated is per-vault and Vault-core:** a vault can follow Vault's PKM schema (rich
+  task/project views) or be loose arbitrary `.md` (Notes/Search/Graph still work). Both live in the switcher.
+- **The overlay corpus becomes an optional connected source in 5.2** (not a required root). The
+  Proposals/Trajectories/Capture surfaces are the Overlay-integration views — present only when an overlay
+  workspace is connected; absent in standalone Vault. Default config still connects it (acceptance stays green).
+- **Registry persistence:** a Vault-owned config-file list with add-by-path for the first pass; a nicer
+  in-app folder-picker is later polish.
+
+Slicing: **5.2.1** server data layer (Vault-owned registry + multi-root loose indexing + vault dimension +
+scoping API; backward-compatible defaults) → **5.2.2** overlay corpus optional (graceful absence) →
+**5.2.3** switcher + "All vaults" UI on the React seam.
+
 ### 5.3 — Integration + acceptance
 - An agent retrieves world-knowledge through the single lens (distinct from doctrine); Vault edits a
   knowledge vault; Overlay re-indexes it; the boundary holds (world-knowledge can't silently become
