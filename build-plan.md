@@ -231,7 +231,8 @@ carried into Phase 5:
   local-web-app + view-seam pattern Vault uses (Vite/React/TS/Tailwind/shadcn + a `node:http` server over
   `/api/*` + SSE) and **remove Electron entirely** — the prerequisite for Overlay's Tauri wrap. The backend
   is already feature-modular; this is a transport swap (IPC → HTTP/SSE) + a renderer decomposition. Plan:
-  [overlay-ui-replatform.md](overlay-ui-replatform.md).
+  [overlay-ui-replatform.md](overlay-ui-replatform.md). **✅ done (2026-06-27)** — Electron fully removed;
+  all 14 features migrated to the web app; suite + Playwright smoke + acceptance green; Tauri-ready.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well; retire the Electron `apps/desktop` once parity is reached.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri

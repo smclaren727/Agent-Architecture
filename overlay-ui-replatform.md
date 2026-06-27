@@ -1,5 +1,15 @@
 # Overlay UI re-platform — Electron → local web app behind a view-seam
 
+**✅ STATUS (2026-06-27): COMPLETE.** Electron is fully removed; `apps/desktop` is now a local web app —
+a `node:http` server (`server/`, serving `web/dist` + the `/api/*` surface + SSE on `/api/events`) and a
+Vite + React + TS + Tailwind + shadcn view-seam (`web/`) sharing Vault's "Archive" theme. All 14 feature
+surfaces migrated; the `update` feature dropped; native dialogs → path inputs; `electron-store` → a JSON
+settings file. Commits: 1 `d7d41f6`, 2 `1fb5a28`, 3 `b0c4d06`/`aaadd03`/`342c01f`/`7226929`/`a73f3c4`/
+`1f6e438`, 4a `db22129` (remove Electron), 4b `82f3a13` (relocate cores + cleanup). Suite 242, web
+Playwright smoke, and the cross-repo acceptance harness all green; Tauri-ready. Minor leftovers:
+`scripts/prepare-desktop-cli.mjs` + `apps/desktop/resources/cli` are orphaned (harmless); `contract.ts`
+retains a few Electron-era types still used by `core/store`.
+
 Re-platform Agent-Overlay's desktop UI off Electron onto the same local-web-app pattern Agent-Vault
 landed in Phase 5.0 (Vite + React + TS + Tailwind + shadcn, a view registry + router + shared context,
 served by a local `node:http` server over `/api/*`), and **remove Electron entirely**. This is the
