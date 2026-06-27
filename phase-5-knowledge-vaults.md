@@ -96,8 +96,9 @@ scoping API; backward-compatible defaults) → **5.2.2** overlay corpus optional
   loose-only writes) and a black-box `acceptance/world-knowledge-loop.mjs` proving all five points
   (served / distinct-from-doctrine / Vault-edit / Overlay-re-read / boundary-holds). Surfaced + fixed a
   dead `--kind` flag in Overlay's search CLI (the world-knowledge lens was unreachable via the CLI).
-- **Follow-up (not blocking):** the in-browser editor does not yet save edits to a loose vault — the
-  write path exists as the `/api/vaults/:id/files` API; wiring the React editor to it is deferred polish.
+- **Follow-up — ✅ done (Agent-Vault `1185587`):** the in-browser editor now edits loose-vault notes
+  (a `LooseNoteEditor` over the `/api/vaults/:id/files` API; NotesView routes loose ids to it), with
+  Playwright coverage of the open → edit → save → persisted round-trip.
 
 ## Verification per slice
 
