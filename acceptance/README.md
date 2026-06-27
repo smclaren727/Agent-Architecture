@@ -52,3 +52,48 @@ surfaced, and the proposal links to the run that produced it.
 - **Not yet wired:** a real `claude-code` / `codex` agent reaching `propose-memory`. `overlay run` does
   not yet inject MCP config into binary adapters — see the Phase 4 scope decisions in
   [../build-plan.md](../build-plan.md). That is a tracked Phase 5 item.
+
+---
+
+# Acceptance — world-knowledge loop (Phase 5.3)
+
+System-level acceptance for the Phase 5.3 boundary: Overlay serves an arbitrary markdown folder as
+**world-knowledge** through the single search lens (distinct from doctrine), Vault edits a file in that
+*same* folder as a loose vault, Overlay re-reads the edit, and world-knowledge **never silently becomes
+doctrine**.
+
+Like the capture loop, this harness is a **black box**: it spawns the Agent-Vault server and the built
+Overlay CLI over one shared folder and asserts through their interfaces (Vault HTTP API + Overlay
+`search` stdout). It imports neither product repo.
+
+## Automated run
+
+Build Overlay first, then run the harness from `~/Developer`:
+
+```sh
+(cd Agent-Overlay && pnpm build)     # packages/cli/dist + packages/core/dist
+# Agent-Vault is plain JS (needs Node 24+ for node:sqlite); no build step
+node Agent-Architecture/acceptance/world-knowledge-loop.mjs
+```
+
+A green run prints `PASS — world-knowledge loop is live across both planes.` and asserts five proof
+points:
+
+1. **world-knowledge served** — `overlay search "<token>" --kind world-knowledge` returns the kv file
+   with a `knowledge://` URI.
+2. **distinct from doctrine** — the same query with no `--kind` (the doctrine default) excludes it.
+3. **Vault edits the kv folder** — `PUT /api/vaults/kv/files/notes/standards.md` writes the loose note
+   (2xx) and re-indexes that vault.
+4. **Overlay re-reads the edit** — `overlay search "<new-token>" --kind world-knowledge` returns the
+   updated content (Overlay rebuilds its index per search).
+5. **boundary holds** — the new token never appears under the doctrine default nor an explicit doctrine
+   kind (`--kind memory-fact`); a Vault `GET /api/search?...&vault=kv` cross-check confirms the edit.
+
+## What this proves — and what it does not
+
+- **Proven:** the end-to-end folder-level coordination — point Overlay's `knowledge_vaults` at a folder
+  Vault manages as a loose vault, edit it in Vault, and Overlay re-indexes it — with the
+  doctrine/world-knowledge boundary enforced on the retrieval surface.
+- **Not exercised:** the MCP transport (the harness drives Overlay's `search` CLI, the same index the
+  MCP `search-overlay` tool serves) and promotion of world-knowledge into doctrine (the human-reviewed
+  propose flow, deliberately out of scope for an automated boundary check).
