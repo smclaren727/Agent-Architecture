@@ -224,6 +224,9 @@ carried into Phase 5:
     `Agent-Vault/Docs/phase-5.0-view-seam.md`.
   - **Detailed #5 plan (execution-ready):** [phase-5-knowledge-vaults.md](phase-5-knowledge-vaults.md)
     — 5.1 Overlay world-knowledge index/retrieval → 5.2 Vault multi-vault editor → 5.3 integration.
+    **✅ done (2026-06-27)** — all three slices landed and verified; the doctrine/world-knowledge boundary
+    is proven by `acceptance/world-knowledge-loop.mjs`. Vault now stands alone as a multi-vault editor
+    with Overlay as an optional plug-in.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well; retire the Electron `apps/desktop` once parity is reached.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
