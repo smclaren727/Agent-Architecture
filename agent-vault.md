@@ -37,14 +37,20 @@ vault, edited in place — Vault never owns a copy or a sync pipeline. The overl
 vault Vault targets; multi-vault and the doctrine-vs-world-knowledge split are how that editing
 experience generalizes (see [agent-overlay.md](agent-overlay.md) → "The single agent lens").
 
+Vault **stands alone** at the product and runtime level: it works with no Overlay, which is an
+*optional* connected source (doctrine + world-knowledge) the way Runner plugs into Overlay. It does,
+however, keep a build-time `@overlay/core` dependency for that integration — standalone at the product
+level, not dependency-free.
+
 ## Tech stack & delivery
 
 Vault ships in two stages:
 
-1. **Web-first (start here).** A plain **HTML/CSS/JS** front-end is the initial build target. It is
-   the fastest path to a working editor and keeps the UI honest about its one job — editing the
-   corpus. The browser/app talks to the corpus and to Overlay through `@overlay/core` and a local
-   `overlay serve`, so no UI-specific data model is introduced.
+1. **Web-first (start here).** A **React** front-end — **Vite + TypeScript + Tailwind + shadcn**, behind
+   a view-module seam — is the build target. (An earlier framework-free HTML/CSS/JS UI was the first cut;
+   it was retired for the React seam in Phase 5.0.) It is the fastest path to a working editor and keeps
+   the UI honest about its one job — editing the corpus. The browser/app talks to the corpus and to
+   Overlay through `@overlay/core` and a local `overlay serve`, so no UI-specific data model is introduced.
 2. **Tauri V2 (polish).** Once the web app works, it is wrapped with **Tauri V2** to make it feel
    genuinely **local-first** — native file access to `~/overlay/`, system integration, and a small
    signed desktop binary — without rewriting the UI. **Agent-Overlay's own desktop surface moves to
@@ -121,30 +127,33 @@ is single-sourced.
 - **No silent canonical memory writes.** Neither the human's edits nor the embedded agent's bypass the
   proposal queue for memory facts.
 
-## Relationship to the existing `apps/desktop`
+## Relationship to `apps/desktop` (Overlay's operator console)
 
-This repo already ships an **Electron** desktop app under `apps/desktop` that overlaps Vault's
-surface heavily: workspace open/create, a canonical file browser/editor with validation rollback, the
-memory proposal queue, a trajectory viewer, search, and adapter diagnostics — all built on
-`@overlay/*`.
+This repo also ships Overlay's own desktop UI under `apps/desktop`, which overlaps Vault's surface
+heavily: workspace open/create, a canonical file browser/editor with validation rollback, the memory
+proposal queue, a trajectory viewer, search, and adapter diagnostics — all built on `@overlay/*`. It
+began as an **Electron** app and has since been **re-platformed off Electron to a local web app, in
+place** — a `node:http` server over `/api/*` + SSE plus a Vite + React + TS + Tailwind + shadcn
+view-seam (the same pattern Vault uses; see [overlay-ui-replatform.md](overlay-ui-replatform.md)).
+Electron was removed without retiring the directory: `apps/desktop` **lives on as Overlay's operator
+console**.
 
-The chosen direction is **web-first → Tauri V2** (see "Tech stack & delivery" above), so Vault is a
-**new front-end codebase**, not a continuation of the Electron shell. The relationship is therefore:
+Vault is still a **separate front-end codebase**, not a continuation of that console. The relationship
+is therefore:
 
 - **Reuse the logic, not the shell.** The valuable parts of `apps/desktop` are framework-agnostic and
   already sit in `@overlay/core` — schema validation, the validation-rollback file APIs
   (`workspace-files/`), the proposal queue and conflict-similarity (`memory/`), search, trajectory
-  reads. Vault imports those directly. The Electron-specific main/preload/IPC layer is **not** carried
-  forward.
-- **`apps/desktop` becomes legacy, then retires.** Because Overlay's own desktop surface is also
-  moving to Tauri V2, the Electron app is superseded rather than maintained in parallel. Keep it
-  working until Vault's web build reaches parity, then retire it — avoiding two desktop shells.
+  reads. Vault imports those directly. The old Electron-specific main/preload/IPC layer is **not**
+  carried forward — and is now gone from Overlay itself.
+- **`apps/desktop` continues as the operator console.** It was not retired in favor of Vault; the
+  Electron shell was swapped for a local web app **in place**. A Tauri V2 wrap remains future for both
+  repos (removing Electron was its prerequisite, now done) — a packaging step, not a retirement.
 
 - **Authoring leaves Overlay; operations stay.** As file authoring/editing moves to Vault, Overlay's
-  own (Tauri) desktop surface **narrows to an operational console** — server status, validation
-  reports, trajectories, eval reports, run launch, diagnostics. Observability and operations, not
-  editing. The two apps then divide cleanly: **Vault authors the files; the Overlay console watches
-  the system.**
+  own console **narrows to an operational surface** — server status, validation reports, trajectories,
+  eval reports, run launch, diagnostics. Observability and operations, not editing. The two apps then
+  divide cleanly: **Vault authors the files; the Overlay console watches the system.**
 
-This document records the direction; the precise retirement timing is sequenced in
-[build-plan.md](build-plan.md) (Phases 1–2 and 5).
+This document records the direction; the sequencing lives in [build-plan.md](build-plan.md)
+(Phases 1–2 and 5).

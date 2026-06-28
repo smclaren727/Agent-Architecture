@@ -31,14 +31,15 @@ Already shipped in this repo:
 - **Trigger seam, Phase 1** — `triggers/` canonical directory, `TriggerSchema`, `validateTriggerRefs`,
   `overlay triggers list`, read-only `overlay://triggers[/{id}]`.
 - **Electron desktop foundation** (`apps/desktop`) — workspace browser/editor with validation
-  rollback, proposal queue, trajectory viewer, search, diagnostics.
+  rollback, proposal queue, trajectory viewer, search, diagnostics. *(Since re-platformed off Electron
+  to a local web app — see the [Overlay UI re-platform](overlay-ui-replatform.md).)*
 
 **Done when:** ✅ already true. `tsc -b` and the Vitest suite are green; `overlay validate --strict`
 passes on the default workspace.
 
 ---
 
-## Phase 1 — Solidify the shared contract
+## Phase 1 — Solidify the shared contract (done)
 
 **Goal:** make `@overlay/core` a stable contract that two external repos can depend on, and resolve
 the one decision that gates Vault's shape.
@@ -64,7 +65,10 @@ Vault or Runner yet.
   already lives in `@overlay/core` (validation, `workspace-files/`, `memory/`, search, trajectory
   reads); do not carry forward the Electron main/preload/IPC layer. Overlay's own desktop surface also
   moves to Tauri V2, so both repos converge on one desktop story. (See
-  [agent-vault.md](agent-vault.md) → "Tech stack & delivery".)
+  [agent-vault.md](agent-vault.md) → "Tech stack & delivery".) *(The web-first direction held; the
+  original framework-free HTML/CSS/JS UI was later rebuilt in React + Vite + Tailwind + shadcn in Phase
+  5.0. Overlay's desktop surface was re-platformed off Electron to a local web app rather than Tauri so
+  far — the Tauri wrap remains future.)*
 
 **Guardrail:** every seam addition must remain *declarative doctrine* or *read-only*. If a proposed
 change would make Overlay *act* when something happens, it belongs in Runner, not here.
@@ -74,10 +78,11 @@ delivery direction is recorded; no seam change has added runtime behavior to Ove
 
 ---
 
-## Phase 2 — Agent-Vault MVP
+## Phase 2 — Agent-Vault MVP (done)
 
 **Goal:** a markdown editor over the corpus where humans and an embedded agent both edit as
-first-class citizens — built **web-first (HTML/CSS/JS)**.
+first-class citizens — built **web-first** (originally framework-free HTML/CSS/JS; the UI was later
+rebuilt in React behind a view-module seam in Phase 5.0).
 
 **Scope:** the MVP targets the **overlay corpus** (the primary vault). Opening *multiple* knowledge
 vaults / arbitrary folders is a deliberate later generalization (Phase 5), built on the same
@@ -112,7 +117,7 @@ file a memory proposal that appears in the queue.
 
 ---
 
-## Phase 3 — Agent-Runner
+## Phase 3 — Agent-Runner (done)
 
 **Goal:** the standalone loop that consumes the Phase 1 trigger seam and dispatches to executors.
 
@@ -178,10 +183,13 @@ carried into Phase 5:
 1. **Real-agent MCP wiring is deferred.** `overlay run` does not yet inject MCP server config into
    binary adapters (`claude-code`/`codex`), so only the self-launching harness reaches the
    `propose-memory` tool. The `capture-triage` fixture therefore binds the harness executor; a real
-   agent executor is a Phase 5 item.
+   agent executor is a Phase 5 item. *(Since resolved in Phase 5: `overlay run` now injects MCP config
+   into the binary adapters — see Phase 5's "Real-agent executor MCP access".)*
 2. **Outcome scoring is exit-code-based.** `overlay run` scores a run on the adapter exit code, not the
    workflow's `expected_artifacts` predicates. Runtime predicate evaluation (via the exported
-   `evaluatePredicates` / `scorePredicateEvaluations`) is a tracked Phase 5 enhancement.
+   `evaluatePredicates` / `scorePredicateEvaluations`) is a tracked Phase 5 enhancement. *(Since
+   resolved in Phase 5: `overlay run` now scores `expected_artifacts` predicates at runtime — see
+   Phase 5's "Runtime predicate scoring".)*
 
 ---
 

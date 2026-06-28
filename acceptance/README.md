@@ -49,9 +49,10 @@ surfaced, and the proposal links to the run that produced it.
 ## What this proves — and what it does not
 
 - **Proven:** the live, cross-service loop on the deterministic `triage-capture-harness` executor.
-- **Not yet wired:** a real `claude-code` / `codex` agent reaching `propose-memory`. `overlay run` does
-  not yet inject MCP config into binary adapters — see the Phase 4 scope decisions in
-  [../build-plan.md](../build-plan.md). That is a tracked Phase 5 item.
+- **Now wired (Phase 5):** `overlay run` injects MCP config into the binary adapters, so a real
+  `claude-code` / `codex` agent can reach `propose-memory` — see the Phase 5 work in
+  [../build-plan.md](../build-plan.md). The harness still binds the deterministic `triage-capture-harness`
+  executor for determinism; a live `claude-code` / `codex` end-to-end proof remains a manual exercise.
 
 ---
 
