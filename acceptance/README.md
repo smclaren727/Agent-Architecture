@@ -24,6 +24,10 @@ A green run prints `PASS — capture → triage → review loop is live across a
 asserts: the capture POST returns 201, a pending proposal appears in Vault, a completed trajectory is
 surfaced, and the proposal links to the run that produced it.
 
+By default the harness spawns the built TS entry points of all three repos; each plane's command can
+be overridden per implementation — see
+[Selecting implementations](#selecting-implementations--the-acceptance__cmd-knobs).
+
 ## Manual procedure
 
 1. Copy the Overlay template to a scratch workspace and activate the trigger:
@@ -90,6 +94,9 @@ points:
 5. **boundary holds** — the new token never appears under the doctrine default nor an explicit doctrine
    kind (`--kind memory-fact`); a Vault `GET /api/search?...&vault=kv` cross-check confirms the edit.
 
+The Overlay CLI and Vault server commands are overridable here too (no Runner in this loop) — see
+[Selecting implementations](#selecting-implementations--the-acceptance__cmd-knobs).
+
 ## What this proves — and what it does not
 
 - **Proven:** the end-to-end folder-level coordination — point Overlay's `knowledge_vaults` at a folder
@@ -98,3 +105,42 @@ points:
 - **Not exercised:** the MCP transport (the harness drives Overlay's `search` CLI, the same index the
   MCP `search-overlay` tool serves) and promotion of world-knowledge into doctrine (the human-reviewed
   propose flow, deliberately out of scope for an automated boundary check).
+
+---
+
+# Selecting implementations — the `ACCEPTANCE_*_CMD` knobs
+
+Both harnesses are black boxes over the system's language-agnostic seams (HTTP, MCP, argv + exit
+codes, the corpus), so the *implementation* behind each plane is selectable. Three env vars — each a
+**JSON argv array** (`["command", ...args]`) — choose what gets spawned:
+
+| Knob | Selects | Default (today's TS entry point) |
+|---|---|---|
+| `ACCEPTANCE_OVERLAY_CMD` | the Overlay CLI (`… run` / `… serve` / `… search`) | `[<node>, "<Agent-Overlay>/packages/cli/dist/index.js"]` |
+| `ACCEPTANCE_RUNNER_CMD` | the Agent-Runner daemon (`… run`); capture-triage loop only | `[<node>, "<Agent-Runner>/dist/main.js"]` |
+| `ACCEPTANCE_VAULT_CMD` | the Agent-Vault server | `[<node>, "<Agent-Vault>/server/main.js"]` |
+
+Arrays because the TS forms need a Node interpreter prefix (`<node>` above is the Node running the
+harness, `process.execPath`); a native binary is just a one-element array, e.g.
+`ACCEPTANCE_OVERLAY_CMD='["/usr/local/bin/overlay"]'`. Everything downstream is derived from these
+arrays:
+
+- the Runner's `--overlay-command` / `--overlay-arg` flags come from `ACCEPTANCE_OVERLAY_CMD`
+  (first element = command, remaining elements = one `--overlay-arg` each);
+- `OVERLAY_CLI_PATH` (which the dispatched triage executor wraps in a Node interpreter to re-launch
+  `overlay serve`) is set **only** when `ACCEPTANCE_OVERLAY_CMD` is the two-element
+  `[node, <cli.js>]` form; for any other shape it is left unset and the executor falls back to
+  resolving `overlay` on `PATH` — which is what a native cutover installs.
+
+Mixed-mode example — a Rust `overlay` binary under the still-TS Runner and Vault (the R1 gate of the
+[Rust re-platform](../rust-migration.md), matrix step R→T→T):
+
+```sh
+ACCEPTANCE_OVERLAY_CMD='["/path/to/Agent-Overlay/target/release/overlay"]' \
+node Agent-Architecture/acceptance/capture-triage-loop.mjs
+```
+
+The unset knobs keep their TS defaults. Later matrix steps swap the remaining planes the same way
+(`ACCEPTANCE_RUNNER_CMD='["…/agent-runner"]'` for R→R→T, then
+`ACCEPTANCE_VAULT_CMD='["…/agent-vault-server"]'` for R→R→R). Setting all three knobs explicitly to
+the TS commands is byte-equivalent to the defaults.

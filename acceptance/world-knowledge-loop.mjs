@@ -18,6 +18,11 @@
 //   - Agent-Vault:   no build (plain JS), Node 24+ for node:sqlite
 //
 // Run: node acceptance/world-knowledge-loop.mjs
+//
+// Implementation selection: the two planes exercised here are spawned from env-selected
+// JSON argv arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_VAULT_CMD), defaulting to
+// today's built TS entry points, so a ported (e.g. Rust) binary can be substituted per
+// plane without touching the harness. See acceptance/README.md.
 
 import { spawn } from "node:child_process";
 import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -31,6 +36,29 @@ const developer = path.resolve(here, "../..");
 const overlayRepo = path.join(developer, "Agent-Overlay");
 const vaultRepo = path.join(developer, "Agent-Vault");
 const overlayCli = path.join(overlayRepo, "packages/cli/dist/index.js");
+
+// Each knob is a JSON argv array ([command, ...args]) — arrays because the TS entry
+// points need a Node interpreter prefix; a native binary is just a one-element array.
+// (No Runner in this loop, so ACCEPTANCE_RUNNER_CMD is not consumed here.)
+const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [process.execPath, overlayCli]);
+const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [process.execPath, path.join(vaultRepo, "server", "main.js")]);
+
+function commandFromEnv(name, fallback) {
+  const raw = process.env[name];
+  if (!raw) {
+    return fallback;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${name} must be a JSON argv array (["command", ...args]): ${error.message}`);
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every((entry) => typeof entry === "string" && entry.length > 0)) {
+    throw new Error(`${name} must be a non-empty JSON array of strings`);
+  }
+  return parsed;
+}
 
 // Coined tokens so a hit is unambiguous: nothing in the doctrine template contains them.
 const INITIAL_TOKEN = "ELDERBERRYPROTOCOL";
@@ -76,7 +104,7 @@ async function main() {
     const port = await freePort();
     const base = `http://127.0.0.1:${port}`;
     children.push(
-      spawnService("vault", process.execPath, [path.join(vaultRepo, "server", "main.js")], {
+      spawnService("vault", vaultCmd[0], vaultCmd.slice(1), {
         cwd: vaultCwd,
         env: {
           ...process.env,
@@ -178,16 +206,16 @@ async function main() {
   }
 }
 
-// Spawn the built Overlay CLI and collect parsed search hits. The CLI prints, per hit,
-// `"<kind> <id> score=<n> <uri>"` followed by an indented excerpt line, or the single
-// line "No results found." when empty.
+// Spawn the Overlay CLI (per ACCEPTANCE_OVERLAY_CMD) and collect parsed search hits.
+// The CLI prints, per hit, `"<kind> <id> score=<n> <uri>"` followed by an indented
+// excerpt line, or the single line "No results found." when empty.
 function runOverlaySearch(workspace, query, kind) {
   return new Promise((resolve, reject) => {
-    const args = [overlayCli, "-W", workspace, "search", query];
+    const args = [...overlayCmd.slice(1), "-W", workspace, "search", query];
     if (kind) {
       args.push("--kind", kind);
     }
-    const child = spawn(process.execPath, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(overlayCmd[0], args, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => {

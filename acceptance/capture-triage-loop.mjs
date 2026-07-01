@@ -13,6 +13,11 @@
 //   - Agent-Vault:   no build (plain JS), Node 24+ for node:sqlite
 //
 // Run: node acceptance/capture-triage-loop.mjs
+//
+// Implementation selection: the three planes are spawned from env-selected JSON argv
+// arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_RUNNER_CMD / ACCEPTANCE_VAULT_CMD),
+// defaulting to today's built TS entry points, so a ported (e.g. Rust) binary can be
+// substituted per plane without touching the harness. See acceptance/README.md.
 
 import { spawn } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -27,6 +32,42 @@ const overlayRepo = path.join(developer, "Agent-Overlay");
 const vaultRepo = path.join(developer, "Agent-Vault");
 const runnerRepo = path.join(developer, "Agent-Runner");
 const overlayCli = path.join(overlayRepo, "packages/cli/dist/index.js");
+
+// Each knob is a JSON argv array ([command, ...args]) — arrays because the TS entry
+// points need a Node interpreter prefix; a native binary is just a one-element array.
+const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [process.execPath, overlayCli]);
+const runnerCmd = commandFromEnv("ACCEPTANCE_RUNNER_CMD", [process.execPath, path.join(runnerRepo, "dist", "main.js")]);
+const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [process.execPath, path.join(vaultRepo, "server", "main.js")]);
+
+function commandFromEnv(name, fallback) {
+  const raw = process.env[name];
+  if (!raw) {
+    return fallback;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${name} must be a JSON argv array (["command", ...args]): ${error.message}`);
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every((entry) => typeof entry === "string" && entry.length > 0)) {
+    throw new Error(`${name} must be a non-empty JSON array of strings`);
+  }
+  return parsed;
+}
+
+// OVERLAY_CLI_PATH is consumed by the dispatched triage executor
+// (templates/default-workspace/adapters/triage-capture-harness.mjs), which re-launches
+// `overlay serve` as `process.execPath $OVERLAY_CLI_PATH -W <ws> serve …` — i.e. it
+// always wraps the value in a Node interpreter. So the variable is only coherent for
+// the two-element `[node, <cli.js>]` command form; for any other shape (e.g. a
+// one-element native `overlay` binary) we leave it unset and the executor falls back
+// to resolving `overlay` on PATH — which is what a native cutover installs.
+function overlayCliPathFor(cmd) {
+  const interpreter = path.basename(cmd[0]).replace(/\.exe$/i, "");
+  const isNodeForm = cmd.length === 2 && (cmd[0] === process.execPath || interpreter === "node");
+  return isNodeForm ? cmd[1] : undefined;
+}
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -49,7 +90,7 @@ async function main() {
 
     // 2. Vault server over the shared workspace.
     children.push(
-      spawnService("vault", process.execPath, [path.join(vaultRepo, "server", "main.js")], {
+      spawnService("vault", vaultCmd[0], vaultCmd.slice(1), {
         cwd: vaultCwd,
         env: {
           ...process.env,
@@ -66,17 +107,25 @@ async function main() {
     await waitFor(() => tryJson(`${base}/api/trajectories`), 20_000, "Vault server to accept requests");
     log("vault ready");
 
-    // 3. Runner loop watching the same workspace. OVERLAY_CLI_PATH lets the triage
+    // 3. Runner loop watching the same workspace. The Runner's --overlay-command /
+    //    --overlay-arg flags are derived from ACCEPTANCE_OVERLAY_CMD (first element =
+    //    command, rest = args); OVERLAY_CLI_PATH (see overlayCliPathFor) lets the triage
     //    harness locate `overlay serve` from the /tmp workspace.
+    const runnerEnv = { ...process.env };
+    delete runnerEnv.OVERLAY_CLI_PATH;
+    const overlayCliPath = overlayCliPathFor(overlayCmd);
+    if (overlayCliPath) {
+      runnerEnv.OVERLAY_CLI_PATH = overlayCliPath;
+    }
     children.push(
-      spawnService("runner", process.execPath, [
-        path.join(runnerRepo, "dist", "main.js"), "run",
+      spawnService("runner", runnerCmd[0], [
+        ...runnerCmd.slice(1), "run",
         "--workspace", workspace,
-        "--overlay-command", process.execPath,
-        "--overlay-arg", overlayCli
+        "--overlay-command", overlayCmd[0],
+        ...overlayCmd.slice(1).flatMap((arg) => ["--overlay-arg", arg])
       ], {
         cwd: runnerRepo,
-        env: { ...process.env, OVERLAY_CLI_PATH: overlayCli }
+        env: runnerEnv
       })
     );
     // Let the Runner read the seam and take its baseline scan before we write the note,
