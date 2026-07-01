@@ -30,13 +30,15 @@ A stateless stdio MCP server that reads the canonical files on each request and 
   shell/HTTP tools.
 - **Workflow-prompts:** one rendered prompt per workflow.
 
-*Who consumes it:* **Vault's embedded agents** (just another MCP client) and the **executor sessions
-that Runner launches** (Claude Code / Codex connect their own `overlay serve` child). See
+*Who consumes it:* the **executor sessions that Runner launches** (Claude Code / Codex connect their
+own `overlay serve` child) and any interactive MCP client. **Vault's embedded agent surface** — the
+planned in-app MCP client — is a post-migration Rust roadmap item (decided 2026-07-01; see
+[agent-vault.md](agent-vault.md)), so it is a *future* consumer, not a current one. See
 [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).
 
 ### Execution surface — `overlay run` + trajectory store
 Wraps an executor subprocess, propagates `OVERLAY_RUN_ID`, and captures an append-only **trajectory**
-(metadata + `events.jsonl` + stdout/stderr) under `trajectories/YYYY-MM/`. See
+(metadata + `events.jsonl` + stdout/stderr) under `trajectories/YYYY-MM-DD/` (per-day directories). See
 [`docs/trajectories.md`](../Agent-Overlay/docs/trajectories.md).
 
 *Who consumes it:* **Runner**, whose single dispatch path invokes an executor against a workflow and
