@@ -1,0 +1,317 @@
+# Rust re-platform — the Node/TS backends move to Rust, the seams do not
+
+> **STATUS (2026-07-01): IN PROGRESS — Phase R0 (contract capture) underway.** Both acceptance
+> harnesses are parameterized for mixed-implementation runs (see
+> [acceptance/README.md](acceptance/README.md) → "Selecting implementations"); the remaining R0
+> artifacts are being captured in the product repos.
+
+This is the campaign master for migrating all backend/non-UI code in the three product repos
+(**Agent-Overlay** · **Agent-Runner** · **Agent-Vault**) from Node/TypeScript to Rust. It owns the
+crate architecture, the pinned stack, the frozen-TS-core policy, the phase sequence with cutover
+gates, and the risk register. The system architecture it re-platforms is [README.md](README.md);
+the per-repo roles it must not change are [agent-overlay.md](agent-overlay.md),
+[agent-runner.md](agent-runner.md), and [agent-vault.md](agent-vault.md); its slot in the phased
+plan is [build-plan.md](build-plan.md) → Phase 6.
+
+## Goals and locked decisions (2026-07-01)
+
+- **Backends to Rust; UI stack stays.** Every Node/TS server, CLI, and daemon becomes a Rust
+  binary. The React web apps (Vite/TS/Tailwind/shadcn) and the Tauri v2 wraps are unchanged — the
+  Rust server replaces the Node SEA sidecar behind the same env-var + `/api/health` contract, which
+  also dissolves the SEA toolchain risk (single-target builds, no bundled Node, no
+  native-module-in-SEA limitation).
+- **Big-bang per repo**, in the order **Overlay → Runner → Vault**. Overlay first is forced (both
+  siblings depend on it); Runner second because it exercises all three Overlay seams with the
+  smallest codebase (sharpest early verification); Vault last because its library coupling is the
+  narrowest, so it tolerates the longest frozen-TS window. The only cross-repo softening is the
+  **frozen TS `@overlay/core` dist**, which stays consumable by not-yet-ported siblings.
+- **Cargo path dependencies across sibling repos** (`path = "../Agent-Overlay/crates/overlay-core"`)
+  mirror today's `file:` deps. No publishing.
+- **Vault's embedded agent surface is post-migration.** The documented-but-never-built in-app
+  chat / MCP-client surface is built once, in Rust (an rmcp *client* against `overlay serve`),
+  after the migration — never in the Node stack.
+- **The seams are the contract, not the TS API.** What must survive byte-for-byte is the corpus
+  file formats, the MCP wire, argv + exit codes, env vars, and the HTTP/SSE shapes — the four
+  language-agnostic seams in [README.md](README.md). Rust and TS implementations operate over the
+  same corpus simultaneously during the window, so file-format parity is the hardest invariant.
+- **Invariants intact throughout:** the dependency arrow never reverses; three planes, one corpus;
+  library, not framework; no second source of truth.
+
+## Crate architecture
+
+### Agent-Overlay (Cargo workspace at repo root)
+
+```
+Agent-Overlay/
+├── Cargo.toml                 workspace = ["crates/*", "apps/desktop/src-tauri"]
+├── crates/
+│   ├── overlay-core/          [lib] THE shared crate (path-dep target for siblings);
+│   │                          modules mirror the TS subpath exports 1:1: schemas, loaders
+│   │                          (frontmatter, atomic_write, retry_read, layering,
+│   │                          knowledge_vaults), adapters (execution, sandbox), secrets,
+│   │                          trajectory, memory, search, eval, render, exporters,
+│   │                          workspace_files, internal (file_lock).
+│   │                          feature "ts" → ts-rs type generation (off by default)
+│   ├── overlay-mcp/           [lib] rmcp server: all resources/templates/tools/prompts,
+│   │                          stdio + StreamableHTTP /mcp :3000 — with a tower layer
+│   │                          reproducing today's DNS-rebinding protection
+│   │                          (allowedHosts/Origins)
+│   ├── overlay-cli/           [lib + bin `overlay`] clap (global -W/--project); commands
+│   │                          as library fns over a CommandIo trait so the console calls
+│   │                          them in-process (preserves console == CLI run-path identity).
+│   │                          Templates embedded via include_dir! with OVERLAY_TEMPLATE_PATH
+│   │                          override; full 24-command parity table maintained
+│   └── overlay-console/       [bin `agent-overlay-server`] axum :4180, /api/* + SSE (same
+│                              event names), origin-guard tower layer, notify watcher with
+│                              sha256 fingerprint suppression + 125ms debounce, JSON settings
+│                              store, cli-installer (installs the native binary — no
+│                              launcher script)
+├── packages/core/             FROZEN TS dist (tagged ts-core-final; deleted at Vault cutover)
+├── apps/desktop/web/          React SPA — unchanged; ts-rs generated types replace contract-sync
+└── apps/desktop/src-tauri/    externalBin → cargo-built console binary + the Rust `overlay`
+                               bin bundled as a second externalBin/resource; lib.rs env
+                               re-pointed (OVERLAY_CLI_PATH → native binary)
+```
+
+One `overlay-core` crate, no feature-flag splitting: the TS package is one package with subpath
+exports, and Rust dead-code elimination makes unused modules free for consumers. `overlay-cli` is
+lib+bin and `overlay-console` depends on its lib, preserving today's property that the desktop app
+runs the *identical* run/eval code path as the terminal. Origin guards stay per-repo (console and
+vault each own theirs), not in `overlay-core` — web middleware in the library crate would widen
+the library-not-framework boundary for no reuse win.
+
+### Agent-Vault
+
+```
+Agent-Vault/
+├── Cargo.toml                 workspace = ["crates/vault-server", "src-tauri"]
+├── crates/vault-server/       [lib + bin `agent-vault-server`] default (no subcommand) =
+│                              serve — the Tauri externalBin spawns it bare, unchanged;
+│                              subcommands rebuild-index, export-context replace tools/*.js.
+│                              modules: server (axum :4173, full route table), http
+│                              (static/SPA/inert-CSP assets), origin_guard, open_file
+│                              (token LRU 64), handlers, queries, filters, context,
+│                              recurrence (hand-port), vault (schema/files/registry/fields/
+│                              templates), index (rusqlite bundled FTS5, schema.sql via
+│                              include_str!, sha256 incremental reconcile, one transaction),
+│                              watch (notify + 250ms debounce), overlay integration via the
+│                              overlay-core path dep
+├── web/                       React SPA — unchanged; hand-mirrored types → ts-rs generated
+└── src-tauri/                 unchanged (Rust PTY terminal stays); externalBin → cargo binary
+```
+
+One binary keeps the Tauri `externalBin` name/contract byte-identical and keeps the
+export-context/API parity guarantee structurally enforced (both call the same `context` module).
+
+### Agent-Runner
+
+```
+Agent-Runner/
+├── Cargo.toml                 workspace = ["crates/agent-runner"]
+└── crates/agent-runner/       [bin `agent-runner`] clap: triggers list / dispatch <id> /
+                               run / sync + today's exact flag set.
+                               modules: workspace (discovery chain), triggers (rmcp CLIENT
+                               spawning `overlay … serve`, replacing the hand-rolled
+                               JSON-RPC client), dispatch (per-trigger tokio task:
+                               restartable debounce, coalesce-to-one, max_concurrency,
+                               onBusy; mkdir file-slots + owner.json with the landed
+                               staleness rules preserved; `overlay run` shell-out with
+                               child-kill semantics preserved), watchers (schedule 15s poll
+                               + hand-ported cron parser + chrono-tz; file 1s poll
+                               bug-for-bug; http axum :8787 + the landed auth contract),
+                               reconcile (manifest v1 + cron fragment text byte-compatible,
+                               so `sync` is a zero-churn diff on default-configured state dirs)
+```
+
+### Dependency arrows (the Cargo mirror of today's `file:` layout)
+
+```
+ Agent-Vault/crates/vault-server ──path──┐      Agent-Runner/crates/agent-runner ──path──┐
+                                          ▼                                               ▼
+                             Agent-Overlay/crates/overlay-core ◀── overlay-mcp ◀── overlay-cli ◀── overlay-console
+                             (depends on NO sibling; the arrow never reverses)
+```
+
+## Pinned stack
+
+| Concern | Pick | Why (one sentence) |
+| --- | --- | --- |
+| Async runtime | **tokio 1.x** | Everything spawns processes/servers; the ecosystem default. |
+| HTTP | **axum 0.8 + tower(-http)** | Both loopback servers and rmcp's StreamableHTTP mount as tower services; origin guards become per-repo tower layers. |
+| Serialization | **serde + serde_json** | Non-decision. |
+| Schemas/validation | **serde structs**: `deny_unknown_fields` exactly where zod is `.strict()`, extra-field-**preserving** where zod is `.passthrough()`; hand validators in `deserialize_with`/`TryFrom` | No crate reproduces zod; parity is proven by the R0 accept/reject corpora and governed by the per-schema strictness audit table. |
+| YAML | **serde_yaml_ng** + insertion-ordered maps | Parity IS normalization — the TS `yaml` package already normalizes on rewrite; key order preserved; stringify output golden-matched to TS; comment preservation is required nowhere. |
+| Frontmatter | **hand-rolled ~40-line splitter** golden-matched to gray-matter | The `gray_matter` crate doesn't match gray-matter's edge cases (CRLF, empty FM, `---` variants). |
+| CLI | **clap 4 derive** (global `-W`/`--project`) | The argv contract with Runner is load-bearing. |
+| FS watching | **notify 7** where event-driven is kept; **explicit polling loops** where polling IS the contract (Runner) | Watch semantics are user-visible trigger contracts. |
+| SQLite | **rusqlite, `bundled`** (FTS5 asserted at startup); one long-lived connection; rebuild in one transaction | The index is disposable/rebuildable — schema portability, not data migration, is the concern. |
+| Keychain | **keyring 3**, first-class | Kills the optional-native-addon + can't-load-in-SEA limitation. |
+| MCP | **rmcp** (official SDK) — server in overlay-mcp, client in agent-runner | Official SDK on both sides collapses the wire-compat risk to one library. |
+| Time | **chrono + chrono-tz** | The cron/RRULE hand-ports need zoned civil-time math. |
+| TS type generation | **ts-rs** (`ts` feature) with an explicit per-consumer export/copy step (Overlay web at R1 — atomic swap with contract-sync deletion in the same change; Vault web at R3) | Types generated from the very structs the servers serialize — drift impossible. |
+| Errors | **thiserror** in core, **anyhow** at bins; HTTP error bodies match today's JSON exactly | Error body shapes are part of the HTTP contract tests. |
+| Logging | **tracing** → stderr or the configured log dir, **never stdout** | `overlay serve`'s stdio transport must carry only JSON-RPC. |
+
+## Frozen-TS-core policy
+
+At Overlay cutover (R1), `packages/core` is tagged **`ts-core-final`** and stops evolving; its
+built `dist/` remains the `file:`-dep target for the still-TS Vault and Runner until each ports.
+`packages/cli`, `packages/mcp-server`, and `apps/desktop/server` are deleted *at Overlay cutover*
+(no sibling imports them — Runner spawns the `overlay` binary, which is now Rust). `packages/core`
+itself is deleted at **Vault cutover** (last consumer gone) — the migration window closes there.
+
+- **Window rule — "no new keys in strict-read artifacts."** Several artifact classes are read with
+  `.strict()` zod schemas (trajectory metadata, memory facts/proposals), which hard-fail on any
+  unknown key, while others are `.passthrough()` (trajectory events). A blanket "corpus format
+  frozen" rule is therefore wrong in both directions. The **per-schema strictness audit table**
+  (an R0 artifact, strict / passthrough / strip per schema) governs the window: no new keys may be
+  written into any strict-read artifact class while a frozen TS reader exists, and the serde derive
+  choices must map strict → `deny_unknown_fields` and passthrough → extra-field-preserving. A CI
+  job strict-parses every artifact class with the frozen TS loaders over Rust-written fixtures for
+  the duration of the window.
+- **Frozen partition.** The core-only test subset (schemas, loaders, memory-operations,
+  trajectory-store, workspace-files, search, trigger-schema, secrets) is pinned as an explicit
+  vitest include list runnable at the `ts-core-final` tag, so the frozen core stays testable after
+  the CLI/MCP/desktop suites are deleted with their packages.
+- **Emergency-patch procedure** (instead of a blanket ban, for a corpus-safety bug discovered in
+  the frozen core while Vault still *writes* through it): patch on the tag branch → rebuild
+  `dist/` → reinstall in the consuming sibling(s) → a corpus-format-compatibility review against
+  the strictness audit table before anything ships.
+
+## Phases
+
+Phased as R0–R4 here; the same five steps appear as 6.0–6.4 in
+[build-plan.md](build-plan.md) → Phase 6.
+
+### R0 — Contract capture (against the TS system, before any porting)
+
+Freeze the observable contracts as **executable, implementation-agnostic artifacts** — data files
+loaded by tests, never expectations inlined in test code — so each big bang has an objective gate.
+
+1. **Parameterize both acceptance harnesses** — ✅ done (this repo, `bda41ed`): env-selected argv
+   arrays per plane (`ACCEPTANCE_OVERLAY_CMD` / `ACCEPTANCE_RUNNER_CMD` / `ACCEPTANCE_VAULT_CMD`),
+   defaulting to today's TS entry points; proven green in both configurations. See
+   [acceptance/README.md](acceptance/README.md).
+2. **MCP surface snapshotter**: spawn `overlay serve`, initialize (protocol 2025-06-18), list and
+   read every resource/template/tool/prompt over the default workspace template → canonical-JSON
+   snapshots — **including the generated agent MCP configs** (`claude-mcp.json`, codex `-c`
+   overrides), so the R1 agent re-entry change is deliberate and tested.
+3. **argv/exit-code matrix** for the full 24-command CLI surface (success / adapter-unavailable /
+   predicate-fail / `--dry-run` / `--enforce` for `run`, plus init/migrate/doctor/update/export/
+   eval/status parity rows) over a fixture workspace with a stub harness binary.
+4. **HTTP+SSE transcript recorders** for :4180 and :4173 (routes, status codes, error bodies,
+   named SSE events, heartbeat framing) + the `/mcp` DNS-rebinding reject cases.
+5. **Golden fixture corpora**: sandbox argv/profiles, cron match table (datetime × tz × expr),
+   RRULE corpus, search-ranking corpora for both engines, schema accept/reject corpora (every
+   `.strict()` schema gets unknown-key reject cases), YAML stringify byte goldens, and the
+   **per-schema strictness audit table**.
+6. **Vault suite split**: the HTTP-contract `node --test` suites converted to spawn a server
+   binary chosen by `AGENT_VAULT_SERVER_BIN` (default `node server/main.js`), so the *same suite*
+   later proves the Rust server; pure-unit suites tracked per-file for Rust ports.
+7. **Frozen-core partition + emergency-patch procedure** pinned (policy above).
+
+**Gate:** all snapshots/goldens committed and green against the TS implementations; both
+acceptance harnesses pass in default and explicitly-parameterized configurations.
+
+### R1 — Agent-Overlay big bang
+
+Build order: overlay-core (schemas → loaders → trajectory, preserving the lock semantics and the
+≤4096-byte lock-free append fast path → memory+similarity → search → secrets → eval →
+adapters+sandbox → workspace-files/render/exporters, porting tests + goldens module-by-module) →
+overlay-mcp (the wire is the contract, not the SDK shape — hand-match URIs if rmcp ergonomics fall
+short) → overlay-cli → overlay-console.
+
+**Agent re-entry decision (first-class, not a footnote).** Today's zod default
+`mcp_agent.server_command: "node"` plus `cliPath = process.argv[1]` generates agent MCP configs of
+the form `command: node, args: [<cli.js>, …]`. Post-port, cliPath is `current_exe()` — a native
+binary — and `node <native binary>` breaks every desktop- or Runner-dispatched claude-code/codex
+run at R1. Therefore: the Rust schema default becomes *invoke cliPath directly* (honor
+`server_command` only when it isn't the legacy `node` default); `overlay doctor` / `overlay
+migrate` flag and rewrite corpus-pinned `server_command: node`; the default workspace template is
+updated; and the R0 config snapshots make the divergence deliberate and tested.
+
+**Cutover (one switch):** `~/.local/bin/overlay` → the Rust binary; Tauri externalBin → the
+cargo-built console binary, with the Rust `overlay` bundled as a second externalBin/resource and
+lib.rs env re-pointed (`OVERLAY_CLI_PATH` → native binary); delete `packages/cli`,
+`packages/mcp-server`, `apps/desktop/server`, and the SEA/Bun toolchains; freeze `packages/core`
+(tag `ts-core-final`); ts-rs replaces contract-sync atomically. **Runner state-dir re-sync step:**
+persisted cron fragments and unit files embed `--overlay-command`/`--overlay-arg` argv and
+`OVERLAY_CLI_PATH` verbatim — any deployment that pinned node paths keeps cron-dispatching the
+deleted TS CLI after R1 unless re-synced. The cutover checklist therefore audits every Runner
+state dir's `manifest.json`/fragments for pinned node argv, re-runs `agent-runner sync` with the
+corrected overlay command, and updates unit env.
+
+**Gate:** R0 snapshots/transcripts green against Rust; mixed-mode proof — the **unmodified TS
+Runner** (including its hand-rolled JSON-RPC client) drives the Rust binary via
+`AGENT_RUNNER_OVERLAY_COMMAND` with its full suite green; the frozen-TS-reads-Rust-writes CI job
+strict-parses every artifact class over Rust-written fixtures; a **mixed-implementation
+lock-contention test** (Rust vs TS racing accept/reject on one proposal; temp-file naming parity
+pinned); acceptance matrix step **R→T→T**; Playwright console smoke; manual bwrap/sandbox-exec
+smoke on both OSes against the sandbox goldens.
+
+### R2 — Agent-Runner big bang
+
+Port: workspace discovery → watchers (bug-for-bug polling semantics) → dispatch gate + file-slots
+(landed staleness rules preserved) → `overlay run` shell-out → reconcile (byte-compatible
+fragments). **Cutover:** bin path → cargo binary; `sync` asserts zero fragment churn on
+default-configured state dirs; delete `src/`, `dist/`, node_modules, the `file:` dep.
+**Gate:** ported tests + binary-spawning contract tests; cron/glob goldens; rmcp client ↔ Rust
+serve, plus one back-compat check against the frozen TS serve from the tag; acceptance matrix step
+**R→R→T**; a soak day on the real workspace with trajectories indistinguishable from TS-era ones.
+
+### R3 — Agent-Vault big bang
+
+Port vault-server per the crate plan (recurrence against the RRULE corpus; `connected` stays
+startup-static — parity first; notify watchers are a deliberate, safe upgrade since the consumer
+is a debounced full reindex). **Cutover:** Tauri externalBin → the cargo binary (same env contract
+`HOST`/`PORT`/`AGENT_VAULT_*` + the `/api/health` `"ok":true` gate — verified drop-in); dev loop =
+`cargo run` + the unchanged Vite :5173 proxy; the NixOS unit swaps to the same binary (derived
+SQLite still excluded from Syncthing); delete `server/`, `tools/*.js`, the SEA toolchain, and the
+committed sidecar/Node runtimes; ts-rs types land in web; **then delete Agent-Overlay
+`packages/core` — the migration window closes.** **Gate:** the R0-refactored `node --test` suite
+green with `AGENT_VAULT_SERVER_BIN=<rust binary>`; FTS5 ranking goldens; inert-CSP `/assets`
+transcripts (the XSS boundary); Playwright ui-smoke unchanged; acceptance matrix step **R→R→R**;
+the packaged Tauri app boots on a clean machine; a multi-day Syncthing dogfood.
+
+### R4 — Demolition + the unblocked tail
+
+Delete residual TS infra (pnpm shrinks to the web apps); final doc close-out. Immediately-unblocked
+post-migration roadmap (explicitly **not** migration scope): signing/notarize/updater + cross-webview
+QA done **once** in Rust (cargo cross-targets replace the mac-arm64-only SEA); the full Vault
+privileged-origin split; Windows/Linux single-instance; the **Vault embedded agent surface** as an
+rmcp-client crate against `overlay serve`; Runner notify-based watching as its own decision;
+dynamic overlay-connected.
+
+## Mixed-mode acceptance matrix
+
+Both harnesses run **unmodified** at every gate — only the `ACCEPTANCE_*_CMD` knobs change (usage:
+[acceptance/README.md](acceptance/README.md)):
+
+| Gate | Overlay | Runner | Vault | Matrix step |
+| --- | --- | --- | --- | --- |
+| R0 | TS | TS | TS | T→T→T (defaults; also proven with knobs set explicitly) |
+| R1 | **Rust** | TS | TS | R→T→T |
+| R2 | Rust | **Rust** | TS | R→R→T |
+| R3 | Rust | Rust | **Rust** | R→R→R |
+
+## Risk register
+
+| # | Risk | Mitigation |
+| --- | --- | --- |
+| 1 | **MCP wire incompat** (rmcp vs TS SDK vs Runner's hand-rolled client; protocol 2025-06-18) | Official SDK both sides; R0 snapshot diffing; the mixed-mode window proves TS client ↔ Rust server before the client ports; hand-match template URIs if rmcp ergonomics lag. |
+| 2 | **Sandbox generation divergence = security regression** (bwrap argv, `.sb` profiles, agent-adapter exemption) | Byte-exact sandbox goldens; exemption semantics preserved exactly; manual macOS+Linux enforcement smoke at R1. |
+| 3 | **Agent re-entry breakage** (`server_command: node` default wrapping a native binary) | The first-class R1 decision above + doctor/migrate rewrite + R0 config snapshots. |
+| 4 | **Frozen-window skew** (Rust writes an artifact the frozen TS readers reject) | The strictness audit table governs "no new keys in strict-read artifacts"; frozen-TS-strict-parse CI over Rust-written fixtures; the emergency-patch path. |
+| 5 | **YAML normalization churn** on user files | Insertion-ordered maps + stringify byte goldens vs TS output; accepted diffs reviewed and committed only deliberately. |
+| 6 | **Search/FTS5 determinism drift** (hand-ported scorer; Node-bundled SQLite vs rusqlite) | Ranking goldens for both engines; pinned unicode61 tokenizer + bundled SQLite; the index is disposable, so worst case is re-pin + rebuild. |
+| 7 | **Watch semantics deltas** | Runner stays polling bug-for-bug (trigger-visible contract); only display-refresh watchers (console, Vault) upgrade to notify, deliberately. |
+| 8 | **zod↔serde strictness parity** (`.strict()` vs `.passthrough()` vs strip) | Accept/reject corpora per schema + the audit table; passthrough ≠ `deny_unknown_fields`. |
+| 9 | **SSE framing/event-name drift** | Transcript goldens pin names/ordering/heartbeats; existing Playwright EventSource assertions run unchanged. |
+| 10 | **Cross-implementation lock/temp-file interop during the window** | Stale-reclaimable core locks (landed pre-migration) + the mixed-implementation contention test at R1; temp-file naming (`.<name>.<pid>.<uuid>.tmp`) pinned as preserved bug-for-bug. |
+
+## Done when
+
+`cargo build` produces `overlay`, `agent-overlay-server`, `agent-vault-server`, and `agent-runner`;
+the Tauri apps boot from Rust sidecars on a clean machine; the NixOS node runs the Rust runner and
+vault server; the acceptance matrix passes all-Rust (R→R→R); and no Node runtime remains in the
+three product repos outside the two `web/` build chains.
