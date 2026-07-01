@@ -30,7 +30,7 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overl
 | Repo | Owns | Must never |
 | --- | --- | --- |
 | **Agent-Overlay** | The corpus schema + loaders, the `@overlay/core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
-| **Agent-Vault** | The human+LLM editing experience: schema-aware editors, wiki navigation/backlinks, the memory proposal review queue UI, an embedded agent surface. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
+| **Agent-Vault** | The human+LLM editing experience: schema-aware editors, wiki navigation/backlinks, the memory proposal review queue UI, the overlay-gated agent-run/capture views (an in-app embedded agent surface is Rust-roadmap). | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
 | **Agent-Runner** | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
@@ -78,7 +78,8 @@ The live surface. Overlay exposes the corpus as MCP **resources** (`overlay://me
 `overlay://skills/{id}`, `overlay://policy/active`, `overlay://workflows/{id}`, `overlay://standards/{id}`,
 `overlay://triggers`, …), **tools** (`search-overlay`, `search-memory`, `get-skill`, `propose-memory`,
 `validate-output`, …), and **workflow-prompts**. Any MCP client — Claude Code, Codex, or Vault's
-embedded agent — consumes the identical surface. This is the **single agent lens**, in *and* out:
+*future* embedded agent (a post-migration Rust roadmap item; see [agent-vault.md](agent-vault.md)) —
+consumes the identical surface. This is the **single agent lens**, in *and* out:
 retrieval generalizes to any open vault, and Overlay serves two distinct content classes — **doctrine**
 (governs behavior) and **world-knowledge** (facts about the operator's world, never instructions). (See
 [agent-overlay.md](agent-overlay.md) → "The single agent lens"; [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).)
@@ -106,18 +107,30 @@ they mark the hardening work that keeps the implementation honest against the sy
 - **Trusted-local is still an exposure boundary.** Local browser/Tauri origins, HTTP trigger ports, MCP
   HTTP/SSE, and any private-network deployment are privileged surfaces. They must default to loopback
   or private-network access, authenticate inbound webhooks before reading unbounded bodies, and keep
-  app-control origins separate from user-controlled assets. Current code bounds Runner HTTP request
-  bodies and makes Vault active assets inert; a first-class webhook auth contract and a full privileged
-  origin split remain future hardening.
+  app-control origins separate from user-controlled assets. **Landed:** the webhook auth contract is
+  doctrine (an `on.auth` header/HMAC block in Overlay's trigger schema —
+  [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) and Runner enforces it fail-closed
+  (constant-time compares, `401` on mismatch, `503` when the secret env var is unset or empty);
+  Runner bounds HTTP request bodies; Vault serves active vault assets inertly (attachment treatment
+  now covers SVG) and gives the app document a script-restricting CSP. The **full privileged-origin
+  split is re-scoped to the Rust/Tauri packaging phase** — consciously deferred, not dropped.
 - **Write safety has to be end-to-end.** The corpus is plain files, but all writers still need unique
   temp paths, atomic rename, validation before commit, and serialization where a read-modify-write
-  operation can race. Overlay's canonical writer, memory acceptance, and trajectory index; Vault's
-  managed notes; Runner's state directory; and Overlay desktop capture now follow that discipline.
+  operation can race. Overlay's canonical writer, memory acceptance **and rejection** (both serialize
+  on the same per-proposal lock), and trajectory index; Vault's managed notes; Runner's state
+  directory; and Overlay desktop capture now follow that discipline. Canonical **writes** enforce
+  realpath symlink containment (a canonical write never follows or replaces a symlink), and both
+  `@overlay/core`'s file locks and Runner's state-dir slot/sync locks reclaim stale owners
+  deterministically — dead-pid probe plus mtime grace windows (Runner's verbatim on-disk rules live
+  in its README, "State-directory lock protocol").
 - **Policy declarations are not enforcement by themselves.** Trigger reliability knobs, custom-tool
   approval metadata, and sandbox policies must be enforced on the path that actually dispatches or
   executes work. Runner now enforces trigger concurrency in-process and for generated cron dispatch;
-  it also passes `overlay run --enforce`. Custom MCP tools that require approval fail closed until a
-  trusted approval protocol exists.
+  it also passes `overlay run --enforce`. Honestly scoped, `--enforce` OS-sandboxes **harness
+  adapters only** (bwrap on Linux, sandbox-exec on macOS); the `claude-code`/`codex` agent adapters
+  are **loud pass-throughs** — they keep their own sandboxes and Overlay warns on stderr that
+  enforcement is delegated — and every run records its effective `sandbox_mode` on the trajectory.
+  Custom MCP tools that require approval fail closed until a trusted approval protocol exists.
 
 ## End-to-end examples
 
@@ -138,9 +151,10 @@ A `schedule` trigger (`0 9 * * 1-5`) fires in Runner, which invokes the `pr-revi
 captures the full run as a trajectory (metadata + append-only events + stdout/stderr). Vault surfaces
 the run and its predicate-scored outcome for the human to skim over coffee.
 
-**4. LLM-as-editor (Vault).**
-Vault's embedded agent — itself just another MCP client of `overlay serve` — maintains wiki notes,
-adds backlinks across the corpus, and proposes a `decision` fact. The human approves it in-app; it
+**4. LLM-as-editor (Vault review, roadmap agent).**
+An agent — today any external MCP client of `overlay serve`; the *in-app* embedded agent is a
+post-migration Rust roadmap item (decided 2026-07-01) — maintains wiki notes, adds backlinks across
+the corpus, and proposes a `decision` fact. The human approves it in Vault's proposal queue; it
 becomes canonical memory served identically to every other client.
 
 ## Where to read next
