@@ -51,13 +51,16 @@ Vault ships in two stages:
    it was retired for the React seam in Phase 5.0.) It is the fastest path to a working editor and keeps
    the UI honest about its one job — editing the corpus. The browser/app talks to the corpus and to
    Overlay through `@overlay/core` and a local `overlay serve`, so no UI-specific data model is introduced.
-2. **Tauri V2 (polish and hardening).** The web app is the product seam; the Tauri shell adds
-   local-first affordances — native file access to `~/overlay/`, terminal integration, system
-   integration, and a small signed desktop binary — without rewriting the UI. The Tauri boundary is
-   not production-ready until privileged IPC is isolated from user-controlled assets; see "Current
-   implementation gaps" below. **Agent-Overlay's own desktop surface remains a local web app with a
-   future Tauri wrap**, so both repos still converge on one desktop delivery story, but Tauri is not
-   the current Overlay runtime.
+2. **Tauri V2 (shipped 2026-06-30).** The web app is the product seam; the Tauri v2 shell
+   (`src-tauri/`) wraps it **model-B**: the window loads the loopback origin of a bundled **Node SEA
+   sidecar** that serves both the UI and the API — no frontend rewrite (see
+   [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md)).
+   **Agent-Overlay's operator console shipped the same model-B Tauri v2 wrap the same day**, so both
+   repos converge on one desktop delivery story. Signed packaging + auto-updater (F1) and
+   cross-webview QA (F2) are consciously parked pending the planned Rust backend migration, which
+   would obsolete the SEA sidecar toolchain they would harden. The trusted origin still holds
+   privileged IPC, so the app document carries a script-restricting CSP; the full privileged-origin
+   split is a Rust packaging-phase item (see "Current hardening status" below).
 
 The references above (`clearly`, `wikiwise`) are native Swift apps; Vault borrows their *form factor*
 (local-first, file-based, agent-collaborative) while taking a web→Tauri path so the same UI runs in a
@@ -79,10 +82,15 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   computes* (`@overlay/core` `memory/similarity.ts`). This is the human-approval step that keeps
   canonical memory disciplined — given a real interface instead of a CLI. (See
   [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
-- **An embedded agent surface** — in the spirit of wikiwise's embedded terminal — whose agents
-  connect to Overlay's MCP server. The in-app AI therefore sees *exactly* the same doctrine as Claude
-  Code or any other client: same skills, same policy, same memory. It edits the corpus as a
-  first-class citizen, and its memory changes go through the same proposal queue a human's do.
+- **Overlay-gated agent-facing views (current), an embedded agent surface (roadmap).** Today's
+  agent-facing surface is file-backed via `@overlay/core`: **Capture, Proposals, Agent Runs
+  (trajectories), and Workspace**, gated client-side (`requiresOverlay` in
+  `web/src/views/registry.ts`) and server-side (the overlay routes return 503 with no `overlay.yaml`
+  workspace connected). There is **no in-app chat**. The embedded agent surface — in-app chat plus an
+  MCP client to a local `overlay serve`, in the spirit of wikiwise's embedded terminal — was never
+  built in the Node stack and is a **post-migration Rust roadmap item (decided 2026-07-01)**. When it
+  lands, the in-app AI sees *exactly* the same doctrine as Claude Code or any other client, and its
+  memory changes go through the same proposal queue a human's do.
 
 ## Conventions — the agent-collaboration spec
 
@@ -101,20 +109,23 @@ goal that motivates the whole editor.
 - **Section-addressable, conflict-tolerant writes.** Edits target a named section, so a human and an
   agent can touch the same file without clobbering each other.
 - **Write-time validation.** Every write is checked against the area's write-contract before it
-  commits — the corpus via `@overlay/core` schemas, knowledge vaults via the convention checker — so a
-  malformed write never lands.
+  commits — the corpus via `@overlay/core` schemas; knowledge vaults via a convention checker, which
+  is **not yet built** (it ships with the embedded agent surface on the post-migration Rust roadmap)
+  — so a malformed write never lands.
 
 Validation lives with the **owner** of each area; Vault *calls* it (imports `@overlay/core` for the
-corpus; runs the convention checker for knowledge vaults) and **never reimplements** it, so the schema
-is single-sourced.
+corpus; will run the knowledge-vault convention checker once it exists) and **never reimplements**
+it, so the schema is single-sourced.
 
 ## How Vault talks to Overlay (three channels)
 
 1. **Library.** Imports `@overlay/core` for schemas, workspace loading, validation, the search index,
    memory operations, and the file read/write APIs (see the contract table in
    [agent-overlay.md](agent-overlay.md)).
-2. **Protocol.** Vault's embedded agents speak **MCP** to a local `overlay serve`. Vault does not
-   reimplement doctrine access; it is just another MCP client.
+2. **Protocol (roadmap).** The embedded agent surface will speak **MCP** to a local `overlay serve`
+   — just another MCP client, reimplementing no doctrine access. This channel is a post-migration
+   Rust roadmap item (decided 2026-07-01); today Vault reaches overlay state through `@overlay/core`
+   and its own server routes, not an in-app MCP client.
 3. **Corpus / vaults.** Direct, **atomic** file read/write on each open vault, honoring that area's
    write-contract — for the overlay corpus: the canonical layout, the schemas, and the
    **propose-don't-write** rule for memory; for a knowledge vault: its convention checker. Agents read
@@ -127,8 +138,11 @@ These Vault-specific review items are now part of the implementation contract:
 
 - **Vault assets are inert on the trusted origin.** The Tauri shell still grants IPC to the local app
   origin, so `/assets/*` must never execute user-controlled code there. Active asset types are served
-  with `nosniff`, script-denying CSP/sandbox headers, and attachment/plain-text treatment for HTML and
-  JavaScript. A fuller privileged-origin split remains the stronger packaging target.
+  with `nosniff`, script-denying CSP/sandbox headers, and attachment treatment — plain-text for HTML
+  and JavaScript, and `Content-Disposition: attachment` for SVG (which keeps `image/svg+xml` so
+  note-preview `<img>` embeds still render). The app document itself carries a script-restricting
+  CSP. The full privileged-origin split is **re-scoped to the Rust/Tauri packaging phase** —
+  consciously deferred, not dropped.
 - **Managed-note writes use Overlay-grade write discipline.** Managed notes validate before commit and
   use unique temp files, file sync, atomic rename, and cleanup on failure, matching the corpus write
   contract.
@@ -162,8 +176,10 @@ is therefore:
   reads. Vault imports those directly. The old Electron-specific main/preload/IPC layer is **not**
   carried forward — and is now gone from Overlay itself.
 - **`apps/desktop` continues as the operator console.** It was not retired in favor of Vault; the
-  Electron shell was swapped for a local web app **in place**. A Tauri V2 wrap remains future for both
-  repos (removing Electron was its prerequisite, now done) — a packaging step, not a retirement.
+  Electron shell was swapped for a local web app **in place**, and both repos have since shipped
+  their **Tauri v2 wraps (2026-06-30)** — model-B shells over Node SEA sidecars, with
+  signing/updater (F1) and cross-webview QA (F2) parked pending the Rust backend migration. A
+  packaging step, not a retirement.
 
 - **Authoring leaves Overlay; operations stay.** As file authoring/editing moves to Vault, Overlay's
   own console **narrows to an operational surface** — server status, validation reports, trajectories,
