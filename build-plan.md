@@ -242,9 +242,37 @@ carried into Phase 5:
   [overlay-ui-replatform.md](overlay-ui-replatform.md). **✅ done (2026-06-27)** — Electron fully removed;
   all 14 features migrated to the web app; suite + Playwright smoke + acceptance green; Tauri-ready.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
-  own desktop surface to Tauri V2 as well; retire the Electron `apps/desktop` once parity is reached.
+  own desktop surface to Tauri V2 as well. Overlay's Electron shell has already been retired in favor
+  of a local web app; the remaining Tauri work is a packaging/hardening layer, not a replacement for
+  active Electron code.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
   desktop app), Runner (service units), with install/update detection.
+
+**Current implementation-risk status:** the following review findings were captured during Phase 5
+hardening and should stay visible as the system moves toward production packaging.
+
+- **Done — Runner trigger reliability.** `debounce_ms` / `max_concurrency` are trigger doctrine, and
+  Runner enforces them through the in-process dispatch gate plus state-dir process slots for generated
+  cron dispatch. Absent `max_concurrency` means one in-flight run per trigger.
+- **Done — Overlay custom-tool approvals.** Custom shell/HTTP tools that require approval, or match
+  supported policy approval gates, fail closed until a trusted approval protocol exists.
+- **Done — Runner-to-Overlay enforcement.** Runner has `--enforce` pass-through for `overlay run`,
+  including generated cron dispatch commands.
+- **Done — write atomicity and serialization.** Overlay, Vault, and Runner use unique temp files and
+  locks/serialization on the write paths that previously raced.
+- **Done — Overlay read-modify-write races.** Memory proposal acceptance and trajectory daily indexes
+  are serialized.
+- **Done — Overlay symlink containment.** Canonical reads realpath-check the selected layer root before
+  returning content.
+- **Done — Runner direct dispatch scoring.** The direct path evaluates Overlay predicates before
+  recording run completion.
+- **Partially done — Vault Tauri origin split.** Active vault assets are now served inertly on the
+  trusted app origin; a fuller privileged-origin split remains the stronger packaging target.
+- **Partially done — Runner HTTP trigger exposure.** HTTP triggers match route before body drain and
+  cap/time out request bodies. A portable header/HMAC authentication contract remains future doctrine.
+- **Docs/status corrections.** systemd is proven as a Runner user unit, while launchd and per-trigger
+  systemd/launchd projection remain backlog; Tauri is a packaging/hardening layer rather than an
+  active Electron replacement.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.

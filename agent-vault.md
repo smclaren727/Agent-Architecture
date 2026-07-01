@@ -51,10 +51,13 @@ Vault ships in two stages:
    it was retired for the React seam in Phase 5.0.) It is the fastest path to a working editor and keeps
    the UI honest about its one job — editing the corpus. The browser/app talks to the corpus and to
    Overlay through `@overlay/core` and a local `overlay serve`, so no UI-specific data model is introduced.
-2. **Tauri V2 (polish).** Once the web app works, it is wrapped with **Tauri V2** to make it feel
-   genuinely **local-first** — native file access to `~/overlay/`, system integration, and a small
-   signed desktop binary — without rewriting the UI. **Agent-Overlay's own desktop surface moves to
-   Tauri V2 as well**, so both repos converge on one desktop delivery story instead of two.
+2. **Tauri V2 (polish and hardening).** The web app is the product seam; the Tauri shell adds
+   local-first affordances — native file access to `~/overlay/`, terminal integration, system
+   integration, and a small signed desktop binary — without rewriting the UI. The Tauri boundary is
+   not production-ready until privileged IPC is isolated from user-controlled assets; see "Current
+   implementation gaps" below. **Agent-Overlay's own desktop surface remains a local web app with a
+   future Tauri wrap**, so both repos still converge on one desktop delivery story, but Tauri is not
+   the current Overlay runtime.
 
 The references above (`clearly`, `wikiwise`) are native Swift apps; Vault borrows their *form factor*
 (local-first, file-based, agent-collaborative) while taking a web→Tauri path so the same UI runs in a
@@ -117,6 +120,18 @@ is single-sourced.
    **propose-don't-write** rule for memory; for a knowledge vault: its convention checker. Agents read
    any vault's content back through Overlay's retrieval (the single agent-read path), never a
    Vault-specific API.
+
+## Current hardening status
+
+These Vault-specific review items are now part of the implementation contract:
+
+- **Vault assets are inert on the trusted origin.** The Tauri shell still grants IPC to the local app
+  origin, so `/assets/*` must never execute user-controlled code there. Active asset types are served
+  with `nosniff`, script-denying CSP/sandbox headers, and attachment/plain-text treatment for HTML and
+  JavaScript. A fuller privileged-origin split remains the stronger packaging target.
+- **Managed-note writes use Overlay-grade write discipline.** Managed notes validate before commit and
+  use unique temp files, file sync, atomic rename, and cleanup on failure, matching the corpus write
+  contract.
 
 ## Non-goals (Vault)
 

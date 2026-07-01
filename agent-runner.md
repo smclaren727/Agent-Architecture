@@ -38,8 +38,8 @@ agent-runner/                   # its own git repo; depends on @overlay/* as a l
     watchers/http.ts            # inbound webhook listener
     dispatch.ts                 # single path: resolve binding → invoke executor against workflow
   units/
-    agent-runner.service        # systemd unit (Linux / NixOS node)
-    com.overlay.runner.plist    # launchd unit (macOS)
+    agent-runner.service        # systemd unit (Linux / NixOS node; proven path)
+    com.overlay.runner.plist    # launchd template (macOS; not yet proven as a second node)
 ```
 
 Watcher modules are added in order of payoff — **schedule, then file, then http** — and every one of
@@ -79,8 +79,10 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
   triggers are *always* in-process (the OS has no "watch this folder" primitive).
 - **OS-projection (optional, `schedule` only).** A `schedule` trigger can be rendered to a native
   systemd `.timer` / cron / launchd unit — deterministic templating from `{cron, workflow, executor}`
-  — for schedules that must fire when no daemon is resident. Generated units are **derived artifacts:
-  never hand-edited**; edit the declaration and re-reconcile.
+  — for schedules that must fire when no daemon is resident. This is the target model; current
+  implementation has a proven systemd user unit for the daemon, while per-trigger projection and the
+  launchd path remain templates/backlog. Generated units are **derived artifacts: never hand-edited**;
+  edit the declaration and re-reconcile.
 
 **Lifecycle.** The reconciler owns both *add* and *remove*, so deleting a declaration cleanly tears
 down its watcher/unit — no orphans. Desired-state lives in doctrine; actual-state is reconciled to
@@ -91,10 +93,30 @@ honors which triggers, watch-root paths, per-host executor settings) — non-por
 doctrine — and a thin **dispatch ledger** (append-only JSONL: "matched X, dispatched W via Z, exit
 status"), distinct from the rich *trajectory* Overlay captures for the run itself.
 
-**Reliability is policy-in-doctrine, enforcement-in-Runner.** Knobs like `debounce` and
-`max_concurrency` are *declared on the trigger* (portable doctrine); the Runner only *enforces* them —
-so a different runner reads the same knob and honors it the same way. The "what" stays in doctrine;
-the Runner keeps only the "how."
+**Reliability is policy-in-doctrine, enforcement-in-Runner.** `debounce_ms` and `max_concurrency` are
+*declared on the trigger* (portable doctrine), then enforced by the Runner so a different runner reads
+the same knob and honors it the same way. An absent debounce means no debounce window; an absent
+concurrency cap means one in-flight run per trigger.
+
+## Current hardening status
+
+These Runner-specific review items are now part of the implementation contract:
+
+- **Dispatch concurrency is bounded by trigger id.** File, HTTP, and schedule watchers all pass through
+  one dispatch gate that enforces `debounce_ms` and `max_concurrency`; excess busy firings coalesce
+  into one pending run. Generated cron dispatch commands carry the reconciled state directory and use
+  process slots there to avoid cross-process overrun.
+- **HTTP triggers remain trusted-local unless fronted by auth.** The watcher now matches routes before
+  draining request bodies, caps body size, times out slow bodies, and contains handler errors. A
+  portable header/HMAC authentication contract is still future doctrine.
+- **Runner-dispatched local adapters can opt into enforcement.** `agent-runner --enforce` passes
+  `--enforce` through to `overlay run`, including generated cron dispatch commands.
+- **The `direct` executor uses Overlay scoring.** Direct dispatch evaluates workflow predicates and
+  records `predicate_results` / `score` before declaring a run complete.
+- **State writes are serialized.** Runner sync holds a state-dir lock and writes manifests/cron
+  fragments with temp-file-then-rename discipline before stale cleanup.
+- **Projection status is narrower than the target docs.** The NixOS/systemd user unit is proven; the
+  launchd path and per-trigger systemd/cron/launchd projection remain implementation backlog.
 
 ## How Runner relates to Vault
 

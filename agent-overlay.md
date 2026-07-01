@@ -93,6 +93,23 @@ Phase 1).
   (agents and editors *propose*; humans *approve*). There is no path that lets an agent silently
   mutate canonical memory. (See [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
 
+## Current hardening status
+
+These Overlay-specific review items are now part of the implementation contract:
+
+- **Custom MCP tool approval fails closed.** `requires_approval` and supported policy approval gates
+  (`tool:*`, `bash:*`, and network approval gates) block custom shell/HTTP tool execution until a
+  trusted approval token/protocol exists.
+- **Sandbox enforcement remains caller-selected.** `overlay run --enforce` exists for local adapters,
+  and Runner now has a matching `--enforce` pass-through. Claude Code and Codex remain documented
+  pass-through adapters under that flag.
+- **Atomic writes use unique temp files.** The shared writer uses same-directory UUID temp paths,
+  exclusive create, file sync, rename, and cleanup on failure.
+- **Read-modify-write paths are serialized.** Memory proposal acceptance locks per proposal, and the
+  trajectory daily index locks per index file to avoid duplicate accepts and lost index updates.
+- **Canonical reads enforce containment.** Canonical file reads realpath-check the selected layer root
+  before reading so a symlink cannot escape the workspace.
+
 ## Non-goals (Overlay)
 
 - **Not an editor.** Overlay provides schemas, validation, and file APIs; the *editing experience*

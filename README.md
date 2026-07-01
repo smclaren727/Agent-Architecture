@@ -98,6 +98,27 @@ pulls doctrine back through the MCP seam and records a **trajectory** via the sh
 (see [`docs/trajectories.md`](../Agent-Overlay/docs/trajectories.md)). The cheap, no-LLM path is just `executor: direct` —
 an executor *choice*, never a Runner built-in.
 
+## Current hardening ledger
+
+These are implementation risks discovered in cross-repo review. They do not change the architecture;
+they mark the hardening work that keeps the implementation honest against the system invariants.
+
+- **Trusted-local is still an exposure boundary.** Local browser/Tauri origins, HTTP trigger ports, MCP
+  HTTP/SSE, and any private-network deployment are privileged surfaces. They must default to loopback
+  or private-network access, authenticate inbound webhooks before reading unbounded bodies, and keep
+  app-control origins separate from user-controlled assets. Current code bounds Runner HTTP request
+  bodies and makes Vault active assets inert; a first-class webhook auth contract and a full privileged
+  origin split remain future hardening.
+- **Write safety has to be end-to-end.** The corpus is plain files, but all writers still need unique
+  temp paths, atomic rename, validation before commit, and serialization where a read-modify-write
+  operation can race. Overlay's canonical writer, memory acceptance, and trajectory index; Vault's
+  managed notes; Runner's state directory; and Overlay desktop capture now follow that discipline.
+- **Policy declarations are not enforcement by themselves.** Trigger reliability knobs, custom-tool
+  approval metadata, and sandbox policies must be enforced on the path that actually dispatches or
+  executes work. Runner now enforces trigger concurrency in-process and for generated cron dispatch;
+  it also passes `overlay run --enforce`. Custom MCP tools that require approval fail closed until a
+  trusted approval protocol exists.
+
 ## End-to-end examples
 
 **1. Author a skill (Vault → Overlay → agent).**
