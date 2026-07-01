@@ -67,8 +67,8 @@ Vault or Runner yet.
   moves to Tauri V2, so both repos converge on one desktop story. (See
   [agent-vault.md](agent-vault.md) → "Tech stack & delivery".) *(The web-first direction held; the
   original framework-free HTML/CSS/JS UI was later rebuilt in React + Vite + Tailwind + shadcn in Phase
-  5.0. Overlay's desktop surface was re-platformed off Electron to a local web app rather than Tauri so
-  far — the Tauri wrap remains future.)*
+  5.0. Overlay's desktop surface was re-platformed off Electron to a local web app, and both apps then
+  shipped model-B Tauri v2 wraps on 2026-06-30 — see Phase 5.)*
 
 **Guardrail:** every seam addition must remain *declarative doctrine* or *read-only*. If a proposed
 change would make Overlay *act* when something happens, it belongs in Runner, not here.
@@ -104,7 +104,10 @@ typed-area write-contract model — not a separate code path.
    conflict-similarity warnings from `memory/similarity.ts`.
 4. **Wiki navigation / backlinks** across the corpus (workflow ↔ skills/standards, fact ↔ entities).
 5. **Embedded agent surface** wired to a local `overlay serve` over MCP — the in-app AI sees the same
-   doctrine as any other client, and its memory changes route through the proposal queue.
+   doctrine as any other client, and its memory changes route through the proposal queue. *(Not built
+   in the Node stack: the shipped agent-facing surface is the overlay-gated file-backed views —
+   Capture / Proposals / Agent Runs / Workspace — and the in-app chat + MCP-client surface moved to
+   the post-migration Rust roadmap, decided 2026-07-01; see [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
 
@@ -112,8 +115,9 @@ The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5,
 watches files only to *display* them. No silent canonical memory writes — human or agent.
 
 **Done when:** a human can author/edit any canonical type in the Vault web app and have `overlay serve`
-reflect it live; the proposal queue is usable end-to-end; the embedded agent can read doctrine and
-file a memory proposal that appears in the queue.
+reflect it live; the proposal queue is usable end-to-end; an agent can read doctrine and file a
+memory proposal that appears in the queue. *(The agent clause was satisfied by external MCP clients
+and the Phase 4 harness executor, not an in-app agent — see work item 5.)*
 
 ---
 
@@ -242,11 +246,19 @@ carried into Phase 5:
   [overlay-ui-replatform.md](overlay-ui-replatform.md). **✅ done (2026-06-27)** — Electron fully removed;
   all 14 features migrated to the web app; suite + Playwright smoke + acceptance green; Tauri-ready.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
-  own desktop surface to Tauri V2 as well. Overlay's Electron shell has already been retired in favor
-  of a local web app; the remaining Tauri work is a packaging/hardening layer, not a replacement for
-  active Electron code.
+  own desktop surface to Tauri V2 as well. **✅ done (2026-06-30)** — both apps shipped **model-B
+  Tauri v2 wraps**: the window loads the loopback origin of a bundled **Node SEA sidecar** that
+  serves the UI and the API (Vault `src-tauri/`; Overlay `apps/desktop/src-tauri`, which also bundles
+  the workspace templates and a runnable CLI). Plans:
+  [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md) (Vault),
+  [`docs/desktop-app-build-plan.md`](../Agent-Overlay/docs/desktop-app-build-plan.md) (Overlay).
+  Signed packaging + auto-updater (F1) and cross-webview QA (F2) are **consciously parked** pending
+  the planned Rust backend migration, which would obsolete the SEA sidecar toolchain they would
+  harden.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
-  desktop app), Runner (service units), with install/update detection.
+  desktop app), Runner (service units), with install/update detection. **Parked pending the Rust
+  backend migration** — the Tauri wraps run locally today; signing, updating, and cross-machine
+  distribution only matter for other machines and sit behind the same parked F1/F2 work.
 
 **Current implementation-risk status:** the following review findings were captured during Phase 5
 hardening and should stay visible as the system moves toward production packaging.
@@ -266,13 +278,19 @@ hardening and should stay visible as the system moves toward production packagin
   returning content.
 - **Done — Runner direct dispatch scoring.** The direct path evaluates Overlay predicates before
   recording run completion.
-- **Partially done — Vault Tauri origin split.** Active vault assets are now served inertly on the
-  trusted app origin; a fuller privileged-origin split remains the stronger packaging target.
-- **Partially done — Runner HTTP trigger exposure.** HTTP triggers match route before body drain and
-  cap/time out request bodies. A portable header/HMAC authentication contract remains future doctrine.
-- **Docs/status corrections.** systemd is proven as a Runner user unit, while launchd and per-trigger
-  systemd/launchd projection remain backlog; Tauri is a packaging/hardening layer rather than an
-  active Electron replacement.
+- **Re-scoped — Vault privileged-origin split.** Active vault assets are served inertly on the
+  trusted app origin (attachment treatment now covers SVG) and the app document carries a
+  script-restricting CSP; the full privileged-origin split moves to the **Rust/Tauri packaging
+  phase** — consciously deferred, not dropped.
+- **Done — Runner webhook authentication.** HTTP triggers match route before body drain and cap/time
+  out request bodies, and the header/HMAC authentication contract is now doctrine (an `on.auth` block
+  in Overlay's trigger schema — [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) enforced
+  fail-closed by Runner: constant-time compares, `401` on mismatch, `503` when the secret env var is
+  unset or empty.
+- **Docs/status corrections.** systemd is proven as a Runner user unit, while the launchd template
+  and per-trigger systemd/launchd unit generation remain backlog (cron fragment projection is
+  implemented); the Tauri v2 wraps shipped 2026-06-30, with signing/updater and webview QA parked
+  pending the Rust backend migration.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
