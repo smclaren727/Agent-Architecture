@@ -33,12 +33,12 @@ agent-runner/                   # its own git repo; depends on @overlay/* as a l
   src/
     main.ts                     # the loop / entry point
     triggers/load.ts            # read declarations via Overlay (overlay triggers list / overlay://triggers)
-    watchers/schedule.ts        # cron evaluation
-    watchers/file.ts            # file-created / file-changed (chokidar-style)
-    watchers/http.ts            # inbound webhook listener
+    watchers/schedule.ts        # cron evaluation (15 s in-process poll, minute granularity)
+    watchers/file.ts            # file-created / file-changed (1 s recursive mtime+size polling scan)
+    watchers/http.ts            # inbound webhook listener (loopback; per-trigger auth)
     dispatch.ts                 # single path: resolve binding → invoke executor against workflow
   units/
-    agent-runner.service        # systemd unit (Linux / NixOS node; proven path)
+    overlay-runner.service      # systemd unit (Linux / NixOS node; proven path)
     com.overlay.runner.plist    # launchd template (macOS; not yet proven as a second node)
 ```
 
@@ -76,13 +76,22 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
 
 - **In-process (default).** Watchers and an internal scheduler live in the Runner daemon's memory;
   there is **no per-trigger OS artifact** — one installed service (the Runner). `file` and `http`
-  triggers are *always* in-process (the OS has no "watch this folder" primitive).
+  triggers are *always* in-process (the OS has no "watch this folder" primitive). The in-process
+  watchers are **polling**, not OS event subscriptions: `schedule` polls every 15 seconds at minute
+  granularity (each trigger fires at most once per matching minute), and `file` runs a recursive scan
+  every second comparing each file's mtime and size against the previous scan.
 - **OS-projection (optional, `schedule` only).** A `schedule` trigger can be rendered to a native
-  systemd `.timer` / cron / launchd unit — deterministic templating from `{cron, workflow, executor}`
-  — for schedules that must fire when no daemon is resident. This is the target model; current
-  implementation has a proven systemd user unit for the daemon, while per-trigger projection and the
-  launchd path remain templates/backlog. Generated units are **derived artifacts: never hand-edited**;
-  edit the declaration and re-reconcile.
+  unit — deterministic templating from `{cron, workflow, executor}` — for schedules that must fire
+  when no daemon is resident. **Implemented today: cron fragments only.** `agent-runner sync
+  --unit-target cron` writes generated user-crontab fragments under the state directory (derived
+  files; installing them into a live crontab is an operator step), and every sync sweeps fragments
+  whose triggers are gone. Per-trigger systemd `.timer` / launchd unit *generation* remains backlog;
+  the daemon itself runs under a proven systemd user unit, while the launchd daemon template is not
+  yet proven. Generated units are **derived artifacts: never hand-edited**; edit the declaration and
+  re-reconcile. **Run-mode and the cron projection are mutually exclusive per state directory** — an
+  installed fragment plus the in-process schedule watcher would double-dispatch the same trigger, so
+  `agent-runner run` warns when the state dir's manifest records `unit_target: cron`
+  (see the [Runner README](../Agent-Runner/README.md)).
 
 **Lifecycle.** The reconciler owns both *add* and *remove*, so deleting a declaration cleanly tears
 down its watcher/unit — no orphans. Desired-state lives in doctrine; actual-state is reconciled to
@@ -90,8 +99,10 @@ match. It is neither "permanent" nor "recreated per event."
 
 **What the Runner owns here** is the *mechanism* plus a little **machine-local config** (which host
 honors which triggers, watch-root paths, per-host executor settings) — non-portable, so config, not
-doctrine — and a thin **dispatch ledger** (append-only JSONL: "matched X, dispatched W via Z, exit
-status"), distinct from the rich *trajectory* Overlay captures for the run itself.
+doctrine — and its **machine-local derived state**: the state directory's `manifest.json` of
+reconciled triggers/units and the per-slot `owner.json` lock records under `dispatch-locks/`. The
+audit record of a run is the rich *trajectory* Overlay captures; the Runner keeps **no dispatch
+ledger of its own** (a thin append-only dispatch log was once planned and remains unimplemented).
 
 **Reliability is policy-in-doctrine, enforcement-in-Runner.** `debounce_ms` and `max_concurrency` are
 *declared on the trigger* (portable doctrine), then enforced by the Runner so a different runner reads
@@ -106,17 +117,34 @@ These Runner-specific review items are now part of the implementation contract:
   one dispatch gate that enforces `debounce_ms` and `max_concurrency`; excess busy firings coalesce
   into one pending run. Generated cron dispatch commands carry the reconciled state directory and use
   process slots there to avoid cross-process overrun.
-- **HTTP triggers remain trusted-local unless fronted by auth.** The watcher now matches routes before
-  draining request bodies, caps body size, times out slow bodies, and contains handler errors. A
-  portable header/HMAC authentication contract is still future doctrine.
+- **Webhook authentication is doctrine, enforced fail-closed.** An `http` trigger may declare
+  `on.auth` (`scheme: header` or `hmac-sha256`; the secret comes from a daemon-environment
+  `secret_env`, never the corpus) — the declaration format is Overlay doctrine
+  ([`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)). The watcher enforces it with
+  constant-time comparison before firing: mismatches get `401`, and an unset or empty secret env var
+  fails closed with `503` — misconfigured, never served unauthenticated. The watcher also matches
+  routes before draining request bodies, caps body size, times out slow bodies, contains handler
+  errors, and binds loopback only — network exposure means fronting the daemon with a reverse proxy
+  or Tailscale.
+- **State-directory locks have explicit staleness rules.** Dispatch slots
+  (`dispatch-locks/<trigger-id>/<n>.lock`) and the sync lock (`.sync.lock`) are directory locks with
+  `owner.json` pid records; staleness is judged by a dead-pid probe plus mtime grace windows, and
+  stale locks are reclaimed with a single retry. The verbatim on-disk contract lives in the
+  [Runner README](../Agent-Runner/README.md) ("State-directory lock protocol").
+- **Run-mode and cron projection are mutually exclusive per state directory.** An installed cron
+  fragment plus the in-process schedule watcher would double-dispatch the same trigger;
+  `agent-runner run` warns when the manifest records `unit_target: cron`, and
+  `sync --unit-target none` removes the projection.
 - **Runner-dispatched local adapters can opt into enforcement.** `agent-runner --enforce` passes
   `--enforce` through to `overlay run`, including generated cron dispatch commands.
 - **The `direct` executor uses Overlay scoring.** Direct dispatch evaluates workflow predicates and
   records `predicate_results` / `score` before declaring a run complete.
 - **State writes are serialized.** Runner sync holds a state-dir lock and writes manifests/cron
   fragments with temp-file-then-rename discipline before stale cleanup.
-- **Projection status is narrower than the target docs.** The NixOS/systemd user unit is proven; the
-  launchd path and per-trigger systemd/cron/launchd projection remain implementation backlog.
+- **Projection status is narrower than the target model.** Only cron fragment projection exists
+  (`sync --unit-target cron`; generated user-crontab fragments in the state directory, installed by
+  the operator). The daemon's NixOS/systemd user unit is proven; the launchd template and
+  per-trigger systemd `.timer` / launchd unit generation remain implementation backlog.
 
 ## How Runner relates to Vault
 
