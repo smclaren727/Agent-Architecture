@@ -65,11 +65,11 @@ async function main() {
       { flag: "a" }
     );
 
-    // 3. Vault registers the SAME folder as a loose vault and serves it over HTTP.
+    // 3. Vault registers the SAME folder as an open (loose-markdown) vault and serves it over HTTP.
     await mkdir(path.join(vaultCwd, "vault"), { recursive: true });
     await writeFile(
       vaultsConfig,
-      `${JSON.stringify({ vaults: [{ id: "kv", label: "KV", path: knowledgeVault, mode: "loose" }] }, null, 2)}\n`,
+      `${JSON.stringify({ vaults: [{ id: "kv", label: "KV", path: knowledgeVault, mode: "open" }] }, null, 2)}\n`,
       "utf8"
     );
 
