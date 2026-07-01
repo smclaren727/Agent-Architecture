@@ -300,12 +300,65 @@ over HTTP/SSE; all three repos have signed/packaged, self-updating distributions
 
 ---
 
+## Phase 6 — Rust re-platform
+
+**Goal:** every Node/TS backend becomes a Rust binary behind unchanged seams — the corpus formats,
+MCP wire, argv + exit codes, env vars, and HTTP/SSE shapes stay byte-identical while the
+implementations swap. React frontends and the Tauri v2 wraps are untouched. Campaign master (crate
+architecture, pinned stack, frozen-TS-core policy, cutover gates, risk register):
+[rust-migration.md](rust-migration.md).
+
+**Prerequisite:** Phase 5 (the parked packaging work is *finished by* this phase, not before it).
+
+**Dependency arrows:** the Cargo mirror of today's `file:` deps —
+`vault-server ──path──▶ overlay-core ◀──path── agent-runner`; Overlay's own crates point only
+inward (`overlay-console → overlay-cli → {overlay-core, overlay-mcp}`). During the migration window
+the frozen TS `@overlay/core` dist remains a second consumable of the *same* arrow for
+not-yet-ported siblings; the arrow never reverses in either implementation.
+
+**Work** (detail per phase in [rust-migration.md](rust-migration.md) → "Phases"):
+1. **6.0 Contract capture (R0)** — ⏳ **in progress (2026-07-01).** Freeze the observable contracts
+   as executable, implementation-agnostic artifacts before any porting: parameterized acceptance
+   harnesses (✅ done — the `ACCEPTANCE_*_CMD` knobs in
+   [acceptance/README.md](acceptance/README.md)), MCP surface snapshots (including the generated
+   agent MCP configs), the 24-command argv/exit-code matrix, HTTP+SSE transcripts, golden fixture
+   corpora (sandbox, cron, RRULE, search ranking, schema accept/reject, YAML stringify), the
+   per-schema strictness audit table, the Vault suite spawn-mode split
+   (`AGENT_VAULT_SERVER_BIN`), and the frozen-core partition + emergency-patch procedure.
+2. **6.1 Overlay big bang (R1).** overlay-core → overlay-mcp → overlay-cli → overlay-console; the
+   agent re-entry decision (no `node`-wrapping of a native binary; doctor/migrate rewrite); one-switch
+   cutover incl. the Runner state-dir re-sync; TS core frozen at `ts-core-final`.
+3. **6.2 Runner big bang (R2).** Watchers bug-for-bug, dispatch gate + file-slots, reconcile with
+   byte-compatible fragments; `sync` asserts zero fragment churn at cutover.
+4. **6.3 Vault big bang (R3).** vault-server crate behind the same Tauri sidecar env/health
+   contract; the frozen TS core is deleted here — the migration window closes.
+5. **6.4 Demolition + packaging-once (R4).** Residual TS infra removed; the parked
+   signing/updater/cross-webview packaging (Phase 5's F1/F2) is done **once**, in Rust; the
+   post-migration roadmap (Vault embedded agent, origin split, notify watchers) unblocks.
+
+**Guardrail:** contracts are frozen as **executable artifacts** — every cutover gate is the R0
+snapshot/golden/transcript suites plus the mixed-mode acceptance matrix (R→T→T → R→R→T → R→R→R)
+going green against the new implementation, never a judgment call. The four seams are
+language-agnostic and must not change shape; the dependency arrow stays intact in both
+implementations for the whole window.
+
+**Done when:** per phase, the cutover gates in [rust-migration.md](rust-migration.md) (6.0: all
+contract artifacts committed and green against TS; 6.1–6.3: each repo's gate incl. its acceptance
+matrix step; 6.4: no Node runtime outside the two `web/` build chains, packaged apps boot from Rust
+sidecars on a clean machine, and the acceptance harnesses pass all-Rust).
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
-                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5
+                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform)
+
+Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
 
 Phase 1 is the gate: it freezes the `@overlay/core` contract and decides Vault's shape, after which
-Vault (Phase 2) and Runner (Phase 3) proceed in parallel and converge at Phase 4.
+Vault (Phase 2) and Runner (Phase 3) proceed in parallel and converge at Phase 4. Phase 6's internal
+order is forced by the same arrow — Overlay ports first because both siblings depend on it, and the
+frozen TS core bridges the window until Vault (its last consumer) ports.
