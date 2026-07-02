@@ -1,9 +1,20 @@
 # Rust re-platform — the Node/TS backends move to Rust, the seams do not
 
-> **STATUS (2026-07-01): IN PROGRESS — Phase R0 (contract capture) underway.** Both acceptance
-> harnesses are parameterized for mixed-implementation runs (see
-> [acceptance/README.md](acceptance/README.md) → "Selecting implementations"); the remaining R0
-> artifacts are being captured in the product repos.
+> **STATUS (2026-07-02): R0 ✅ · R1 ✅ COMPLETE — the migration window is OPEN; next up R2 (Runner).**
+> Agent-Overlay is Rust end-to-end (crates `overlay-core`/`overlay-mcp`/`overlay-cli`/
+> `overlay-console`, Tauri shipping the cargo binaries); the TS backends are deleted and
+> `packages/core` is frozen at the tag **`ts-core-final`** (the "no new keys in strict-read
+> artifacts" window rule is in force until R3). Both acceptance harnesses now *default* to the Rust
+> `overlay` binary — the defaults are matrix step R→T→T (see
+> [acceptance/README.md](acceptance/README.md) → "Selecting implementations").
+> Deliberate R1 wire deviations, recorded in Agent-Overlay's `docs/rust-migration-notes.md`:
+> **rmcp 2.0.0** serves the MCP surface (stdio rmcp end-to-end; StreamableHTTP hand-shaped at the
+> boundary to the snapshotted bytes); **GET `/mcp` returns 405** (the spec-sanctioned reply — the
+> TS SDK's optional standalone SSE stream could never carry data here); and the
+> **protocol-version fallback** differs on one edge (a `2024-10-07` client negotiates the
+> `2025-11-25` fallback where TS echoed `2024-10-07`; header validation still accepts the full TS
+> SUPPORTED list). Linux/bwrap live sandbox smoke on the NixOS node remains outstanding (macOS
+> sandbox-exec smoke done).
 
 This is the campaign master for migrating all backend/non-UI code in the three product repos
 (**Agent-Overlay** · **Agent-Runner** · **Agent-Vault**) from Node/TypeScript to Rust. It owns the

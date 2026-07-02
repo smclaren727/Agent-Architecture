@@ -317,17 +317,20 @@ the frozen TS `@overlay/core` dist remains a second consumable of the *same* arr
 not-yet-ported siblings; the arrow never reverses in either implementation.
 
 **Work** (detail per phase in [rust-migration.md](rust-migration.md) → "Phases"):
-1. **6.0 Contract capture (R0)** — ⏳ **in progress (2026-07-01).** Freeze the observable contracts
+1. **6.0 Contract capture (R0)** — ✅ **done (2026-07-01).** Freeze the observable contracts
    as executable, implementation-agnostic artifacts before any porting: parameterized acceptance
-   harnesses (✅ done — the `ACCEPTANCE_*_CMD` knobs in
+   harnesses (the `ACCEPTANCE_*_CMD` knobs in
    [acceptance/README.md](acceptance/README.md)), MCP surface snapshots (including the generated
    agent MCP configs), the 24-command argv/exit-code matrix, HTTP+SSE transcripts, golden fixture
    corpora (sandbox, cron, RRULE, search ranking, schema accept/reject, YAML stringify), the
    per-schema strictness audit table, the Vault suite spawn-mode split
    (`AGENT_VAULT_SERVER_BIN`), and the frozen-core partition + emergency-patch procedure.
-2. **6.1 Overlay big bang (R1).** overlay-core → overlay-mcp → overlay-cli → overlay-console; the
-   agent re-entry decision (no `node`-wrapping of a native binary; doctor/migrate rewrite); one-switch
-   cutover incl. the Runner state-dir re-sync; TS core frozen at `ts-core-final`.
+2. **6.1 Overlay big bang (R1)** — ✅ **done (2026-07-02).** All four crates ported and cut over
+   behind the R0 contracts (MCP snapshot byte-exact, cli-contract 37/37, console transcripts,
+   acceptance matrix R→T→T); the TS backends are deleted, `packages/core` is frozen at
+   `ts-core-final`, and the Tauri shell ships the cargo-built binaries. Detail: overlay-core →
+   overlay-mcp → overlay-cli → overlay-console; the agent re-entry decision (no `node`-wrapping of
+   a native binary; doctor/migrate rewrite); one-switch cutover incl. the Runner state-dir re-sync.
 3. **6.2 Runner big bang (R2).** Watchers bug-for-bug, dispatch gate + file-slots, reconcile with
    byte-compatible fragments; `sync` asserts zero fragment churn at cutover.
 4. **6.3 Vault big bang (R3).** vault-server crate behind the same Tauri sidecar env/health
