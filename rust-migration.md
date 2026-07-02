@@ -326,7 +326,8 @@ transcripts (the XSS boundary); Playwright ui-smoke unchanged; acceptance matrix
 the packaged Tauri app boots on a clean machine; a multi-day Syncthing dogfood.
 
 **R3 slice map (2026-07-02; same small-resumable-slice discipline as R2 — progress ledger lives in
-`Agent-Vault/docs/rust-migration-notes.md`, created by R3.1):**
+`Agent-Vault/Docs/rust-migration-notes.md` — capitalized `Docs/`, that repo's convention;
+created by R3.1):**
 
 - **R3.1** — Cargo scaffold (`crates/vault-server`, overlay-core path dep) + config.js port (env
   surface, `js_number` grammar) + origin-guard + http helpers (static/SPA, inert-CSP `/assets`
