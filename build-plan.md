@@ -331,8 +331,11 @@ not-yet-ported siblings; the arrow never reverses in either implementation.
    `ts-core-final`, and the Tauri shell ships the cargo-built binaries. Detail: overlay-core →
    overlay-mcp → overlay-cli → overlay-console; the agent re-entry decision (no `node`-wrapping of
    a native binary; doctor/migrate rewrite); one-switch cutover incl. the Runner state-dir re-sync.
-3. **6.2 Runner big bang (R2).** Watchers bug-for-bug, dispatch gate + file-slots, reconcile with
-   byte-compatible fragments; `sync` asserts zero fragment churn at cutover.
+3. **6.2 Runner big bang (R2)** — ✅ **done (2026-07-02).** Watchers bug-for-bug, dispatch gate +
+   file-slots, reconcile with byte-compatible fragments — all gated on the golden tables consumed
+   in place; the cutover deleted the TS implementation, re-pointed the unit templates at the
+   native binary, and pinned `sync` zero-churn over a committed TS-written state dir. Acceptance
+   matrix R→R→T is now the harness default. Ledger: Agent-Runner `docs/rust-migration-notes.md`.
 4. **6.3 Vault big bang (R3).** vault-server crate behind the same Tauri sidecar env/health
    contract; the frozen TS core is deleted here — the migration window closes.
 5. **6.4 Demolition + packaging-once (R4).** Residual TS infra removed; the parked

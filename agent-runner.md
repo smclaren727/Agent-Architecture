@@ -25,25 +25,29 @@ corpus (a workflow + an executor choice), never as a built-in capability of the 
 
 ## Repo shape
 
-Illustrative — its internals are not overlay doctrine (from
-[`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) Phase 3):
+Illustrative — its internals are not overlay doctrine (module roles from
+[`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) Phase 3;
+Rust crate layout since the Phase 6 / [R2](rust-migration.md) re-platform):
 
 ```
-agent-runner/                   # its own git repo; depends on @overlay/* as a library
-  src/
-    main.ts                     # the loop / entry point
-    triggers/load.ts            # read declarations via Overlay (overlay triggers list / overlay://triggers)
-    watchers/schedule.ts        # cron evaluation (15 s in-process poll, minute granularity)
-    watchers/file.ts            # file-created / file-changed (1 s recursive mtime+size polling scan)
-    watchers/http.ts            # inbound webhook listener (loopback; per-trigger auth)
-    dispatch.ts                 # single path: resolve binding → invoke executor against workflow
+agent-runner/                   # its own git repo; depends on Agent-Overlay's overlay-core
+  crates/agent-runner/          #   crate as a library (Cargo path dependency)
+    src/
+      main.rs                   # thin argv/exit shim; cli.rs wires the loop / entry point
+      triggers/load.rs          # read declarations via Overlay (rmcp client on overlay://triggers)
+      watchers/schedule.rs      # cron evaluation (15 s in-process poll, minute granularity)
+      watchers/file.rs          # file-created / file-changed (1 s recursive mtime+size polling scan)
+      watchers/http.rs          # inbound webhook listener (loopback; per-trigger auth)
+      dispatch.rs               # single path: resolve binding → invoke executor against workflow
+      reconcile.rs              # sync: state-dir manifest + cron fragment projection
+  test/fixtures/                # golden tables captured from the pre-port TS implementation
   units/
     overlay-runner.service      # systemd unit (Linux / NixOS node; proven path)
     com.overlay.runner.plist    # launchd template (macOS; not yet proven as a second node)
 ```
 
 Watcher modules are added in order of payoff — **schedule, then file, then http** — and every one of
-them funnels into the *same* `dispatch.ts`. Adding an event source never adds an action.
+them funnels into the *same* `dispatch.rs`. Adding an event source never adds an action.
 
 ## How Runner consumes Overlay
 

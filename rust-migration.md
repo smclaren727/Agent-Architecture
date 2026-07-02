@@ -1,12 +1,19 @@
 # Rust re-platform — the Node/TS backends move to Rust, the seams do not
 
-> **STATUS (2026-07-02): R0 ✅ · R1 ✅ COMPLETE — the migration window is OPEN; next up R2 (Runner).**
-> Agent-Overlay is Rust end-to-end (crates `overlay-core`/`overlay-mcp`/`overlay-cli`/
+> **STATUS (2026-07-02): R0 ✅ · R1 ✅ · R2 ✅ COMPLETE — the migration window is OPEN; next up
+> R3 (Vault).**
+> **Agent-Overlay** is Rust end-to-end (crates `overlay-core`/`overlay-mcp`/`overlay-cli`/
 > `overlay-console`, Tauri shipping the cargo binaries); the TS backends are deleted and
 > `packages/core` is frozen at the tag **`ts-core-final`** (the "no new keys in strict-read
-> artifacts" window rule is in force until R3). Both acceptance harnesses now *default* to the Rust
-> `overlay` binary — the defaults are matrix step R→T→T (see
-> [acceptance/README.md](acceptance/README.md) → "Selecting implementations").
+> artifacts" window rule is in force until R3, when Vault — the last TS consumer — ports).
+> **Agent-Runner** is Rust end-to-end (crate `agent-runner`; the TS implementation is deleted —
+> the repo is the crate + golden fixtures + units + docs; ledger and deviations in its
+> `docs/rust-migration-notes.md`). Operator-visible R2 cutover facts: cron fragments record the
+> **native binary** as the runner command (the R1 agent-re-entry analog), so cron-projected state
+> dirs need **one `agent-runner sync`** after upgrading while `none`-target dirs are zero-churn;
+> the unit templates invoke the binary directly and **OVERLAY_CLI_PATH is gone** (its consumer
+> resolves `overlay` on PATH). Both acceptance harnesses now *default* to matrix step **R→R→T**
+> (see [acceptance/README.md](acceptance/README.md) → "Selecting implementations").
 > Deliberate R1 wire deviations, recorded in Agent-Overlay's `docs/rust-migration-notes.md`:
 > **rmcp 2.0.0** serves the MCP surface (stdio rmcp end-to-end; StreamableHTTP hand-shaped at the
 > boundary to the snapshotted bytes); **GET `/mcp` returns 405** (the spec-sanctioned reply — the
@@ -262,6 +269,13 @@ smoke on both OSes against the sandbox goldens.
 
 ### R2 — Agent-Runner big bang
 
+**✅ done (2026-07-02)** — all slices R2.1–R2.9 landed (ledger: Agent-Runner
+`docs/rust-migration-notes.md`). Gate held: 116 Rust tests green including the cron/glob/reconcile
+goldens consumed in place and a zero-churn `sync` pin over a committed TS-written state dir;
+acceptance matrix step **R→R→T** is now the harness default; the `ts-core-final` back-compat check
+is the R2.2 fake-serve negotiating `2025-06-18` (the TS serve is not runnable — `packages/cli` was
+deleted at R1); the soak day is ongoing operation rather than a cutover-day artifact.
+
 Port: workspace discovery → watchers (bug-for-bug polling semantics) → dispatch gate + file-slots
 (landed staleness rules preserved) → `overlay run` shell-out → reconcile (byte-compatible
 fragments). **Cutover:** bin path → cargo binary; `sync` asserts zero fragment churn on
@@ -327,9 +341,9 @@ Both harnesses run **unmodified** at every gate — only the `ACCEPTANCE_*_CMD` 
 
 | Gate | Overlay | Runner | Vault | Matrix step |
 | --- | --- | --- | --- | --- |
-| R0 | TS | TS | TS | T→T→T (defaults; also proven with knobs set explicitly) |
+| R0 | TS | TS | TS | T→T→T (the defaults at R0; also proven with knobs set explicitly) |
 | R1 | **Rust** | TS | TS | R→T→T |
-| R2 | Rust | **Rust** | TS | R→R→T |
+| R2 | Rust | **Rust** | TS | R→R→T (the defaults since the R2 cutover) |
 | R3 | Rust | Rust | **Rust** | R→R→R |
 
 ## Risk register
