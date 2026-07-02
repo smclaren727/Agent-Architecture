@@ -9,16 +9,16 @@
 //
 // Prerequisites (build the siblings first):
 //   - Agent-Overlay: cargo build  (target/debug/overlay — the Rust CLI, the R1 default)
-//   - Agent-Runner:  npm run build (dist/)
+//   - Agent-Runner:  cargo build  (target/debug/agent-runner — the Rust runner, the R2 default)
 //   - Agent-Vault:   no build (plain JS), Node 24+ for node:sqlite
 //
 // Run: node acceptance/capture-triage-loop.mjs
 //
 // Implementation selection: the three planes are spawned from env-selected JSON argv
 // arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_RUNNER_CMD / ACCEPTANCE_VAULT_CMD).
-// Since the R1 cutover the Overlay default is the Rust `overlay` binary; Runner and
-// Vault default to their built TS entry points until R2/R3. Any plane can be
-// substituted without touching the harness. See acceptance/README.md.
+// Since the R1/R2 cutovers the Overlay and Runner defaults are the Rust binaries;
+// Vault defaults to its TS entry point until R3. Any plane can be substituted
+// without touching the harness. See acceptance/README.md.
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -34,19 +34,27 @@ const overlayRepo = path.join(developer, "Agent-Overlay");
 const vaultRepo = path.join(developer, "Agent-Vault");
 const runnerRepo = path.join(developer, "Agent-Runner");
 const overlayBin = path.join(overlayRepo, "target", "debug", "overlay");
+const runnerBin = path.join(runnerRepo, "target", "debug", "agent-runner");
 
 // Each knob is a JSON argv array ([command, ...args]) — arrays because the TS entry
 // points need a Node interpreter prefix; a native binary is just a one-element array.
-// The Overlay default is the Rust binary (R1 cutover); the frozen TS CLI remains
-// selectable explicitly (it lives at Agent-Overlay's `ts-core-final` tag).
+// The Overlay and Runner defaults are the Rust binaries (R1/R2 cutovers); the frozen
+// TS forms remain selectable explicitly (Overlay's lives at the `ts-core-final` tag;
+// the TS Runner only in Agent-Runner's pre-cutover history).
 if (!process.env.ACCEPTANCE_OVERLAY_CMD && !existsSync(overlayBin)) {
   throw new Error(
     `The Rust overlay binary is missing at ${overlayBin} — run \`cargo build\` in Agent-Overlay, ` +
     `or set ACCEPTANCE_OVERLAY_CMD to an explicit JSON argv array.`
   );
 }
+if (!process.env.ACCEPTANCE_RUNNER_CMD && !existsSync(runnerBin)) {
+  throw new Error(
+    `The Rust agent-runner binary is missing at ${runnerBin} — run \`cargo build\` in Agent-Runner, ` +
+    `or set ACCEPTANCE_RUNNER_CMD to an explicit JSON argv array.`
+  );
+}
 const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [overlayBin]);
-const runnerCmd = commandFromEnv("ACCEPTANCE_RUNNER_CMD", [process.execPath, path.join(runnerRepo, "dist", "main.js")]);
+const runnerCmd = commandFromEnv("ACCEPTANCE_RUNNER_CMD", [runnerBin]);
 const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [process.execPath, path.join(vaultRepo, "server", "main.js")]);
 
 function commandFromEnv(name, fallback) {
