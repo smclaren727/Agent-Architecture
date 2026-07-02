@@ -7,8 +7,8 @@
 ## Role: the doctrine/serve plane and the shared library
 
 Agent-Overlay is the **substrate** of the system. It owns the canonical corpus, defines its schema,
-validates it, serves it live to agents over MCP, and ships the `@overlay/core` library that the two
-sibling repos build on. It is deliberately **not an editor** (that is Vault) and **not a loop** (that
+validates it, serves it live to agents over MCP, and ships the shared core library that the two
+sibling repos build on (`crates/overlay-core` — see "The core library contract" below). It is deliberately **not an editor** (that is Vault) and **not a loop** (that
 is Runner). It is a library you call, not a framework that runs you.
 
 Overlay depends on **neither** Vault nor Runner. The dependency arrow points *into* Overlay from both
@@ -65,25 +65,32 @@ Agents treat world-knowledge as **facts, never instructions** — it never silen
 doctrine. This is the federation boundary that once justified a separate repo, now preserved as a
 **content distinction inside the single agent lens** rather than a split between two systems.
 
-## The `@overlay/core` library contract
+## The core library contract
 
-`@overlay/core` is the stable API both siblings import. The pieces they depend on (source paths in
-`packages/core/src/`):
+The shared library both siblings build on is the Rust crate **`crates/overlay-core`** (since the R1
+cutover of the [Rust re-platform](rust-migration.md)); at R2/R3 the siblings take it as a Cargo path
+dependency. The pieces they depend on (module paths in `crates/overlay-core/src/`):
 
 | Concern | Module | Used by |
 | --- | --- | --- |
 | Canonical type schemas (skill, workflow, standard, profile, policy, memory-fact, trigger, …) | `schemas/` | Vault (schema-aware editing, validation), Runner (trigger schema) |
-| Workspace loading + layered (base + project) merge | `loaders/workspace.ts` | Vault (load the corpus), Runner (resolve bindings) |
-| Atomic writes / retry-on-parse reads | `loaders/atomic-write.ts`, `loaders/retry-read.ts` | Vault (safe writes) |
-| Deterministic search index | `search/` | Vault (in-app search) |
-| Memory operations + conflict similarity | `memory/operations.ts`, `memory/similarity.ts` | Vault (proposal queue UI) |
+| Workspace loading + layered (base + project) merge | `loaders/workspace.rs` | Vault (load the corpus), Runner (resolve bindings) |
+| Atomic writes / retry-on-parse reads | `loaders/atomic_write.rs`, `loaders/retry_read.rs` | Vault (safe writes) |
+| Deterministic search index | `search.rs` | Vault (in-app search) |
+| Memory operations + conflict similarity | `memory/operations.rs`, `memory/similarity.rs` | Vault (proposal queue UI) |
 | Secret resolution (env, keyring, 1password, bitwarden, pass, exec) | `secrets/` | Overlay tools/executors (server-side only) |
-| Canonical file list/read/write with validation rollback | `workspace-files/` | Vault (file browser/editor) |
-| Trajectory read/write | `trajectory/store.ts` | Vault (run history), Runner (via `overlay run`) |
+| Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
+| Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
 
-**Treat `@overlay/core`'s exported surface as a public contract.** Once Vault and Runner depend on
+**Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on
 it, breaking changes ripple across repos — version it accordingly (see [build-plan.md](build-plan.md)
 Phase 1).
+
+**Frozen TS core (the migration window).** Until Vault and Runner port (R2/R3), they still consume
+the TS `@overlay/core` **`packages/core/dist`** via `file:` deps — frozen at Agent-Overlay's
+annotated tag **`ts-core-final`**, which accepts no changes outside the emergency-patch procedure in
+[rust-migration.md](rust-migration.md) → "Frozen-TS-core policy". The frozen dist is deleted at the
+Vault cutover (R3), closing the window.
 
 ## The seams Overlay offers each sibling
 

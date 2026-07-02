@@ -131,6 +131,12 @@ they mark the hardening work that keeps the implementation honest against the sy
   are **loud pass-throughs** — they keep their own sandboxes and Overlay warns on stderr that
   enforcement is delegated — and every run records its effective `sandbox_mode` on the trajectory.
   Custom MCP tools that require approval fail closed until a trusted approval protocol exists.
+- **The R1 migration window is open (2026-07-02).** Overlay's backends are Rust behind the unchanged
+  seams, while Vault and Runner still consume the frozen TS `@overlay/core` dist (Agent-Overlay tag
+  `ts-core-final`) until they port at R2/R3. The **frozen-core skew rule is now ACTIVE**: no new
+  keys may be written into any strict-read artifact class while a frozen TS reader exists — governed
+  by the per-schema strictness audit table, with the emergency-patch procedure as the only change
+  path ([rust-migration.md](rust-migration.md) → "Frozen-TS-core policy").
 
 ## End-to-end examples
 
@@ -159,7 +165,7 @@ becomes canonical memory served identically to every other client.
 
 ## Where to read next
 
-- **[agent-overlay.md](agent-overlay.md)** — Overlay's role, the two surfaces, and the `@overlay/core` library contract.
+- **[agent-overlay.md](agent-overlay.md)** — Overlay's role, the two surfaces, and the core library contract.
 - **[agent-vault.md](agent-vault.md)** — the Vault repo definition (net-new).
 - **[agent-runner.md](agent-runner.md)** — the Runner repo definition.
 - **[build-plan.md](build-plan.md)** — the phased, full-horizon multi-repo build plan.
