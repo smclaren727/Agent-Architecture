@@ -325,6 +325,35 @@ green with `AGENT_VAULT_SERVER_BIN=<rust binary>`; FTS5 ranking goldens; inert-C
 transcripts (the XSS boundary); Playwright ui-smoke unchanged; acceptance matrix step **R→R→R**;
 the packaged Tauri app boots on a clean machine; a multi-day Syncthing dogfood.
 
+**R3 slice map (2026-07-02; same small-resumable-slice discipline as R2 — progress ledger lives in
+`Agent-Vault/docs/rust-migration-notes.md`, created by R3.1):**
+
+- **R3.1** — Cargo scaffold (`crates/vault-server`, overlay-core path dep) + config.js port (env
+  surface, `js_number` grammar) + origin-guard + http helpers (static/SPA, inert-CSP `/assets`
+  headers, app-document CSP, JSON body caps) + the progress ledger.
+- **R3.2** — vault data layer: schema.js (13 typed notes, frontmatter validation, wikilink checks) +
+  files.js (atomic schema-validated + loose writes, TYPE_FOLDERS, traversal guards) + registry.js
+  (managed/open modes, vaults.json) + fields.js + templates.js.
+- **R3.3** — SQLite index: rebuild.js (walk + sha256 incremental reconcile, one transaction,
+  schema.sql via include_str!, per-vault pruning, loose-doc reduced fidelity) + sqlite-cli wrapper
+  semantics (rusqlite bundled FTS5, asserted at startup) + watch.js (notify + 250ms — the
+  sanctioned upgrade) + startup-index behavior.
+- **R3.4** — queries.js (all parameterized reads incl. FTS5 `search_index MATCH` + bm25 rank) +
+  filters.js; gated on the FTS5 ranking goldens (`tests/fixtures/search-ranking/`).
+- **R3.5** — handlers.js (notes CRUD, metadata allowlist, task updates w/ recurrence advance,
+  daily notes) + recurrence.js hand-port gated on the 63-case RRULE corpus + dates.js.
+- **R3.6** — context.js (LLM context builder; byte-parity with GET /api/context) + export-context
+  + rebuild-index as bin subcommands + open-file.js (token LRU sessions).
+- **R3.7** — overlay integration (connection/files/memory/trajectories/capture via the
+  overlay-core path dep; 503 gating; workspace display watcher) + SSE hub.
+- **R3.8** — server.js route table + main.js boot (listen-first) — the full axum dispatch; gated
+  on the spawn-mode suites (`AGENT_VAULT_SERVER_BIN=<rust binary>` → the 8 converted suites green)
+  + remaining node-suite parity.
+- **R3.9** — CUTOVER: Tauri externalBin swap (same env + health contract), NixOS unit note, delete
+  `server/` + `tools/*.js` + SEA toolchain + committed sidecar binaries + Node cache, ts-rs types
+  for `web/`, retire superseded node suites (fixtures stay), **delete Agent-Overlay
+  `packages/core` (window closes)**, acceptance **R→R→R** default flip, docs + ledgers.
+
 ### R4 — Demolition + the unblocked tail
 
 Delete residual TS infra (pnpm shrinks to the web apps); final doc close-out. Immediately-unblocked
