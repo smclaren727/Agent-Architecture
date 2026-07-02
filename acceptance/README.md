@@ -16,12 +16,12 @@ Build the siblings first, then run the harness from `~/Developer`:
 ```sh
 (cd Agent-Overlay && cargo build)    # target/debug/overlay — the Rust CLI (the default)
 (cd Agent-Runner && cargo build)     # target/debug/agent-runner — the Rust runner (the default)
-# Agent-Vault is plain JS (needs Node 24+ for node:sqlite); no build step
+(cd Agent-Vault && cargo build --release -p vault-server)  # target/release/agent-vault-server (the default)
 node Agent-Architecture/acceptance/capture-triage-loop.mjs
 ```
 
-The harness fails fast with a `cargo build` pointer if either Rust binary (`overlay` or
-`agent-runner`) is missing.
+The harness fails fast with a `cargo build` pointer if any of the three Rust binaries (`overlay`,
+`agent-runner`, or `agent-vault-server`) is missing.
 
 A green run prints `PASS — capture → triage → review loop is live across all three planes.` and
 asserts: the capture POST returns 201, a pending proposal appears in Vault, a completed trajectory is
@@ -80,7 +80,7 @@ Build Overlay first, then run the harness from `~/Developer`:
 
 ```sh
 (cd Agent-Overlay && cargo build)    # target/debug/overlay — the Rust CLI (the default)
-# Agent-Vault is plain JS (needs Node 24+ for node:sqlite); no build step
+(cd Agent-Vault && cargo build --release -p vault-server)  # target/release/agent-vault-server (the default)
 node Agent-Architecture/acceptance/world-knowledge-loop.mjs
 ```
 
@@ -121,7 +121,7 @@ codes, the corpus), so the *implementation* behind each plane is selectable. Thr
 |---|---|---|
 | `ACCEPTANCE_OVERLAY_CMD` | the Overlay CLI (`… run` / `… serve` / `… search`) | `["<Agent-Overlay>/target/debug/overlay"]` — the Rust binary (since the R1 cutover); the harness fails fast with a `cargo build` pointer if it is missing |
 | `ACCEPTANCE_RUNNER_CMD` | the Agent-Runner daemon (`… run`); capture-triage loop only | `["<Agent-Runner>/target/debug/agent-runner"]` — the Rust binary (since the R2 cutover); same fail-fast if missing |
-| `ACCEPTANCE_VAULT_CMD` | the Agent-Vault server | `[<node>, "<Agent-Vault>/server/main.js"]` — TS until R3 |
+| `ACCEPTANCE_VAULT_CMD` | the Agent-Vault server | `["<Agent-Vault>/target/release/agent-vault-server"]` — the Rust binary (since the R3.9 cutover); same fail-fast if missing |
 
 Arrays because the TS forms need a Node interpreter prefix (`<node>` above is the Node running the
 harness, `process.execPath`); a native binary is just a one-element array, e.g.
@@ -135,16 +135,19 @@ arrays:
   `[node, <cli.js>]` form; for any other shape it is left unset and the executor falls back to
   resolving `overlay` on `PATH` — which is what a native cutover installs.
 
-The defaults now *are* matrix step **R→R→T** of the [Rust re-platform](../rust-migration.md): the
-Rust `overlay` and `agent-runner` binaries over the still-TS Vault. The last matrix step swaps the
-remaining plane the same way (`ACCEPTANCE_VAULT_CMD='["…/agent-vault-server"]'` for R→R→R).
+The defaults now *are* matrix step **R→R→R** of the [Rust re-platform](../rust-migration.md): the
+Rust `overlay`, `agent-runner`, and `agent-vault-server` binaries — the terminal all-Rust step,
+default since the R3.9 Vault cutover.
 
 The historical TS forms remain documented for the record. The TS Overlay CLI no longer exists on
 `main` (deleted at the R1 cutover); it lives at Agent-Overlay's annotated tag **`ts-core-final`** —
 build at that tag and point the knob at it. The TS Runner (`ACCEPTANCE_RUNNER_CMD='[<node>,
 "<Agent-Runner>/dist/main.js"]'`) was deleted at the R2 cutover and lives only in Agent-Runner's
 pre-cutover history — check out the last pre-cutover commit, `npm install` (its `file:` dep is the
-frozen `@overlay/core` dist), and `npm run build` to resurrect it:
+frozen `@overlay/core` dist), and `npm run build` to resurrect it. The TS Vault
+(`ACCEPTANCE_VAULT_CMD='[<node>, "<Agent-Vault>/server/main.js"]'`) was deleted at the R3.9 cutover
+and lives only in Agent-Vault's pre-R3.9 history (its `file:` dep was the frozen `@overlay/core`
+dist; run `npm install` on that checkout to resurrect it):
 
 ```sh
 ACCEPTANCE_OVERLAY_CMD='["'"$(command -v node)"'", "/path/to/ts-core-final-checkout/packages/cli/dist/index.js"]' \

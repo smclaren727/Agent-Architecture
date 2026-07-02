@@ -35,12 +35,14 @@ const vaultRepo = path.join(developer, "Agent-Vault");
 const runnerRepo = path.join(developer, "Agent-Runner");
 const overlayBin = path.join(overlayRepo, "target", "debug", "overlay");
 const runnerBin = path.join(runnerRepo, "target", "debug", "agent-runner");
+const vaultBin = path.join(vaultRepo, "target", "release", "agent-vault-server");
 
 // Each knob is a JSON argv array ([command, ...args]) — arrays because the TS entry
 // points need a Node interpreter prefix; a native binary is just a one-element array.
-// The Overlay and Runner defaults are the Rust binaries (R1/R2 cutovers); the frozen
-// TS forms remain selectable explicitly (Overlay's lives at the `ts-core-final` tag;
-// the TS Runner only in Agent-Runner's pre-cutover history).
+// The Overlay, Runner, and Vault defaults are all the Rust binaries (R1/R2/R3
+// cutovers); the frozen TS forms remain selectable explicitly (Overlay's lives at
+// the `ts-core-final` tag; the TS Runner only in Agent-Runner's pre-cutover
+// history; the TS Vault only in Agent-Vault's pre-R3.9 history).
 if (!process.env.ACCEPTANCE_OVERLAY_CMD && !existsSync(overlayBin)) {
   throw new Error(
     `The Rust overlay binary is missing at ${overlayBin} — run \`cargo build\` in Agent-Overlay, ` +
@@ -53,9 +55,16 @@ if (!process.env.ACCEPTANCE_RUNNER_CMD && !existsSync(runnerBin)) {
     `or set ACCEPTANCE_RUNNER_CMD to an explicit JSON argv array.`
   );
 }
+if (!process.env.ACCEPTANCE_VAULT_CMD && !existsSync(vaultBin)) {
+  throw new Error(
+    `The Rust agent-vault-server binary is missing at ${vaultBin} — run ` +
+    `\`cargo build --release -p vault-server\` in Agent-Vault, ` +
+    `or set ACCEPTANCE_VAULT_CMD to an explicit JSON argv array.`
+  );
+}
 const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [overlayBin]);
 const runnerCmd = commandFromEnv("ACCEPTANCE_RUNNER_CMD", [runnerBin]);
-const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [process.execPath, path.join(vaultRepo, "server", "main.js")]);
+const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [vaultBin]);
 
 function commandFromEnv(name, fallback) {
   const raw = process.env[name];

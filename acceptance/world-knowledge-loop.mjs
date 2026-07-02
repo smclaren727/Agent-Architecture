@@ -38,11 +38,13 @@ const developer = path.resolve(here, "../..");
 const overlayRepo = path.join(developer, "Agent-Overlay");
 const vaultRepo = path.join(developer, "Agent-Vault");
 const overlayBin = path.join(overlayRepo, "target", "debug", "overlay");
+const vaultBin = path.join(vaultRepo, "target", "release", "agent-vault-server");
 
 // Each knob is a JSON argv array ([command, ...args]) — arrays because the TS entry
 // points need a Node interpreter prefix; a native binary is just a one-element array.
-// The Overlay default is the Rust binary (R1 cutover); the frozen TS CLI remains
-// selectable explicitly (it lives at Agent-Overlay's `ts-core-final` tag).
+// The Overlay and Vault defaults are the Rust binaries (R1/R3 cutovers); the frozen
+// TS forms remain selectable explicitly (Overlay's CLI lives at Agent-Overlay's
+// `ts-core-final` tag; the TS Vault only in Agent-Vault's pre-R3.9 history).
 // (No Runner in this loop, so ACCEPTANCE_RUNNER_CMD is not consumed here.)
 if (!process.env.ACCEPTANCE_OVERLAY_CMD && !existsSync(overlayBin)) {
   throw new Error(
@@ -50,8 +52,15 @@ if (!process.env.ACCEPTANCE_OVERLAY_CMD && !existsSync(overlayBin)) {
     `or set ACCEPTANCE_OVERLAY_CMD to an explicit JSON argv array.`
   );
 }
+if (!process.env.ACCEPTANCE_VAULT_CMD && !existsSync(vaultBin)) {
+  throw new Error(
+    `The Rust agent-vault-server binary is missing at ${vaultBin} — run ` +
+    `\`cargo build --release -p vault-server\` in Agent-Vault, ` +
+    `or set ACCEPTANCE_VAULT_CMD to an explicit JSON argv array.`
+  );
+}
 const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [overlayBin]);
-const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [process.execPath, path.join(vaultRepo, "server", "main.js")]);
+const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [vaultBin]);
 
 function commandFromEnv(name, fallback) {
   const raw = process.env[name];
