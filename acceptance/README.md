@@ -14,18 +14,20 @@ nothing depends on the other).
 Build the siblings first, then run the harness from `~/Developer`:
 
 ```sh
-(cd Agent-Overlay && pnpm build)     # packages/cli/dist + packages/core/dist
+(cd Agent-Overlay && cargo build)    # target/debug/overlay — the Rust CLI (the default)
 (cd Agent-Runner && npm run build)   # dist/
 # Agent-Vault is plain JS (needs Node 24+ for node:sqlite); no build step
 node Agent-Architecture/acceptance/capture-triage-loop.mjs
 ```
 
+The harness fails fast with a `cargo build` pointer if the Rust `overlay` binary is missing.
+
 A green run prints `PASS — capture → triage → review loop is live across all three planes.` and
 asserts: the capture POST returns 201, a pending proposal appears in Vault, a completed trajectory is
 surfaced, and the proposal links to the run that produced it.
 
-By default the harness spawns the built TS entry points of all three repos; each plane's command can
-be overridden per implementation — see
+By default the harness spawns the Rust `overlay` binary (since the R1 cutover) and the built TS
+entry points of Runner and Vault; each plane's command can be overridden per implementation — see
 [Selecting implementations](#selecting-implementations--the-acceptance__cmd-knobs).
 
 ## Manual procedure
@@ -35,12 +37,11 @@ be overridden per implementation — see
    `/tmp/ws/triggers/capture-triage.yaml`.
 2. Start Vault over that workspace (from the Agent-Vault repo):
    `AGENT_VAULT_WORKSPACE=/tmp/ws AGENT_VAULT_DB=/tmp/agent-vault.sqlite npm start`
-3. Start the Runner loop over the same workspace (from the Agent-Runner repo), exporting the Overlay
-   CLI so the triage harness can reach `overlay serve`:
+3. Start the Runner loop over the same workspace (from the Agent-Runner repo), with `overlay` on
+   `PATH` so the triage harness can reach `overlay serve` (a native install puts it there):
    ```sh
-   OVERLAY_CLI_PATH=$PWD/../Agent-Overlay/packages/cli/dist/index.js \
    node dist/main.js run --workspace /tmp/ws \
-     --overlay-command node --overlay-arg ../Agent-Overlay/packages/cli/dist/index.js
+     --overlay-command $PWD/../Agent-Overlay/target/debug/overlay
    ```
 4. Drop a capture through Vault (UI "new capture", or curl):
    ```sh
@@ -76,7 +77,7 @@ Overlay CLI over one shared folder and asserts through their interfaces (Vault H
 Build Overlay first, then run the harness from `~/Developer`:
 
 ```sh
-(cd Agent-Overlay && pnpm build)     # packages/cli/dist + packages/core/dist
+(cd Agent-Overlay && cargo build)    # target/debug/overlay — the Rust CLI (the default)
 # Agent-Vault is plain JS (needs Node 24+ for node:sqlite); no build step
 node Agent-Architecture/acceptance/world-knowledge-loop.mjs
 ```
@@ -114,11 +115,11 @@ Both harnesses are black boxes over the system's language-agnostic seams (HTTP, 
 codes, the corpus), so the *implementation* behind each plane is selectable. Three env vars — each a
 **JSON argv array** (`["command", ...args]`) — choose what gets spawned:
 
-| Knob | Selects | Default (today's TS entry point) |
+| Knob | Selects | Default |
 |---|---|---|
-| `ACCEPTANCE_OVERLAY_CMD` | the Overlay CLI (`… run` / `… serve` / `… search`) | `[<node>, "<Agent-Overlay>/packages/cli/dist/index.js"]` |
-| `ACCEPTANCE_RUNNER_CMD` | the Agent-Runner daemon (`… run`); capture-triage loop only | `[<node>, "<Agent-Runner>/dist/main.js"]` |
-| `ACCEPTANCE_VAULT_CMD` | the Agent-Vault server | `[<node>, "<Agent-Vault>/server/main.js"]` |
+| `ACCEPTANCE_OVERLAY_CMD` | the Overlay CLI (`… run` / `… serve` / `… search`) | `["<Agent-Overlay>/target/debug/overlay"]` — the Rust binary (since the R1 cutover); the harness fails fast with a `cargo build` pointer if it is missing |
+| `ACCEPTANCE_RUNNER_CMD` | the Agent-Runner daemon (`… run`); capture-triage loop only | `[<node>, "<Agent-Runner>/dist/main.js"]` — TS until R2 |
+| `ACCEPTANCE_VAULT_CMD` | the Agent-Vault server | `[<node>, "<Agent-Vault>/server/main.js"]` — TS until R3 |
 
 Arrays because the TS forms need a Node interpreter prefix (`<node>` above is the Node running the
 harness, `process.execPath`); a native binary is just a one-element array, e.g.
@@ -132,15 +133,16 @@ arrays:
   `[node, <cli.js>]` form; for any other shape it is left unset and the executor falls back to
   resolving `overlay` on `PATH` — which is what a native cutover installs.
 
-Mixed-mode example — a Rust `overlay` binary under the still-TS Runner and Vault (the R1 gate of the
-[Rust re-platform](../rust-migration.md), matrix step R→T→T):
+The defaults now *are* matrix step **R→T→T** of the [Rust re-platform](../rust-migration.md): a Rust
+`overlay` binary under the still-TS Runner and Vault. Later matrix steps swap the remaining planes
+the same way (`ACCEPTANCE_RUNNER_CMD='["…/agent-runner"]'` for R→R→T, then
+`ACCEPTANCE_VAULT_CMD='["…/agent-vault-server"]'` for R→R→R).
+
+The historical all-TS form (matrix step T→T→T) remains selectable explicitly. The TS Overlay CLI no
+longer exists on `main` (deleted at the R1 cutover); it lives at Agent-Overlay's annotated tag
+**`ts-core-final`** — build at that tag and point the knob at it:
 
 ```sh
-ACCEPTANCE_OVERLAY_CMD='["/path/to/Agent-Overlay/target/release/overlay"]' \
+ACCEPTANCE_OVERLAY_CMD='["'"$(command -v node)"'", "/path/to/ts-core-final-checkout/packages/cli/dist/index.js"]' \
 node Agent-Architecture/acceptance/capture-triage-loop.mjs
 ```
-
-The unset knobs keep their TS defaults. Later matrix steps swap the remaining planes the same way
-(`ACCEPTANCE_RUNNER_CMD='["…/agent-runner"]'` for R→R→T, then
-`ACCEPTANCE_VAULT_CMD='["…/agent-vault-server"]'` for R→R→R). Setting all three knobs explicitly to
-the TS commands is byte-equivalent to the defaults.

@@ -8,18 +8,20 @@
 // built Overlay CLI.
 //
 // Prerequisites (build the siblings first):
-//   - Agent-Overlay: pnpm build   (packages/cli/dist + packages/core/dist)
+//   - Agent-Overlay: cargo build  (target/debug/overlay — the Rust CLI, the R1 default)
 //   - Agent-Runner:  npm run build (dist/)
 //   - Agent-Vault:   no build (plain JS), Node 24+ for node:sqlite
 //
 // Run: node acceptance/capture-triage-loop.mjs
 //
 // Implementation selection: the three planes are spawned from env-selected JSON argv
-// arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_RUNNER_CMD / ACCEPTANCE_VAULT_CMD),
-// defaulting to today's built TS entry points, so a ported (e.g. Rust) binary can be
-// substituted per plane without touching the harness. See acceptance/README.md.
+// arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_RUNNER_CMD / ACCEPTANCE_VAULT_CMD).
+// Since the R1 cutover the Overlay default is the Rust `overlay` binary; Runner and
+// Vault default to their built TS entry points until R2/R3. Any plane can be
+// substituted without touching the harness. See acceptance/README.md.
 
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import os from "node:os";
@@ -31,11 +33,19 @@ const developer = path.resolve(here, "../..");
 const overlayRepo = path.join(developer, "Agent-Overlay");
 const vaultRepo = path.join(developer, "Agent-Vault");
 const runnerRepo = path.join(developer, "Agent-Runner");
-const overlayCli = path.join(overlayRepo, "packages/cli/dist/index.js");
+const overlayBin = path.join(overlayRepo, "target", "debug", "overlay");
 
 // Each knob is a JSON argv array ([command, ...args]) — arrays because the TS entry
 // points need a Node interpreter prefix; a native binary is just a one-element array.
-const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [process.execPath, overlayCli]);
+// The Overlay default is the Rust binary (R1 cutover); the frozen TS CLI remains
+// selectable explicitly (it lives at Agent-Overlay's `ts-core-final` tag).
+if (!process.env.ACCEPTANCE_OVERLAY_CMD && !existsSync(overlayBin)) {
+  throw new Error(
+    `The Rust overlay binary is missing at ${overlayBin} — run \`cargo build\` in Agent-Overlay, ` +
+    `or set ACCEPTANCE_OVERLAY_CMD to an explicit JSON argv array.`
+  );
+}
+const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [overlayBin]);
 const runnerCmd = commandFromEnv("ACCEPTANCE_RUNNER_CMD", [process.execPath, path.join(runnerRepo, "dist", "main.js")]);
 const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [process.execPath, path.join(vaultRepo, "server", "main.js")]);
 
