@@ -1,11 +1,14 @@
 # Rust re-platform — the Node/TS backends move to Rust, the seams do not
 
-> **STATUS (2026-07-02): R0 ✅ · R1 ✅ · R2 ✅ COMPLETE — the migration window is OPEN; next up
-> R3 (Vault).**
+> **STATUS (2026-07-02): R0 ✅ · R1 ✅ · R2 ✅ · R3 ✅ COMPLETE — the migration window is CLOSED;
+> all three product repos are Rust.**
 > **Agent-Overlay** is Rust end-to-end (crates `overlay-core`/`overlay-mcp`/`overlay-cli`/
-> `overlay-console`, Tauri shipping the cargo binaries); the TS backends are deleted and
-> `packages/core` is frozen at the tag **`ts-core-final`** (the "no new keys in strict-read
-> artifacts" window rule is in force until R3, when Vault — the last TS consumer — ports).
+> `overlay-console`, Tauri shipping the cargo binaries); the TS backends are deleted and the frozen
+> TS `packages/core` has been **deleted at the R3 Vault cutover** (its last consumer ported), closing
+> the window — the code stays recoverable at the annotated tag **`ts-core-final`**.
+> **Agent-Vault** is Rust end-to-end (crate `vault-server`, default = serve; `server/` + `tools/*.js`
+> + the Node SEA sidecar deleted; Tauri externalBin = the cargo-built `agent-vault-server`; both it
+> and Runner take `overlay-core` as a Cargo path dep — the `file:` `@overlay/core` deps are gone).
 > **Agent-Runner** is Rust end-to-end (crate `agent-runner`; the TS implementation is deleted —
 > the repo is the crate + golden fixtures + units + docs; ledger and deviations in its
 > `docs/rust-migration-notes.md`). Operator-visible R2 cutover facts: cron fragments record the
@@ -171,6 +174,13 @@ Agent-Runner/
 | Logging | **tracing** → stderr or the configured log dir, **never stdout** | `overlay serve`'s stdio transport must carry only JSON-RPC. |
 
 ## Frozen-TS-core policy
+
+> **CLOSED (2026-07-02).** The window closed at the R3 Vault cutover: with both siblings ported to the
+> Rust `overlay-core` crate, `packages/core` had **zero consumers** and was deleted (along with its
+> `test:core` partition, `vitest.core.config.ts`, the `pnpm-workspace.yaml` / root-`tsconfig` /
+> `package.json` wiring, and the frozen-core vitest suites). The code is recoverable at the annotated
+> tag **`ts-core-final`**. The rules below are retained as the historical record of the window that
+> governed R1–R3.
 
 At Overlay cutover (R1), `packages/core` is tagged **`ts-core-final`** and stops evolving; its
 built `dist/` remains the `file:`-dep target for the still-TS Vault and Runner until each ports.

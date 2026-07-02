@@ -27,8 +27,9 @@ A green run prints `PASS — capture → triage → review loop is live across a
 asserts: the capture POST returns 201, a pending proposal appears in Vault, a completed trajectory is
 surfaced, and the proposal links to the run that produced it.
 
-By default the harness spawns the Rust `overlay` and `agent-runner` binaries (since the R1/R2
-cutovers) and Vault's built TS entry point; each plane's command can be overridden per
+By default the harness spawns the Rust `overlay`, `agent-runner`, and `agent-vault-server` binaries
+(since the R1/R2/R3 cutovers — the acceptance matrix is now **R→R→R**); each plane's command can be
+overridden per
 implementation — see
 [Selecting implementations](#selecting-implementations--the-acceptance__cmd-knobs).
 

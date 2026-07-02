@@ -86,11 +86,12 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 it, breaking changes ripple across repos — version it accordingly (see [build-plan.md](build-plan.md)
 Phase 1).
 
-**Frozen TS core (the migration window).** Until Vault and Runner port (R2/R3), they still consume
-the TS `@overlay/core` **`packages/core/dist`** via `file:` deps — frozen at Agent-Overlay's
-annotated tag **`ts-core-final`**, which accepts no changes outside the emergency-patch procedure in
-[rust-migration.md](rust-migration.md) → "Frozen-TS-core policy". The frozen dist is deleted at the
-Vault cutover (R3), closing the window.
+**Frozen TS core — window closed (2026-07-02).** Through the migration window, not-yet-ported siblings
+consumed the TS `@overlay/core` **`packages/core/dist`** via `file:` deps, frozen at Agent-Overlay's
+annotated tag **`ts-core-final`**. With Vault and Runner both ported to the Rust `overlay-core` crate
+(Cargo path deps), `packages/core` had **zero consumers and was deleted at the R3 Vault cutover** — the
+window is closed. The code stays recoverable at `ts-core-final`; the history of the window and its
+emergency-patch procedure is in [rust-migration.md](rust-migration.md) → "Frozen-TS-core policy".
 
 ## The seams Overlay offers each sibling
 

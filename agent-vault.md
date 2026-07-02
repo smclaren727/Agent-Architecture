@@ -39,8 +39,8 @@ experience generalizes (see [agent-overlay.md](agent-overlay.md) → "The single
 
 Vault **stands alone** at the product and runtime level: it works with no Overlay, which is an
 *optional* connected source (doctrine + world-knowledge) the way Runner plugs into Overlay. It does,
-however, keep a build-time `@overlay/core` dependency for that integration — standalone at the product
-level, not dependency-free.
+however, keep a build-time dependency on the Rust **`overlay-core`** crate (a Cargo path dep of Vault's
+`vault-server` crate) for that integration — standalone at the product level, not dependency-free.
 
 ## Tech stack & delivery
 
@@ -49,18 +49,21 @@ Vault ships in two stages:
 1. **Web-first (start here).** A **React** front-end — **Vite + TypeScript + Tailwind + shadcn**, behind
    a view-module seam — is the build target. (An earlier framework-free HTML/CSS/JS UI was the first cut;
    it was retired for the React seam in Phase 5.0.) It is the fastest path to a working editor and keeps
-   the UI honest about its one job — editing the corpus. The browser/app talks to the corpus and to
-   Overlay through `@overlay/core` and a local `overlay serve`, so no UI-specific data model is introduced.
-2. **Tauri V2 (shipped 2026-06-30).** The web app is the product seam; the Tauri v2 shell
-   (`src-tauri/`) wraps it **model-B**: the window loads the loopback origin of a bundled **Node SEA
-   sidecar** that serves both the UI and the API — no frontend rewrite (see
-   [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md)).
-   **Agent-Overlay's operator console shipped the same model-B Tauri v2 wrap the same day**, so both
-   repos converge on one desktop delivery story. Signed packaging + auto-updater (F1) and
-   cross-webview QA (F2) are consciously parked pending the planned Rust backend migration, which
-   would obsolete the SEA sidecar toolchain they would harden. The trusted origin still holds
-   privileged IPC, so the app document carries a script-restricting CSP; the full privileged-origin
-   split is a Rust packaging-phase item (see "Current hardening status" below).
+   the UI honest about its one job — editing the corpus. The front-end talks over HTTP to the local
+   Vault server — the Rust **`vault-server`** crate, which links **`overlay-core`** — and reaches Overlay
+   through a local `overlay serve`, so no UI-specific data model is introduced.
+2. **Tauri V2 (shipped 2026-06-30; Rust sidecar since the R3 cutover).** The web app is the product seam;
+   the Tauri v2 shell (`src-tauri/`) wraps it **model-B**: the window loads the loopback origin of a
+   bundled sidecar that serves both the UI and the API — no frontend rewrite (see
+   [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md)). That sidecar is now
+   the cargo-built **`agent-vault-server`** binary (the Tauri `externalBin`), swapped in at the R3 Rust
+   cutover under the same env/`/api/health` contract — the original Node SEA sidecar and its toolchain
+   are **retired**. **Agent-Overlay's operator console shipped the same model-B Tauri v2 wrap** (its
+   sidecars likewise now the cargo binaries), so both repos converge on one desktop delivery story.
+   Signed packaging + auto-updater (F1) and cross-webview QA (F2) are done **once, in Rust**, in the R4
+   tail. The trusted origin still holds privileged IPC, so the app document carries a script-restricting
+   CSP; the full privileged-origin split is a Rust packaging-phase item (see "Current hardening status"
+   below).
 
 The references above (`clearly`, `wikiwise`) are native Swift apps; Vault borrows their *form factor*
 (local-first, file-based, agent-collaborative) while taking a web→Tauri path so the same UI runs in a
@@ -71,7 +74,7 @@ browser during development and as a local app in production.
 A generic editor would let you type into the files. Vault is *corpus-aware*:
 
 - **Schema-aware editing of canonical types.** When you edit a skill, workflow, standard, policy,
-  profile, or memory fact, Vault knows its shape (via `@overlay/core` schemas), offers structured
+  profile, or memory fact, Vault knows its shape (via `overlay-core` schemas), offers structured
   editing, and validates before saving — so you never commit a file `overlay validate` would reject.
 - **Live file watching.** Files changed outside Vault (by an agent, by Runner, by `git pull`) reflect
   immediately, the way wikiwise watches with FSEvents.
@@ -79,11 +82,11 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   standards it references, from a memory fact to the entities it mentions, and back.
 - **The memory proposal review queue as a first-class UI.** Proposals in `memory/proposals/` are
   surfaced for accept / reject / supersede, *showing the conflict-similarity warnings Overlay already
-  computes* (`@overlay/core` `memory/similarity.ts`). This is the human-approval step that keeps
+  computes* (`overlay-core`'s `memory/similarity.rs`). This is the human-approval step that keeps
   canonical memory disciplined — given a real interface instead of a CLI. (See
   [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
 - **Overlay-gated agent-facing views (current), an embedded agent surface (roadmap).** Today's
-  agent-facing surface is file-backed via `@overlay/core`: **Capture, Proposals, Agent Runs
+  agent-facing surface is file-backed via `overlay-core`: **Capture, Proposals, Agent Runs
   (trajectories), and Workspace**, gated client-side (`requiresOverlay` in
   `web/src/views/registry.ts`) and server-side (the overlay routes return 503 with no `overlay.yaml`
   workspace connected). There is **no in-app chat**. The embedded agent surface — in-app chat plus an
@@ -109,22 +112,22 @@ goal that motivates the whole editor.
 - **Section-addressable, conflict-tolerant writes.** Edits target a named section, so a human and an
   agent can touch the same file without clobbering each other.
 - **Write-time validation.** Every write is checked against the area's write-contract before it
-  commits — the corpus via `@overlay/core` schemas; knowledge vaults via a convention checker, which
+  commits — the corpus via `overlay-core` schemas; knowledge vaults via a convention checker, which
   is **not yet built** (it ships with the embedded agent surface on the post-migration Rust roadmap)
   — so a malformed write never lands.
 
-Validation lives with the **owner** of each area; Vault *calls* it (imports `@overlay/core` for the
+Validation lives with the **owner** of each area; Vault *calls* it (links `overlay-core` for the
 corpus; will run the knowledge-vault convention checker once it exists) and **never reimplements**
 it, so the schema is single-sourced.
 
 ## How Vault talks to Overlay (three channels)
 
-1. **Library.** Imports `@overlay/core` for schemas, workspace loading, validation, the search index,
-   memory operations, and the file read/write APIs (see the contract table in
+1. **Library.** Links the Rust `overlay-core` crate for schemas, workspace loading, validation, the
+   search index, memory operations, and the file read/write APIs (see the contract table in
    [agent-overlay.md](agent-overlay.md)).
 2. **Protocol (roadmap).** The embedded agent surface will speak **MCP** to a local `overlay serve`
    — just another MCP client, reimplementing no doctrine access. This channel is a post-migration
-   Rust roadmap item (decided 2026-07-01); today Vault reaches overlay state through `@overlay/core`
+   Rust roadmap item (decided 2026-07-01); today Vault reaches overlay state through `overlay-core`
    and its own server routes, not an in-app MCP client.
 3. **Corpus / vaults.** Direct, **atomic** file read/write on each open vault, honoring that area's
    write-contract — for the overlay corpus: the canonical layout, the schemas, and the
@@ -160,7 +163,8 @@ These Vault-specific review items are now part of the implementation contract:
 
 This repo also ships Overlay's own desktop UI under `apps/desktop`, which overlaps Vault's surface
 heavily: workspace open/create, a canonical file browser/editor with validation rollback, the memory
-proposal queue, a trajectory viewer, search, and adapter diagnostics — all built on `@overlay/*`. It
+proposal queue, a trajectory viewer, search, and adapter diagnostics — all built on the `overlay-*`
+crates. It
 began as an **Electron** app and has since been **re-platformed off Electron to a local web app, in
 place** — a `node:http` server over `/api/*` + SSE plus a Vite + React + TS + Tailwind + shadcn
 view-seam (the same pattern Vault uses; see [overlay-ui-replatform.md](overlay-ui-replatform.md)).
@@ -171,9 +175,9 @@ Vault is still a **separate front-end codebase**, not a continuation of that con
 is therefore:
 
 - **Reuse the logic, not the shell.** The valuable parts of `apps/desktop` are framework-agnostic and
-  already sit in `@overlay/core` — schema validation, the validation-rollback file APIs
-  (`workspace-files/`), the proposal queue and conflict-similarity (`memory/`), search, trajectory
-  reads. Vault imports those directly. The old Electron-specific main/preload/IPC layer is **not**
+  already sit in `overlay-core` — schema validation, the validation-rollback file APIs
+  (`workspace_files`), the proposal queue and conflict-similarity (`memory/`), search, trajectory
+  reads. Vault links those directly. The old Electron-specific main/preload/IPC layer is **not**
   carried forward — and is now gone from Overlay itself.
 - **`apps/desktop` continues as the operator console.** It was not retired in favor of Vault; the
   Electron shell was swapped for a local web app **in place**, and both repos have since shipped

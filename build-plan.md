@@ -312,9 +312,10 @@ architecture, pinned stack, frozen-TS-core policy, cutover gates, risk register)
 
 **Dependency arrows:** the Cargo mirror of today's `file:` deps —
 `vault-server ──path──▶ overlay-core ◀──path── agent-runner`; Overlay's own crates point only
-inward (`overlay-console → overlay-cli → {overlay-core, overlay-mcp}`). During the migration window
-the frozen TS `@overlay/core` dist remains a second consumable of the *same* arrow for
-not-yet-ported siblings; the arrow never reverses in either implementation.
+inward (`overlay-console → overlay-cli → {overlay-core, overlay-mcp}`). Through the migration window
+(now **closed** at R3) the frozen TS `@overlay/core` dist was a second consumable of the *same* arrow
+for not-yet-ported siblings; with both ported it was deleted. The arrow never reversed in either
+implementation.
 
 **Work** (detail per phase in [rust-migration.md](rust-migration.md) → "Phases"):
 1. **6.0 Contract capture (R0)** — ✅ **done (2026-07-01).** Freeze the observable contracts
@@ -336,8 +337,13 @@ not-yet-ported siblings; the arrow never reverses in either implementation.
    in place; the cutover deleted the TS implementation, re-pointed the unit templates at the
    native binary, and pinned `sync` zero-churn over a committed TS-written state dir. Acceptance
    matrix R→R→T is now the harness default. Ledger: Agent-Runner `docs/rust-migration-notes.md`.
-4. **6.3 Vault big bang (R3).** vault-server crate behind the same Tauri sidecar env/health
-   contract; the frozen TS core is deleted here — the migration window closes.
+4. **6.3 Vault big bang (R3)** — ✅ **done (2026-07-02).** The `vault-server` crate serves behind the
+   same Tauri sidecar env/health contract (externalBin swapped to the cargo-built `agent-vault-server`);
+   the R0-refactored `node --test` suite is green against `AGENT_VAULT_SERVER_BIN=<rust binary>`, and
+   the acceptance matrix reached **R→R→R**. `server/` + `tools/*.js` + the Node SEA toolchain are
+   deleted, and the frozen TS `packages/core` — its last consumer now Rust — was **deleted here,
+   closing the migration window** (recoverable at `ts-core-final`). Ledger: Agent-Vault
+   `Docs/rust-migration-notes.md`.
 5. **6.4 Demolition + packaging-once (R4).** Residual TS infra removed; the parked
    signing/updater/cross-webview packaging (Phase 5's F1/F2) is done **once**, in Rust; the
    post-migration roadmap (Vault embedded agent, origin split, notify watchers) unblocks.
@@ -366,5 +372,6 @@ Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 V
 
 Phase 1 is the gate: it freezes the `@overlay/core` contract and decides Vault's shape, after which
 Vault (Phase 2) and Runner (Phase 3) proceed in parallel and converge at Phase 4. Phase 6's internal
-order is forced by the same arrow — Overlay ports first because both siblings depend on it, and the
-frozen TS core bridges the window until Vault (its last consumer) ports.
+order is forced by the same arrow — Overlay ported first because both siblings depend on it, and the
+frozen TS core bridged the window until Vault, its last consumer, ported (R3, 2026-07-02) — at which
+point the frozen core was deleted and the window closed.
