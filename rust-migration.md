@@ -270,6 +270,33 @@ default-configured state dirs; delete `src/`, `dist/`, node_modules, the `file:`
 serve, plus one back-compat check against the frozen TS serve from the tag; acceptance matrix step
 **R→R→T**; a soak day on the real workspace with trajectories indistinguishable from TS-era ones.
 
+**R2 slice map (2026-07-02; each slice lands committed + doc-noted + pushed so any session can
+resume from repo state alone — progress ledger lives in `Agent-Runner/docs/rust-migration-notes.md`):**
+
+- **R2.1** — Cargo scaffold (`crates/agent-runner`, overlay-core path dep) + workspace discovery +
+  trigger type re-exports + the Runner's `docs/rust-migration-notes.md` progress ledger. ✅/⬜ per ledger.
+- **R2.2** — trigger loading: rmcp *client* spawning `overlay … serve` (replaces the hand-rolled
+  newline-framed JSON-RPC; 2025-06-18 init; `overlay://triggers[/{id}]`; exactly-one-text-content;
+  10s/request), validated by TriggerSchema from overlay-core.
+- **R2.3** — schedule watcher: 15s poll, hand-ported 5-field cron parser + chrono-tz zoned-minute
+  matching + minute dedupe; gated on the full cron golden table (`test/fixtures/cron/`).
+- **R2.4** — file watcher: 1s recursive readdir+stat poll, baseline-first, mtime+size deltas,
+  glob→regex; gated on the glob goldens (`test/fixtures/glob/`).
+- **R2.5** — http watcher: axum :8787, route-before-body, 1 MiB/10 s caps, webhook header/HMAC auth
+  (timing-safe, 401/503 fail-closed wire parity with the R4 gap-fix fixtures), fail-fast listen.
+- **R2.6** — dispatch: in-memory gate (restartable debounce, coalesce-to-one, max_concurrency,
+  onBusy) + state-dir slot locks (owner.json + landed staleness rules — same on-disk protocol) +
+  `overlay run` shell-out (exit-code contract) + the in-process `direct` executor over overlay-core
+  (trajectory, predicates, network fail-closed).
+- **R2.7** — reconcile + sync: manifest v1 + cron fragments gated byte-exact on
+  `test/fixtures/reconcile/`; `.sync.lock` bounded/stale-reclaimed; cron→none orphan sweep.
+- **R2.8** — main/CLI wiring (`triggers list` / `dispatch <id>` / `run` / `sync`, exact flags) +
+  run-vs-cron warning + bin.
+- **R2.9** — CUTOVER: node --test suites retargeted/ported (golden tables consumed by Rust tests in
+  place), delete `src/`+`dist/`+node_modules+`file:` dep, unit templates re-pointed at the binary,
+  acceptance R→R→T, zero-churn `sync` diff, back-compat check vs the `ts-core-final` TS serve,
+  docs + Architecture ledger updated.
+
 ### R3 — Agent-Vault big bang
 
 Port vault-server per the crate plan (recurrence against the RRULE corpus; `connected` stays
