@@ -58,7 +58,11 @@ Vault ships in two stages:
    [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md)). That sidecar is now
    the cargo-built **`agent-vault-server`** binary (the Tauri `externalBin`), swapped in at the R3 Rust
    cutover under the same env/`/api/health` contract — the original Node SEA sidecar and its toolchain
-   are **retired**. **Agent-Overlay's operator console shipped the same model-B Tauri v2 wrap** (its
+   are **retired**. In release, the shell binds the sidecar to `127.0.0.1:4173`, passes a per-launch
+   `AGENT_VAULT_INSTANCE_TOKEN`, and accepts `/api/health` only when the response echoes that token, so
+   a stale fixed-port process cannot satisfy a fresh launch gate. In dev, the Tauri window uses
+   `http://localhost:5173` and does not spawn the bundled sidecar. **Agent-Overlay's operator console
+   shipped the same model-B Tauri v2 wrap** (its
    sidecars likewise now the cargo binaries), so both repos converge on one desktop delivery story.
    Signed packaging + auto-updater (F1) and cross-webview QA (F2) are done **once, in Rust**, in the R4
    tail. The trusted origin still holds privileged IPC, so the app document carries a script-restricting
@@ -95,6 +99,10 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   built in the Node stack and is a **post-migration Rust roadmap item (decided 2026-07-01)**. When it
   lands, the in-app AI sees *exactly* the same doctrine as Claude Code or any other client, and its
   memory changes go through the same proposal queue a human's do.
+- **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
+  token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
+  caller-provided paths. Saves are atomic temp-create + rename writes, and "add to vault" copies only
+  into open-mode vaults, rejecting collisions instead of overwriting.
 
 ## Conventions — the agent-collaboration spec
 
@@ -150,6 +158,13 @@ These Vault-specific review items are now part of the implementation contract:
 - **Managed-note writes use Overlay-grade write discipline.** Managed notes validate before commit and
   use unique temp files, file sync, atomic rename, and cleanup on failure, matching the corpus write
   contract.
+- **The HTTP boundary is loopback-first.** The standalone server defaults to `127.0.0.1:4173` and the
+  request guard checks Host, Origin, JSON content type, and extra dev/Tauri origins. Node-hosted or
+  phone-facing deployments should keep the process loopback-bound and publish it through Tailscale
+  Serve or an authenticated proxy, rather than binding the API directly to the LAN.
+- **Quick capture is optional desktop polish.** The Tauri shell registers `CmdOrCtrl+Shift+Space` for a
+  capture window when the OS allows it, but plugin or shortcut registration failure is non-fatal and
+  never blocks app startup.
 
 ## Non-goals (Vault)
 
