@@ -241,25 +241,26 @@ carried into Phase 5:
     is proven by `acceptance/world-knowledge-loop.mjs`. Vault now stands alone as a multi-vault editor
     with Overlay as an optional plug-in.
 - **Overlay UI re-platform (Electron → local web app).** Rebuild Overlay's `apps/desktop` UI on the same
-  local-web-app + view-seam pattern Vault uses (Vite/React/TS/Tailwind/shadcn + a `node:http` server over
-  `/api/*` + SSE) and **remove Electron entirely** — the prerequisite for Overlay's Tauri wrap. The backend
+  local-web-app + view-seam pattern Vault uses (Vite/React/TS/Tailwind/shadcn + a local API/SSE server over
+  `/api/*`) and **remove Electron entirely** — the prerequisite for Overlay's Tauri wrap. The backend
   is already feature-modular; this is a transport swap (IPC → HTTP/SSE) + a renderer decomposition. Plan:
   [overlay-ui-replatform.md](overlay-ui-replatform.md). **✅ done (2026-06-27)** — Electron fully removed;
   all 14 features migrated to the web app; suite + Playwright smoke + acceptance green; Tauri-ready.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well. **✅ done (2026-06-30)** — both apps shipped **model-B
-  Tauri v2 wraps**: the window loads the loopback origin of a bundled **Node SEA sidecar** that
-  serves the UI and the API (Vault `src-tauri/`; Overlay `apps/desktop/src-tauri`, which also bundles
-  the workspace templates and a runnable CLI). Plans:
+  Tauri v2 wraps**: the window loads the loopback origin of bundled cargo-built Rust sidecars
+  (Vault `src-tauri/` bundles `agent-vault-server`; Overlay `apps/desktop/src-tauri` bundles
+  `agent-overlay-server` plus the runnable `overlay` CLI). The old Node SEA sidecar/toolchain was retired
+  during the Rust migration. Plans:
   [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md) (Vault),
   [`docs/desktop-app-build-plan.md`](../Agent-Overlay/docs/desktop-app-build-plan.md) (Overlay).
   Signed packaging + auto-updater (F1) and cross-webview QA (F2) are **consciously parked** pending
-  the planned Rust backend migration, which would obsolete the SEA sidecar toolchain they would
-  harden.
+  distribution work; the Rust backend migration has already removed the SEA sidecar toolchain they
+  originally would have hardened.
 - **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
-  desktop app), Runner (service units), with install/update detection. **Parked pending the Rust
-  backend migration** — the Tauri wraps run locally today; signing, updating, and cross-machine
-  distribution only matter for other machines and sit behind the same parked F1/F2 work.
+  desktop app), Runner (service units), with install/update detection. **Unblocked by the completed Rust
+  backend migration, but still parked behind F1/F2 distribution work** — the Tauri wraps run locally today;
+  signing, updating, and cross-machine distribution only matter for other machines.
 
 **Current implementation-risk status:** the following review findings were captured during Phase 5
 hardening and should stay visible as the system moves toward production packaging.
@@ -268,15 +269,16 @@ hardening and should stay visible as the system moves toward production packagin
   Runner enforces them through the in-process dispatch gate plus state-dir process slots for generated
   cron dispatch. Absent `max_concurrency` means one in-flight run per trigger.
 - **Done — Overlay custom-tool approvals.** Custom shell/HTTP tools that require approval, or match
-  supported policy approval gates, fail closed until a trusted approval protocol exists.
+  supported policy approval gates, fail closed until a trusted approval protocol exists; HTTP tools do
+  not follow redirects, and shell tools drain stdout/stderr before returning bounded tails.
 - **Done — Runner-to-Overlay enforcement.** Runner has `--enforce` pass-through for `overlay run`,
   including generated cron dispatch commands.
 - **Done — write atomicity and serialization.** Overlay, Vault, and Runner use unique temp files and
   locks/serialization on the write paths that previously raced.
-- **Done — Overlay read-modify-write races.** Memory proposal acceptance and trajectory daily indexes
-  are serialized.
+- **Done — Overlay read-modify-write races.** Memory proposal accept/reject decisions share the
+  workspace-level memory-review lock, and trajectory daily indexes are serialized.
 - **Done — Overlay symlink containment.** Canonical reads realpath-check the selected layer root before
-  returning content.
+  returning content; canonical writes realpath-check parents and refuse symlinked final targets.
 - **Done — Runner direct dispatch scoring.** The direct path evaluates Overlay predicates before
   recording run completion.
 - **Re-scoped — Vault privileged-origin split.** Active vault assets are served inertly on the
@@ -288,10 +290,16 @@ hardening and should stay visible as the system moves toward production packagin
   in Overlay's trigger schema — [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) enforced
   fail-closed by Runner: constant-time compares, `401` on mismatch, `503` when the secret env var is
   unset or empty.
+- **Done — Vault sidecar launch proof.** The packaged Tauri shell passes a per-launch instance token to
+  `agent-vault-server` and accepts `/api/health` only when the token is echoed, so stale fixed-port
+  sidecars cannot masquerade as the fresh app.
+- **Done — Runner reliability polish.** `agent-runner openapi` emits only active HTTP trigger routes,
+  and non-direct dispatch drains `overlay run` stdout/stderr while retaining only a bounded diagnostic
+  tail.
 - **Docs/status corrections.** systemd is proven as a Runner user unit, while the launchd template
   and per-trigger systemd/launchd unit generation remain backlog (cron fragment projection is
   implemented); the Tauri v2 wraps shipped 2026-06-30, with signing/updater and webview QA parked
-  pending the Rust backend migration.
+  as distribution follow-up work after the completed Rust backend migration.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
@@ -382,7 +390,7 @@ ledger):
    client; serves `/openapi.yaml` · `/openapi.json` · `/docs`.
 3. **Runner** `:8787` — [`runner-webhooks.yaml`](../Agent-Runner/openapi/runner-webhooks.yaml)
    template + an `agent-runner openapi` subcommand that emits a concrete spec from the configured
-   `http` triggers.
+   active `http` triggers.
 4. **System docs** — this repo's [openapi-contracts.md](openapi-contracts.md) indexes the three
    specs and the quickstart, with a runnable second-language (Python) portability proof under
    [`Agent-Vault/examples/python-portability/`](../Agent-Vault/examples/python-portability/).
