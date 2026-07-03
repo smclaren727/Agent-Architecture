@@ -24,14 +24,14 @@ generates a typed client. The phased build is [build-plan.md](build-plan.md) →
 | --- | --- | --- | --- | --- |
 | **Vault** (the PKM API — the primary integration target) | [`vault.yaml`](../Agent-Vault/openapi/vault.yaml) | `:4173` | `/openapi.yaml` · `/openapi.json` · `/docs` | [README](../Agent-Vault/openapi/README.md) · [ledger](../Agent-Vault/Docs/openapi-notes.md) |
 | **Overlay console** (the operator API) | [`console.yaml`](../Agent-Overlay/openapi/console.yaml) | `:4180` | `/openapi.yaml` · `/openapi.json` · `/docs` | [README](../Agent-Overlay/openapi/README.md) · [ledger](../Agent-Overlay/docs/openapi-notes.md) |
-| **Runner** (inbound webhooks) | [`runner-webhooks.yaml`](../Agent-Runner/openapi/runner-webhooks.yaml) | `:8787` | not served — Runner *receives* webhooks; `agent-runner openapi` emits a concrete spec from the configured triggers | [README](../Agent-Runner/openapi/README.md) · [ledger](../Agent-Runner/docs/openapi-notes.md) |
+| **Runner** (inbound webhooks) | [`runner-webhooks.yaml`](../Agent-Runner/openapi/runner-webhooks.yaml) | `:8787` | not served — Runner *receives* webhooks; `agent-runner openapi` emits a concrete spec from active configured HTTP triggers | [README](../Agent-Runner/openapi/README.md) · [ledger](../Agent-Runner/docs/openapi-notes.md) |
 
 Vault and the console **serve their own spec**: `GET /openapi.yaml` and `/openapi.json`
 return the embedded contract, and `GET /docs` is a self-contained Redoc explorer — build
 against a running server without leaving it. Runner is different in kind: its routes are
-per-deployment (one path per configured `http` trigger), so `runner-webhooks.yaml` is a
-**template** of the contract *shape* and `agent-runner openapi` generates the concrete spec
-for a given trigger set.
+per-deployment (one path per active configured `http` trigger), so `runner-webhooks.yaml` is a
+**template** of the contract *shape* and `agent-runner openapi` generates the concrete live spec
+for the active HTTP trigger set.
 
 ## MCP (`:3000`) is not here — and why
 
