@@ -21,7 +21,9 @@ Overlay exposes the corpus through two surfaces, both already built in this repo
 consume them as follows.
 
 ### Live surface — `overlay serve` (MCP)
-A stateless stdio MCP server that reads the canonical files on each request and exposes them as:
+A stateless MCP server that reads the canonical files on each request. Stdio is the default transport;
+StreamableHTTP is also available at `/mcp` for HTTP MCP clients, with DNS-rebinding protection, a 5 MiB
+JSON-RPC body cap, and a bounded live-session pool. Both transports expose:
 - **Resources:** `overlay://profile/active`, `overlay://memory/{section}`, `overlay://policy/active`,
   `overlay://skills` + `overlay://skills/{id}`, `overlay://workflows` + `overlay://workflows/{id}`,
   `overlay://standards/{id}`, `overlay://prompts/{id}`, `overlay://triggers` + `overlay://triggers/{id}`.
@@ -81,6 +83,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Secret resolution (env, keyring, 1password, bitwarden, pass, exec) | `secrets/` | Overlay tools/executors (server-side only) |
 | Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
 | Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
+| Node-compatible filesystem/path helpers | `fs_util.rs` | Vault and Runner (shared Rust helper seam) |
 
 **Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on
 it, breaking changes ripple across repos — version it accordingly (see [build-plan.md](build-plan.md)
@@ -109,16 +112,19 @@ These Overlay-specific review items are now part of the implementation contract:
 
 - **Custom MCP tool approval fails closed.** `requires_approval` and supported policy approval gates
   (`tool:*`, `bash:*`, and network approval gates) block custom shell/HTTP tool execution until a
-  trusted approval token/protocol exists.
+  trusted approval token/protocol exists. HTTP custom tools do not follow redirects; shell custom tools
+  drain stdout/stderr before returning bounded tails, so child output cannot deadlock the server.
 - **Sandbox enforcement remains caller-selected.** `overlay run --enforce` exists for local adapters,
   and Runner now has a matching `--enforce` pass-through. Claude Code and Codex remain documented
   pass-through adapters under that flag.
 - **Atomic writes use unique temp files.** The shared writer uses same-directory UUID temp paths,
   exclusive create, file sync, rename, and cleanup on failure.
-- **Read-modify-write paths are serialized.** Memory proposal acceptance locks per proposal, and the
-  trajectory daily index locks per index file to avoid duplicate accepts and lost index updates.
-- **Canonical reads enforce containment.** Canonical file reads realpath-check the selected layer root
-  before reading so a symlink cannot escape the workspace.
+- **Read-modify-write paths are serialized.** Memory proposal review uses one workspace-level
+  `.cache/memory-review.lock` for accept and reject decisions, and the trajectory daily index locks per
+  index file to avoid duplicate accepts and lost index updates.
+- **Canonical reads and writes enforce containment.** Canonical file reads realpath-check the selected
+  layer root; canonical writes lock per target, realpath-check the parent directory, and refuse to
+  follow or replace a symlinked final target.
 
 ## Non-goals (Overlay)
 
