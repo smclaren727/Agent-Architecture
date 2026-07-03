@@ -132,6 +132,9 @@ These Runner-specific review items are now part of the implementation contract:
   routes before draining request bodies, caps body size, times out slow bodies, contains handler
   errors, and binds loopback only — network exposure means fronting the daemon with a reverse proxy
   or Tailscale.
+- **The OpenAPI contract is generated from live routes only.** `agent-runner openapi` loads triggers over
+  the same Overlay seam as `triggers list`, filters to active `http` triggers, and emits one path per
+  declared route/method/auth pair; inactive HTTP triggers and non-HTTP triggers are intentionally absent.
 - **State-directory locks have explicit staleness rules.** Dispatch slots
   (`dispatch-locks/<trigger-id>/<n>.lock`) and the sync lock (`.sync.lock`) are directory locks with
   `owner.json` pid records; staleness is judged by a dead-pid probe plus mtime grace windows, and
@@ -143,6 +146,9 @@ These Runner-specific review items are now part of the implementation contract:
   `sync --unit-target none` removes the projection.
 - **Runner-dispatched local adapters can opt into enforcement.** `agent-runner --enforce` passes
   `--enforce` through to `overlay run`, including generated cron dispatch commands.
+- **Non-direct dispatch output is drained but bounded.** When Runner shells out to `overlay run`, it
+  drains child stdout/stderr concurrently so large output cannot block dispatch, but retains only a
+  64 KiB diagnostic tail in Runner errors because Overlay owns the full trajectory logs.
 - **The `direct` executor uses Overlay scoring.** Direct dispatch evaluates workflow predicates and
   records `predicate_results` / `score` before declaring a run complete.
 - **State writes are serialized.** Runner sync holds a state-dir lock and writes manifests/cron
