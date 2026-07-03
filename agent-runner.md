@@ -72,9 +72,11 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
    the read seam and never interprets prose. (An LLM may help a human *author* a declaration in Vault,
    but that output is validated like any other write — it is never in the materialization path.)
 2. **Reconcile** is the Runner's deterministic step: read desired state (the declarations), make actual
-   state match — start new watchers, stop removed ones, install/remove projected units. It is
-   **idempotent**: run it repeatedly, it converges. Triggered by `agent-runner sync`, on start, and on
-   change — the Runner's first watcher watches the trigger source itself.
+   state match — start new watchers in the daemon or install/remove projected units. It is
+   **idempotent**: run `agent-runner sync` repeatedly and it converges. The daemon currently loads the
+   trigger set once at `agent-runner run` startup and passes that fixed set into the file, schedule, and
+   HTTP watchers; trigger declaration changes take effect after rerunning `sync` or restarting the
+   daemon. Live trigger-source watching/reload is not implemented today.
 
 **Two materializations:**
 

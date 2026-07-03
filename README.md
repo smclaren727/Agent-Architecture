@@ -30,7 +30,7 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overl
 | Repo | Owns | Must never |
 | --- | --- | --- |
 | **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
-| **Agent-Vault** | The human+LLM editing experience: schema-aware editors, wiki navigation/backlinks, the memory proposal review queue UI, the overlay-gated agent-run/capture views (an in-app embedded agent surface is Rust-roadmap). | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
+| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, the memory proposal review queue UI, the overlay-gated agent-run/capture views (an in-app embedded agent surface is Rust-roadmap). | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
 | **Agent-Runner** | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
