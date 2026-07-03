@@ -6,7 +6,7 @@
 ## How to read this plan
 
 Each phase states its **goal**, the **dependency arrows that must hold** while it is built (the
-load-bearing rule — `@overlay/*` is the library; Overlay depends on neither sibling), its concrete
+load-bearing rule — `overlay-core` is the library seam; Overlay depends on neither sibling), its concrete
 **work**, the **guardrail** whose violation signals drift back toward a framework, and **done when**.
 Phases are sequenced by dependency, not calendar. Phase _N_ names its prerequisite.
 
@@ -21,34 +21,35 @@ reference for Runner internals.
 **Goal:** a working doctrine/serve plane and a corpus schema worth building on.
 
 Already shipped in this repo:
-- `@overlay/core` — schemas, layered workspace loaders, atomic writes / retry-on-parse reads, search
+- `overlay-core` — the shared library seam (originally the TS `@overlay/core` package; now the
+  Rust crate) for schemas, layered workspace loaders, atomic writes / retry-on-parse reads, search
   index, memory operations + conflict similarity, secrets resolution, trajectory store, eval
-  predicates, canonical file APIs.
+  predicates, and canonical file APIs.
 - `overlay serve` — stateless MCP server (resources, tools, workflow-prompts).
 - `overlay run` + trajectory store — execution wrapper with `OVERLAY_RUN_ID` propagation.
 - Memory layer with the **proposal queue** (propose → human review → accept/supersede).
 - Evals, secrets hardening, project (layered) overlays, search.
-- **Trigger seam, Phase 1** — `triggers/` canonical directory, `TriggerSchema`, `validateTriggerRefs`,
+- **Trigger seam, Phase 1** — `triggers/` canonical directory, trigger schema, `validate_trigger_refs`,
   `overlay triggers list`, read-only `overlay://triggers[/{id}]`.
 - **Electron desktop foundation** (`apps/desktop`) — workspace browser/editor with validation
   rollback, proposal queue, trajectory viewer, search, diagnostics. *(Since re-platformed off Electron
   to a local web app — see the [Overlay UI re-platform](overlay-ui-replatform.md).)*
 
-**Done when:** ✅ already true. `tsc -b` and the Vitest suite are green; `overlay validate --strict`
-passes on the default workspace.
+**Original done condition (historical TS baseline):** ✅ `tsc -b` and the Vitest suite were green;
+`overlay validate --strict` passed on the default workspace.
 
 ---
 
 ## Phase 1 — Solidify the shared contract (done)
 
-**Goal:** make `@overlay/core` a stable contract that two external repos can depend on, and resolve
-the one decision that gates Vault's shape.
+**Goal:** make the shared Overlay core contract stable enough for two external repos to depend on,
+and resolve the one decision that gates Vault's shape.
 
-**Dependency arrows:** establish `@overlay/*` as the published library boundary. Nothing depends on
+**Dependency arrows:** establish `overlay-core` as the published library boundary. Nothing depends on
 Vault or Runner yet.
 
 **Work:**
-- Treat `@overlay/core`'s exported surface (the contract table in [agent-overlay.md](agent-overlay.md))
+- Treat `overlay-core`'s exported surface (the contract table in [agent-overlay.md](agent-overlay.md))
   as public API: confirm every export the siblings need is actually exported, documented, and covered
   by tests. Adopt a versioning policy so breaking changes are visible across repos.
 - Harden the trigger seam only as far as a real consumer will need it (the "Phase 2 candidate scope"
@@ -62,7 +63,7 @@ Vault or Runner yet.
   "Conventions — the agent-collaboration spec".)
 - **Vault delivery direction (decided): web-first → Tauri V2.** Vault is a new HTML/CSS/JS front-end,
   not a continuation of the Electron `apps/desktop` shell. Reuse the framework-agnostic logic that
-  already lives in `@overlay/core` (validation, `workspace-files/`, `memory/`, search, trajectory
+  already lives in `overlay-core` (validation, `workspace-files/`, `memory/`, search, trajectory
   reads); do not carry forward the Electron main/preload/IPC layer. Overlay's own desktop surface also
   moves to Tauri V2, so both repos converge on one desktop story. (See
   [agent-vault.md](agent-vault.md) → "Tech stack & delivery".) *(The web-first direction held; the
@@ -73,7 +74,7 @@ Vault or Runner yet.
 **Guardrail:** every seam addition must remain *declarative doctrine* or *read-only*. If a proposed
 change would make Overlay *act* when something happens, it belongs in Runner, not here.
 
-**Done when:** the `@overlay/core` public surface is documented and version-pinned; the web→Tauri
+**Done when:** the shared core public surface is documented and version-pinned; the web→Tauri
 delivery direction is recorded; no seam change has added runtime behavior to Overlay.
 
 ---
@@ -88,18 +89,18 @@ rebuilt in React behind a view-module seam in Phase 5.0).
 vaults / arbitrary folders is a deliberate later generalization (Phase 5), built on the same
 typed-area write-contract model — not a separate code path.
 
-**Prerequisite:** Phase 1 (stable `@overlay/core`; web→Tauri direction recorded).
+**Prerequisite:** Phase 1 (stable Overlay core library seam; web→Tauri direction recorded).
 
-**Dependency arrows:** `Agent-Vault ──imports──▶ @overlay/core`; `Agent-Vault ──MCP──▶ overlay serve`;
+**Dependency arrows:** `Agent-Vault ──imports──▶ overlay-core`; `Agent-Vault ──MCP──▶ overlay serve`;
 `Agent-Vault ──atomic file r/w──▶ corpus`. Overlay still depends on neither sibling.
 
 **Work (smallest useful first):**
 1. **Editor over the corpus.** Open/browse/edit the workspace as markdown/YAML, with live file
    watching so external changes reflect immediately.
-2. **Schema-aware editing.** Validate canonical types against `@overlay/core` schemas before saving;
+2. **Schema-aware editing.** Validate canonical types against `overlay-core` schemas before saving;
    atomic `.tmp`-rename writes. Reuse the validation-rollback file APIs in `workspace-files/` (the
    logic, not the Electron shell). Honor the Phase 1 conventions spec — record provenance, keep stable
-   IDs, write section-addressably — and call `@overlay/core`'s validator rather than reimplementing it.
+   IDs, write section-addressably — and call `overlay-core`'s validator rather than reimplementing it.
 3. **Proposal review queue UI.** Surface `memory/proposals/` for accept/reject/supersede, showing the
    conflict-similarity warnings from `memory/similarity.ts`.
 4. **Wiki navigation / backlinks** across the corpus (workflow ↔ skills/standards, fact ↔ entities).
@@ -128,7 +129,7 @@ and the Phase 4 harness executor, not an in-app agent — see work item 5.)*
 **Prerequisite:** Phase 1 (trigger seam stable). Independent of Phase 2 — Runner and Vault can be
 built in parallel once the contract is stable.
 
-**Dependency arrows:** `Agent-Runner ──imports──▶ @overlay/*`; `Agent-Runner ──read seam──▶ overlay://triggers`;
+**Dependency arrows:** `Agent-Runner ──imports──▶ overlay-core`; `Agent-Runner ──read seam──▶ overlay://triggers`;
 `Agent-Runner ──invokes──▶ executors ──MCP──▶ overlay serve`. Never the reverse.
 
 **Work (internally phased, from [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md)):**
@@ -310,7 +311,7 @@ architecture, pinned stack, frozen-TS-core policy, cutover gates, risk register)
 
 **Prerequisite:** Phase 5 (the parked packaging work is *finished by* this phase, not before it).
 
-**Dependency arrows:** the Cargo mirror of today's `file:` deps —
+**Dependency arrows:** Cargo path deps replaced the former TS `file:` deps —
 `vault-server ──path──▶ overlay-core ◀──path── agent-runner`; Overlay's own crates point only
 inward (`overlay-console → overlay-cli → {overlay-core, overlay-mcp}`). Through the migration window
 (now **closed** at R3) the frozen TS `@overlay/core` dist was a second consumable of the *same* arrow
@@ -405,7 +406,8 @@ Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
 
-Phase 1 is the gate: it freezes the `@overlay/core` contract and decides Vault's shape, after which
+Phase 1 is the gate: it freezes the shared Overlay core contract (the Rust `overlay-core` crate today;
+the TS `@overlay/core` package during the historical migration window) and decides Vault's shape, after which
 Vault (Phase 2) and Runner (Phase 3) proceed in parallel and converge at Phase 4. Phase 6's internal
 order is forced by the same arrow — Overlay ported first because both siblings depend on it, and the
 frozen TS core bridged the window until Vault, its last consumer, ported (R3, 2026-07-02) — at which
