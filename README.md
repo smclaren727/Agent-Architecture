@@ -114,15 +114,18 @@ they mark the hardening work that keeps the implementation honest against the sy
   Runner bounds HTTP request bodies; Vault serves active vault assets inertly (attachment treatment
   now covers SVG) and gives the app document a script-restricting CSP. The **full privileged-origin
   split is re-scoped to the Rust/Tauri packaging phase** — consciously deferred, not dropped.
+  Overlay's Streamable HTTP MCP transport is also bounded for trusted-local use: 5 MiB JSON-RPC
+  bodies, 64 live sessions per process, explicit `DELETE /mcp` teardown, and 30-minute idle reaping.
 - **Write safety has to be end-to-end.** The corpus is plain files, but all writers still need unique
   temp paths, atomic rename, validation before commit, and serialization where a read-modify-write
   operation can race. Overlay's canonical writer, memory acceptance **and rejection** (both serialize
-  on the same per-proposal lock), and trajectory index; Vault's managed notes; Runner's state
-  directory; and Overlay desktop capture now follow that discipline. Canonical **writes** enforce
-  realpath symlink containment (a canonical write never follows or replaces a symlink), and both
-  `overlay-core`'s file locks and Runner's state-dir slot/sync locks reclaim stale owners
-  deterministically — dead-pid probe plus mtime grace windows (Runner's verbatim on-disk rules live
-  in its README, "State-directory lock protocol").
+  on the same workspace-level memory-review lock), and trajectory index; Vault's managed notes/open-file
+  writes; Runner's state directory; and Overlay desktop capture now follow that discipline. Canonical
+  **writes** use per-file locks, compare-before-rollback validation failure handling, and realpath
+  symlink containment (a canonical write never follows or replaces a symlink), and both `overlay-core`'s
+  file locks and Runner's state-dir slot/sync locks reclaim stale owners deterministically — dead-pid
+  probe plus mtime grace windows (Runner's verbatim on-disk rules live in its README,
+  "State-directory lock protocol").
 - **Policy declarations are not enforcement by themselves.** Trigger reliability knobs, custom-tool
   approval metadata, and sandbox policies must be enforced on the path that actually dispatches or
   executes work. Runner now enforces trigger concurrency in-process and for generated cron dispatch;
@@ -131,6 +134,8 @@ they mark the hardening work that keeps the implementation honest against the sy
   are **loud pass-throughs** — they keep their own sandboxes and Overlay warns on stderr that
   enforcement is delegated — and every run records its effective `sandbox_mode` on the trajectory.
   Custom MCP tools that require approval fail closed until a trusted approval protocol exists.
+  HTTP custom tools do not follow redirects, and shell custom tools drain stdout/stderr before returning
+  bounded tails.
 - **The Rust migration window is closed (2026-07-02).** All three repos are Rust end-to-end behind the
   unchanged seams; Vault and Runner now depend on the `overlay-core` crate as a Cargo path dependency.
   Through the window they consumed the frozen TS `@overlay/core` dist (Agent-Overlay tag
