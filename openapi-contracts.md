@@ -31,7 +31,7 @@ return the embedded contract, and `GET /docs` is a self-contained Redoc explorer
 against a running server without leaving it. Runner is different in kind: its routes are
 per-deployment (one path per active configured `http` trigger), so `runner-webhooks.yaml` is a
 **template** of the contract *shape* and `agent-runner openapi` generates the concrete live spec
-for the active HTTP trigger set.
+for the active HTTP trigger set, intentionally omitting inactive HTTP triggers and non-HTTP triggers.
 
 ## MCP (`:3000`) is not here — and why
 
