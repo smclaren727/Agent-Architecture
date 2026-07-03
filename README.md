@@ -169,6 +169,7 @@ becomes canonical memory served identically to every other client.
 - **[agent-vault.md](agent-vault.md)** — the Vault repo definition (net-new).
 - **[agent-runner.md](agent-runner.md)** — the Runner repo definition.
 - **[build-plan.md](build-plan.md)** — the phased, full-horizon multi-repo build plan.
+- **[openapi-contracts.md](openapi-contracts.md)** — the API-contract seam: the OpenAPI 3.1 specs for the Vault, console, and Runner HTTP surfaces, and how to generate a typed client in any language.
 
 Background and canonical detail:
 [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) ·

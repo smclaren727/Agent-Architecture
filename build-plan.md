@@ -361,11 +361,46 @@ sidecars on a clean machine, and the acceptance harnesses pass all-Rust).
 
 ---
 
+## Phase 7 — API contracts (done)
+
+**Goal:** give each REST surface a canonical, machine-readable **OpenAPI 3.1** contract so any
+future integration — in any language, on any device — starts from a generated client. Additive
+(spec + codegen + docs); the only removal is ts-rs, replaced by the generated console client in the
+same slice. Campaign master + the consume-in-any-language quickstart:
+[openapi-contracts.md](openapi-contracts.md).
+
+**Prerequisite:** Phase 6 (the servers are Rust; the specs are authored from their real responses).
+
+**Work** (sequence O0 → O4; per-repo detail in each repo's `openapi/README.md` + `openapi-notes.md`
+ledger):
+1. **Vault** `:4173` — [`vault.yaml`](../Agent-Vault/openapi/vault.yaml), conformance-tested against
+   the live binary; generated TS client replaces the hand-mirrored `types.ts`; serves
+   `/openapi.yaml` · `/openapi.json` · `/docs`.
+2. **Overlay console** `:4180` — [`console.yaml`](../Agent-Overlay/openapi/console.yaml),
+   conformance-tested against the recorded transcript; **ts-rs removed** in favor of the generated
+   client; serves `/openapi.yaml` · `/openapi.json` · `/docs`.
+3. **Runner** `:8787` — [`runner-webhooks.yaml`](../Agent-Runner/openapi/runner-webhooks.yaml)
+   template + an `agent-runner openapi` subcommand that emits a concrete spec from the configured
+   `http` triggers.
+4. **System docs** — this repo's [openapi-contracts.md](openapi-contracts.md) indexes the three
+   specs and the quickstart, with a runnable second-language (Python) portability proof under
+   [`Agent-Vault/examples/python-portability/`](../Agent-Vault/examples/python-portability/).
+
+MCP (`:3000`) stays out of scope: it is JSON-RPC/MCP (rmcp), not REST, and keeps its own R0
+`mcp-surface` snapshot.
+
+**Done when:** each REST surface has a linted, conformance-tested `openapi.yaml`; both web frontends
+consume generated types (no hand-mirroring, no ts-rs); Vault + console serve `/openapi.yaml` +
+`/docs`; and the portability proof generates a working second-language client against a running
+server.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
-                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform)
+                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts)
 
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
