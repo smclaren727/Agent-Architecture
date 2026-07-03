@@ -204,8 +204,11 @@ is therefore:
 
 - **Authoring leaves Overlay; operations stay.** As file authoring/editing moves to Vault, Overlay's
   own console **narrows to an operational surface** — server status, validation reports, trajectories,
-  eval reports, run launch, diagnostics. Observability and operations, not editing. The two apps then
-  divide cleanly: **Vault authors the files; the Overlay console watches the system.**
+  eval reports, run launch, diagnostics, and the **Automations surface** (trigger lifecycle over the
+  canonical write path, plus whitelisted `agent-runner` sync/status, service controls, and cron
+  projection — the console invokes the runner as a configured subprocess; the dependency arrow does
+  not move). Observability and operations, not authoring. The two apps then divide cleanly:
+  **Vault authors the files; the Overlay console operates the system.**
 
 This document records the direction; the sequencing lives in [build-plan.md](build-plan.md)
 (Phases 1–2 and 5).

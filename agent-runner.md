@@ -109,6 +109,11 @@ doctrine — and its **machine-local derived state**: the state directory's `man
 reconciled triggers/units and the per-slot `owner.json` lock records under `dispatch-locks/`. The
 audit record of a run is the rich *trajectory* Overlay captures; the Runner keeps **no dispatch
 ledger of its own** (a thin append-only dispatch log was once planned and remains unimplemented).
+That derived state is also the Runner's **machine-readable inspection contract** for external
+operator tooling: `agent-runner status [--json]` reports the state dir and manifest offline, and
+`sync --json` emits the structured reconcile result — this is how Overlay's console Automations
+surface reads and actuates the Runner (as a configured subprocess; the arrow still points at
+Overlay, never back).
 
 **Reliability is policy-in-doctrine, enforcement-in-Runner.** `debounce_ms` and `max_concurrency` are
 *declared on the trigger* (portable doctrine), then enforced by the Runner so a different runner reads
