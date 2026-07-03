@@ -311,7 +311,8 @@ resume from repo state alone — progress ledger lives in `Agent-Runner/docs/rus
 - **R2.6** — dispatch: in-memory gate (restartable debounce, coalesce-to-one, max_concurrency,
   onBusy) + state-dir slot locks (owner.json + landed staleness rules — same on-disk protocol) +
   `overlay run` shell-out (exit-code contract) + the in-process `direct` executor over overlay-core
-  (trajectory, predicates, network fail-closed).
+  (trajectory, predicates, network fail-closed). Non-direct shell-out drains stdout/stderr
+  concurrently and retains only a bounded diagnostic tail; full logs remain Overlay trajectories.
 - **R2.7** — reconcile + sync: manifest v1 + cron fragments gated byte-exact on
   `test/fixtures/reconcile/`; `.sync.lock` bounded/stale-reclaimed; cron→none orphan sweep.
 - **R2.8** — main/CLI wiring (`triggers list` / `dispatch <id>` / `run` / `sync`, exact flags) +
@@ -357,10 +358,11 @@ created by R3.1):**
   + rebuild-index as bin subcommands + open-file.js (token LRU sessions).
 - **R3.7** — overlay integration (connection/files/memory/trajectories/capture via the
   overlay-core path dep; 503 gating; workspace display watcher) + SSE hub.
-- **R3.8** — server.js route table + main.js boot (listen-first) — the full axum dispatch; gated
-  on the spawn-mode suites (`AGENT_VAULT_SERVER_BIN=<rust binary>` → the 8 converted suites green)
-  + remaining node-suite parity.
-- **R3.9** — CUTOVER: Tauri externalBin swap (same env + health contract), NixOS unit note, delete
+- **R3.8** — server.js route table + main.js boot (rebuild/watch before listen, preserving the Node
+  boot order) — the full axum dispatch; gated on the spawn-mode suites
+  (`AGENT_VAULT_SERVER_BIN=<rust binary>` → the 8 converted suites green) + remaining node-suite parity.
+- **R3.9** — CUTOVER: Tauri externalBin swap (same env + health contract, now including the optional
+  packaged-app instance token echoed by `/api/health`), NixOS unit note, delete
   `server/` + `tools/*.js` + SEA toolchain + committed sidecar binaries + Node cache, ts-rs types
   for `web/`, retire superseded node suites (fixtures stay), **delete Agent-Overlay
   `packages/core` (window closes)**, acceptance **R→R→R** default flip, docs + ledgers.
