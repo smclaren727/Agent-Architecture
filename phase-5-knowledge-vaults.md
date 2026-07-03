@@ -1,5 +1,10 @@
 # Phase 5 (#5) — Knowledge vaults + generalized retrieval
 
+> **History (2026-07-02).** Completed pre-Rust-migration phase record. The feature (world-knowledge +
+> multi-vault retrieval) still holds — proven by `acceptance/world-knowledge-loop.mjs` — but the code
+> paths and build/test commands below predate the [Rust migration](rust-migration.md)
+> (`packages/core` → the `overlay-core` crate; `pnpm`/`node --test` → `cargo`). Read the below as history.
+
 **✅ STATUS (2026-06-27): COMPLETE.** 5.1 (Overlay world-knowledge index/retrieval), 5.2 (Vault
 multi-vault editor — data layer, optional-overlay, switcher UI), and 5.3 (integration + acceptance) all
 landed and verified; see the per-slice ✅ markers below. Overlay serves arbitrary markdown folders as

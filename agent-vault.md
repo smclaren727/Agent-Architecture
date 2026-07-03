@@ -166,8 +166,9 @@ heavily: workspace open/create, a canonical file browser/editor with validation 
 proposal queue, a trajectory viewer, search, and adapter diagnostics — all built on the `overlay-*`
 crates. It
 began as an **Electron** app and has since been **re-platformed off Electron to a local web app, in
-place** — a `node:http` server over `/api/*` + SSE plus a Vite + React + TS + Tailwind + shadcn
-view-seam (the same pattern Vault uses; see [overlay-ui-replatform.md](overlay-ui-replatform.md)).
+place** — a Rust axum server (`crates/overlay-console`, bin `agent-overlay-server`) over `/api/*` + SSE
+plus a Vite + React + TS + Tailwind + shadcn view-seam (the same pattern Vault uses; see
+[overlay-ui-replatform.md](overlay-ui-replatform.md)).
 Electron was removed without retiring the directory: `apps/desktop` **lives on as Overlay's operator
 console**.
 
@@ -181,8 +182,8 @@ is therefore:
   carried forward — and is now gone from Overlay itself.
 - **`apps/desktop` continues as the operator console.** It was not retired in favor of Vault; the
   Electron shell was swapped for a local web app **in place**, and both repos have since shipped
-  their **Tauri v2 wraps (2026-06-30)** — model-B shells over Node SEA sidecars, with
-  signing/updater (F1) and cross-webview QA (F2) parked pending the Rust backend migration. A
+  their **Tauri v2 wraps (2026-06-30)** — model-B shells over the cargo-built sidecar binaries, with
+  signing/updater (F1) and cross-webview QA (F2) handled once in Rust in the R4 tail. A
   packaging step, not a retirement.
 
 - **Authoring leaves Overlay; operations stay.** As file authoring/editing moves to Vault, Overlay's

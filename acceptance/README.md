@@ -39,7 +39,7 @@ implementation — see
    `cp -r Agent-Overlay/templates/default-workspace /tmp/ws`, then set `status: active` in
    `/tmp/ws/triggers/capture-triage.yaml`.
 2. Start Vault over that workspace (from the Agent-Vault repo):
-   `AGENT_VAULT_WORKSPACE=/tmp/ws AGENT_VAULT_DB=/tmp/agent-vault.sqlite npm start`
+   `AGENT_VAULT_WORKSPACE=/tmp/ws AGENT_VAULT_DB=/tmp/agent-vault.sqlite target/release/agent-vault-server`
 3. Start the Runner loop over the same workspace (from the Agent-Runner repo), with `overlay` on
    `PATH` so the triage harness can reach `overlay serve` (a native install puts it there):
    ```sh

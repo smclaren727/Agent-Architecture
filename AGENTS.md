@@ -9,6 +9,10 @@ plan, and it contains **no code**.
 - `README.md` — the whole-system architecture (three planes over one corpus; the dependency arrow).
 - `agent-overlay.md`, `agent-vault.md`, `agent-runner.md` — per-repo role definitions.
 - `build-plan.md` — the phased, multi-repo build plan.
+- `rust-migration.md` — the Node/TypeScript → Rust re-platform campaign (crate layout, cutover gates, risks).
+- `openapi-contracts.md` — the OpenAPI 3.1 API-contract seam across the three HTTP surfaces.
+- `overlay-ui-replatform.md`, `phase-5-knowledge-vaults.md` — completed-phase records, kept as history.
+- `acceptance/` — the cross-system acceptance harnesses.
 
 ## Language & tooling
 

@@ -67,8 +67,8 @@ A trigger declaration is doctrine; turning it into a running watcher or timer is
 it is **pure deterministic mechanism — no LLM in the provisioning path.** The pipeline is
 **parse → validate → reconcile**:
 
-1. **Parse / validate** happen in Overlay. The declaration is schema-validated (`TriggerSchema` +
-   `validateTriggerRefs`) before the Runner ever sees it; the Runner consumes already-valid JSON via
+1. **Parse / validate** happen in Overlay. The declaration is schema-validated (the `Trigger` schema +
+   `validate_trigger_refs`) before the Runner ever sees it; the Runner consumes already-valid JSON via
    the read seam and never interprets prose. (An LLM may help a human *author* a declaration in Vault,
    but that output is validated like any other write — it is never in the materialization path.)
 2. **Reconcile** is the Runner's deterministic step: read desired state (the declarations), make actual

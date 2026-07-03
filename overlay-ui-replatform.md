@@ -1,5 +1,10 @@
 # Overlay UI re-platform — Electron → local web app behind a view-seam
 
+> **Superseded — history (2026-07-02).** This records the Electron→web-app re-platform delivered
+> 2026-06-27. Its `node:http` backend was later re-platformed to Rust in the
+> [Rust migration](rust-migration.md) (`apps/desktop`'s server → `crates/overlay-console`, axum;
+> `@overlay/core` → the `overlay-core` crate); the React view-seam is unchanged. Read the below as history.
+
 **✅ STATUS (2026-06-27): COMPLETE.** Electron is fully removed; `apps/desktop` is now a local web app —
 a `node:http` server (`server/`, serving `web/dist` + the `/api/*` surface + SSE on `/api/events`) and a
 Vite + React + TS + Tailwind + shadcn view-seam (`web/`) sharing Vault's "Archive" theme. All 14 feature

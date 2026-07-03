@@ -29,13 +29,13 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overl
 
 | Repo | Owns | Must never |
 | --- | --- | --- |
-| **Agent-Overlay** | The corpus schema + loaders, the `@overlay/core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
+| **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
 | **Agent-Vault** | The human+LLM editing experience: schema-aware editors, wiki navigation/backlinks, the memory proposal review queue UI, the overlay-gated agent-run/capture views (an in-app embedded agent surface is Rust-roadmap). | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
 | **Agent-Runner** | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
 
-`@overlay/*` is a **library**. Both siblings depend on it; **Overlay depends on neither.** This is
+`overlay-core` is a **library**. Both siblings depend on it; **Overlay depends on neither.** This is
 the same rule the trigger system was designed around
 ([`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md),
 Decision 1), generalized to all three repos. Keep the arrow straight and the system stays a set of
@@ -47,7 +47,7 @@ reinvented a framework that runs you instead of a library you call.
    (edit plane, own repo)              (trigger plane, own repo)
         │   │   │                              │        │
  imports│   │   │direct                 imports│        │watches
-@overlay/   │   │file r/w          @overlay/*  │        │corpus events
+overlay-    │   │file r/w          overlay-core│        │corpus events
   core │    │   ▼                    (library) │        ▼
         │   │  ┌────────────────────────────────────────────┐
         │   └─▶│   ~/overlay/  — the canonical corpus          │
@@ -67,8 +67,8 @@ Both operate on the same files. Overlay **reads and serves**; Vault **reads and 
 corpus (`~/overlay/`) is the *primary* vault, but Vault can open additional **knowledge vaults** and
 arbitrary folders — each a typed area with its own write-contract. For the canonical corpus, Vault
 honors the same write discipline Overlay's own writers do:
-- **Atomic writes:** write-to-`.tmp`-then-rename for every file (matches `packages/core/src/loaders/atomic-write.ts`).
-- **Schema validation:** validate canonical types against `@overlay/core` schemas before saving.
+- **Atomic writes:** write-to-`.tmp`-then-rename for every file (matches `crates/overlay-core/src/loaders/atomic_write.rs`).
+- **Schema validation:** validate canonical types against `overlay-core` schemas before saving.
 - **Propose, don't write (memory):** memory changes go through the proposal queue
   (`memory/proposals/`), never as silent canonical writes. Humans approve. (See
   [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
@@ -120,7 +120,7 @@ they mark the hardening work that keeps the implementation honest against the sy
   on the same per-proposal lock), and trajectory index; Vault's managed notes; Runner's state
   directory; and Overlay desktop capture now follow that discipline. Canonical **writes** enforce
   realpath symlink containment (a canonical write never follows or replaces a symlink), and both
-  `@overlay/core`'s file locks and Runner's state-dir slot/sync locks reclaim stale owners
+  `overlay-core`'s file locks and Runner's state-dir slot/sync locks reclaim stale owners
   deterministically — dead-pid probe plus mtime grace windows (Runner's verbatim on-disk rules live
   in its README, "State-directory lock protocol").
 - **Policy declarations are not enforcement by themselves.** Trigger reliability knobs, custom-tool
@@ -131,12 +131,11 @@ they mark the hardening work that keeps the implementation honest against the sy
   are **loud pass-throughs** — they keep their own sandboxes and Overlay warns on stderr that
   enforcement is delegated — and every run records its effective `sandbox_mode` on the trajectory.
   Custom MCP tools that require approval fail closed until a trusted approval protocol exists.
-- **The R1 migration window is open (2026-07-02).** Overlay's backends are Rust behind the unchanged
-  seams, while Vault and Runner still consume the frozen TS `@overlay/core` dist (Agent-Overlay tag
-  `ts-core-final`) until they port at R2/R3. The **frozen-core skew rule is now ACTIVE**: no new
-  keys may be written into any strict-read artifact class while a frozen TS reader exists — governed
-  by the per-schema strictness audit table, with the emergency-patch procedure as the only change
-  path ([rust-migration.md](rust-migration.md) → "Frozen-TS-core policy").
+- **The Rust migration window is closed (2026-07-02).** All three repos are Rust end-to-end behind the
+  unchanged seams; Vault and Runner now depend on the `overlay-core` crate as a Cargo path dependency.
+  Through the window they consumed the frozen TS `@overlay/core` dist (Agent-Overlay tag
+  `ts-core-final`) under the frozen-core skew rule — now historical; the record and its emergency-patch
+  procedure live in [rust-migration.md](rust-migration.md) → "Frozen-TS-core policy".
 
 ## End-to-end examples
 
