@@ -58,7 +58,9 @@ them funnels into the *same* `dispatch.rs`. Adding an event source never adds an
 - **Execution seam.** Runner invokes a named executor — `claude-code`, `codex`, `direct`, or
   `harness` — against the named workflow, reusing `overlay run`/adapters for judgment paths and the
   `direct` adapter for the cheap deterministic path. The executor session pulls doctrine back over
-  MCP and the run is captured as a trajectory via `OVERLAY_RUN_ID`. (See
+  MCP and the run is captured as a trajectory via `OVERLAY_RUN_ID`. Both dispatch paths stamp the
+  exact trigger id onto the captured trajectory (`overlay run --trigger-id`; metadata `trigger_id`),
+  so run history joins back to the firing trigger without guessing from the workflow. (See
   [`docs/trajectories.md`](../Agent-Overlay/docs/trajectories.md), [`docs/harness-adapters.md`](../Agent-Overlay/docs/harness-adapters.md).)
 
 ## From declaration to live state (the reconcile model)
@@ -73,10 +75,13 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
    but that output is validated like any other write — it is never in the materialization path.)
 2. **Reconcile** is the Runner's deterministic step: read desired state (the declarations), make actual
    state match — start new watchers in the daemon or install/remove projected units. It is
-   **idempotent**: run `agent-runner sync` repeatedly and it converges. The daemon currently loads the
-   trigger set once at `agent-runner run` startup and passes that fixed set into the file, schedule, and
-   HTTP watchers; trigger declaration changes take effect after rerunning `sync` or restarting the
-   daemon. Live trigger-source watching/reload is not implemented today.
+   **idempotent**: run `agent-runner sync` repeatedly and it converges. The daemon also reconciles
+   **continuously**: `agent-runner run` re-reads the trigger seam on a poll (default 30 s;
+   `--reload-interval`, SIGHUP forces an attempt) and replaces watchers per event class — unchanged
+   classes keep their state, a failed reload keeps the last-good set and surfaces the error, and
+   in-flight dispatches are never aborted. `sync` remains the explicit step for the manifest and the
+   cron projection. (Semantics in the [Runner README](../Agent-Runner/README.md) → "Live trigger
+   reload".)
 
 **Two materializations:**
 
@@ -110,10 +115,11 @@ reconciled triggers/units and the per-slot `owner.json` lock records under `disp
 audit record of a run is the rich *trajectory* Overlay captures; the Runner keeps **no dispatch
 ledger of its own** (a thin append-only dispatch log was once planned and remains unimplemented).
 That derived state is also the Runner's **machine-readable inspection contract** for external
-operator tooling: `agent-runner status [--json]` reports the state dir and manifest offline, and
-`sync --json` emits the structured reconcile result — this is how Overlay's console Automations
-surface reads and actuates the Runner (as a configured subprocess; the arrow still points at
-Overlay, never back).
+operator tooling: `agent-runner status [--json]` reports the state dir, manifest, and the daemon's
+`runtime.json` snapshot (live-reload interval, reload count, last reload time/error, active trigger
+counts) offline, and `sync --json` emits the structured reconcile result — this is how Overlay's
+console Automations surface reads and actuates the Runner (as a configured subprocess; the arrow
+still points at Overlay, never back).
 
 **Reliability is policy-in-doctrine, enforcement-in-Runner.** `debounce_ms` and `max_concurrency` are
 *declared on the trigger* (portable doctrine), then enforced by the Runner so a different runner reads
