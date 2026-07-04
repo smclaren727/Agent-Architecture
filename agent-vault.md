@@ -121,13 +121,16 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
   caller-provided paths. Saves are atomic temp-create + rename writes, and "add to vault" copies only
   into open-mode vaults, rejecting collisions instead of overwriting.
-- **The convention checker's inspection half (shipped 2026-07-04).** `GET /api/conventions/check` is a
-  standalone, overlay-independent, **read-only** quality pass: deterministic checks (duplicate ids,
-  invalid frontmatter, dangling references/wikilinks, empty notes, orphans, task-less active projects)
-  over the corpus and the disposable index, surfaced in a first-class **Conventions** view with
-  severity/category filters and open-the-note navigation. It persists nothing and applies nothing —
-  suggested fixes are text, and humans fix notes through the existing editing paths. Open vaults
-  degrade to the schema-free checks. Design + slice record:
+- **The convention checker and write-time backstop (shipped 2026-07-04).** `GET
+  /api/conventions/check` is a standalone, overlay-independent, **read-only** quality pass:
+  deterministic checks (duplicate ids, invalid frontmatter, dangling references/wikilinks, empty
+  notes, orphans, task-less active projects) over the corpus and the disposable index, surfaced in a
+  first-class **Conventions** view with severity/category filters and open-the-note navigation. It
+  persists nothing and applies nothing - suggested fixes are text, and humans fix notes through the
+  existing editing paths. Managed note API writes prepare candidate markdown and reject invalid
+  frontmatter or duplicate ids before disk write; direct filesystem edits are still reported after
+  the fact. Open vaults degrade to the schema-free checks and keep schema-free raw writes. Design +
+  slice record:
   [`Docs/convention-checker.md`](../Agent-Vault/Docs/convention-checker.md).
 
 ## Conventions — the agent-collaboration spec
@@ -148,9 +151,9 @@ goal that motivates the whole editor.
   agent can touch the same file without clobbering each other.
 - **Write-time validation.** Every write is checked against the area's write-contract before it
   commits — the corpus via `overlay-core` schemas; knowledge vaults via a convention checker — so a
-  malformed write never lands. The checker's **inspection half shipped 2026-07-04** (read-only
-  findings over the corpus; see above); managed-note saves are already schema-validated, but
-  convention-checker *write-time enforcement* as such remains the open half.
+  malformed app/API write never lands. The convention checker now covers both read-only findings
+  and the managed-note API write-time backstop. Direct filesystem edits can still bypass Vault and
+  are caught by the checker/index rebuild afterward; open vaults remain intentionally schema-free.
 
 Validation lives with the **owner** of each area; Vault *calls* it (links `overlay-core` for the
 corpus; the knowledge-vault convention checker reuses the same in-crate schema validation rather
