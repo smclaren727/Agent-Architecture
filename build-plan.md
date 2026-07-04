@@ -108,8 +108,9 @@ typed-area write-contract model — not a separate code path.
    shipped 2026-07-03: a right-dock Chat executing governed, trajectory-recorded turns through
    `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only,
    suggest-with-explicit-apply, and governed allow-edits permissions. The knowledge-vault convention
-   checker and managed-note write-time backstop shipped 2026-07-04; the in-app MCP client/tool channel to
-   `overlay serve`, streaming, transcript persistence, and embeddings remain the open tail; see
+   checker, managed-note write-time backstop, and browser-session transcript persistence shipped
+   2026-07-04; the in-app MCP client/tool channel to `overlay serve`, streaming, and embeddings remain
+   the open tail; see
    [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
