@@ -105,7 +105,8 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   doctrine tools like `search-overlay` and `propose-memory` (proposal-queue writes only, never
   canonical memory). Permission is a per-turn selection: read-only, or suggest — structured
   suggestions applied only via explicit confirmation through the validated note-save API (frontmatter
-  preserved). Design + slice record:
+  preserved). Context is also a per-turn selector, including a bounded, server-resolved Overlay
+  workspace summary. Design + slice record:
   [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).
 - **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
