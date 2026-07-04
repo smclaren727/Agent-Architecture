@@ -29,7 +29,9 @@ JSON-RPC body cap, and a bounded live-session pool. Both transports expose:
   `overlay://standards/{id}`, `overlay://prompts/{id}`, `overlay://triggers` + `overlay://triggers/{id}`.
 - **Tools:** `search-overlay`, `search-memory`, `get-skill`, `get-workflow`, `list-skills`,
   `propose-memory`, `record-decision`, `validate-output`, `refresh-overlay`, plus user-defined
-  shell/HTTP tools.
+  shell/HTTP tools. Built-in and custom tools pass the **same active-policy tool allowlist and
+  approval gates** (list filtering + fail-closed calls, denials recorded as `tool_call_denied`
+  trajectory events).
 - **Workflow-prompts:** one rendered prompt per workflow.
 
 *Who consumes it:* the **executor sessions that Runner launches** (Claude Code / Codex connect their
@@ -86,6 +88,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
 | Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
 | Governed chat turns — direct or tool-bearing claude-code/codex execution (MCP re-entry) under the `vault-chat` workflow, trajectory-recorded, suggest-format parsing | `adapters/turn.rs` | Vault (embedded chat) |
+| Agent/profile introspection — per-profile readiness + `toolAccess` with provenance (`adapter` \| `policy` \| `unknown`); the same answer the console serves at `GET /api/agents/status` | `adapters/introspection.rs` (policy gate in `policy_gate.rs`) | Vault (chat profile status display) |
 | Node-compatible filesystem/path helpers | `fs_util.rs` | Vault and Runner (shared Rust helper seam) |
 
 **Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on
@@ -113,10 +116,19 @@ emergency-patch procedure is in [rust-migration.md](rust-migration.md) → "Froz
 
 These Overlay-specific review items are now part of the implementation contract:
 
-- **Custom MCP tool approval fails closed.** `requires_approval` and supported policy approval gates
-  (`tool:*`, `bash:*`, and network approval gates) block custom shell/HTTP tool execution until a
-  trusted approval token/protocol exists. HTTP custom tools do not follow redirects; shell custom tools
-  drain stdout/stderr before returning bounded tails, so child output cannot deadlock the server.
+- **MCP tool policy fails closed for built-ins and custom tools alike.** One shared gate
+  (`overlay-core` `policy_gate`) enforces the active policy's allow/deny and `tool:` approval gates on
+  both tool classes, on both transports: disallowed tools are omitted from `tools/list`, calls fail
+  closed, and denials are recorded as `tool_call_denied` trajectory events. `requires_approval` and
+  supported policy approval gates (`tool:*`, `bash:*`, and network approval gates) block execution
+  until a trusted approval token/protocol exists. HTTP custom tools do not follow redirects; shell
+  custom tools drain stdout/stderr before returning bounded tails, so child output cannot deadlock the
+  server.
+- **Enforcement truth lives in Overlay; consumers only display it.** The introspection surface
+  (`describe_agent_profiles`, console `GET /api/agents/status`) reports each profile's tool access
+  with provenance instead of letting siblings re-derive policy from config files — Vault renders that
+  answer and never becomes a policy authority. The dependency arrow is unchanged: Vault depends on
+  `overlay-core`; Overlay depends on neither sibling.
 - **Sandbox enforcement remains caller-selected.** `overlay run --enforce` exists for local adapters,
   and Runner now has a matching `--enforce` pass-through. Claude Code and Codex remain documented
   pass-through adapters under that flag.

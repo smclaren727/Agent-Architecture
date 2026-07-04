@@ -103,10 +103,12 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   chat-completions call) or **tool-bearing `claude-code`/`codex`** — the agent binary re-enters
   Overlay over MCP via the same generated re-entry config `overlay run` uses, so in-app turns reach
   doctrine tools like `search-overlay` and `propose-memory` (proposal-queue writes only, never
-  canonical memory). The status contract reports per-profile readiness — turn-capable direct,
-  turn-capable tool-bearing, or a closed `unavailableReason` when a profile exists but is
-  misconfigured — and surfaces the operator-configured claude-code tool allowlist read-only in the
-  Chat dock (codex tool surfaces are governed server-side by `overlay serve` policy). Tool-bearing
+  canonical memory). The status contract is a **passthrough of Overlay's own introspection**
+  (`overlay-core`'s `describe_agent_profiles`): per-profile readiness — turn-capable direct,
+  turn-capable tool-bearing, or a closed `unavailableReason` — plus `toolAccess` with provenance
+  (`adapter` = the claude-code client allowlist, `policy` = the policy-gated `overlay serve` tool
+  surface a codex profile actually gets, `unknown` = honest fallback). The Chat dock displays that
+  answer read-only; Vault never derives or owns tool policy. Tool-bearing
   replies link back the memory proposals their run filed, closing the review round-trip: chat reply
   → run-filtered proposal queue → Agent Runs. Graph-edge proposals need no separate contract —
   they ride `propose-memory` with `type: relationship` through the same queue. Permission is a
