@@ -128,8 +128,8 @@ goal that motivates the whole editor.
   agent can touch the same file without clobbering each other.
 - **Write-time validation.** Every write is checked against the area's write-contract before it
   commits — the corpus via `overlay-core` schemas; knowledge vaults via a convention checker, which
-  is **not yet built** (it ships with the embedded agent surface on the post-migration Rust roadmap)
-  — so a malformed write never lands.
+  is **not yet built** and remains separate from the shipped embedded Chat — so a malformed write
+  never lands.
 
 Validation lives with the **owner** of each area; Vault *calls* it (links `overlay-core` for the
 corpus; will run the knowledge-vault convention checker once it exists) and **never reimplements**

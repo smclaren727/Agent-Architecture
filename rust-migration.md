@@ -48,9 +48,9 @@ plan is [build-plan.md](build-plan.md) → Phase 6.
   **frozen TS `@overlay/core` dist**, which stays consumable by not-yet-ported siblings.
 - **Cargo path dependencies across sibling repos** (`path = "../Agent-Overlay/crates/overlay-core"`)
   mirror today's `file:` deps. No publishing.
-- **Vault's embedded agent surface is post-migration.** The documented-but-never-built in-app
-  chat / MCP-client surface is built once, in Rust (an rmcp *client* against `overlay serve`),
-  after the migration — never in the Node stack.
+- **Vault's embedded agent surface stays out of the Node migration.** The in-app chat surface is
+  built once, in Rust after the migration, through `overlay-core`'s governed turn API. The
+  rmcp-client/tool-bearing tail against `overlay serve` remains a post-migration follow-up.
 - **The seams are the contract, not the TS API.** What must survive byte-for-byte is the corpus
   file formats, the MCP wire, argv + exit codes, env vars, and the HTTP/SSE shapes — the four
   language-agnostic seams in [README.md](README.md). Rust and TS implementations operate over the
@@ -372,9 +372,9 @@ created by R3.1):**
 Delete residual TS infra (pnpm shrinks to the web apps); final doc close-out. Immediately-unblocked
 post-migration roadmap (explicitly **not** migration scope): signing/notarize/updater + cross-webview
 QA done **once** in Rust (cargo cross-targets replace the mac-arm64-only SEA); the full Vault
-privileged-origin split; Windows/Linux single-instance; the **Vault embedded agent surface** as an
-rmcp-client crate against `overlay serve`; Runner notify-based watching as its own decision;
-dynamic overlay-connected.
+privileged-origin split; Windows/Linux single-instance; the remaining **Vault embedded-agent tail**
+(an rmcp-client/tool channel against `overlay serve`, plus convention checking); Runner notify-based
+watching as its own decision; dynamic overlay-connected.
 
 ## Mixed-mode acceptance matrix
 

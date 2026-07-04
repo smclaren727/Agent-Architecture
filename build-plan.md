@@ -104,15 +104,12 @@ typed-area write-contract model — not a separate code path.
 3. **Proposal review queue UI.** Surface `memory/proposals/` for accept/reject/supersede, showing the
    conflict-similarity warnings from `memory/similarity.ts`.
 4. **Wiki navigation / backlinks** across the corpus (workflow ↔ skills/standards, fact ↔ entities).
-5. **Embedded agent surface** wired to a local `overlay serve` over MCP — the in-app AI sees the same
-   doctrine as any other client, and its memory changes route through the proposal queue. *(Not built
-   in the Node stack: the shipped agent-facing surface is the overlay-gated file-backed views —
-   Capture / Proposals / Agent Runs / Workspace — and the in-app chat + MCP-client surface moved to
-   the post-migration Rust roadmap, decided 2026-07-01; see [agent-vault.md](agent-vault.md).
-   **The chat shipped 2026-07-03**: a right-dock Chat executing governed, trajectory-recorded turns
-   through `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with
-   read-only and suggest-with-explicit-apply permissions. The in-app MCP client and the
-   knowledge-vault convention checker remain the open tail.)*
+5. **Embedded agent surface** for human+agent co-editing. *(Not built in the Node stack. The chat
+   shipped 2026-07-03: a right-dock Chat executing governed, trajectory-recorded turns through
+   `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only
+   and suggest-with-explicit-apply permissions. The in-app MCP client/tool channel to `overlay serve`
+   and the knowledge-vault convention checker remain the open tail; see
+   [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
 
@@ -121,8 +118,9 @@ watches files only to *display* them. No silent canonical memory writes — huma
 
 **Done when:** a human can author/edit any canonical type in the Vault web app and have `overlay serve`
 reflect it live; the proposal queue is usable end-to-end; an agent can read doctrine and file a
-memory proposal that appears in the queue. *(The agent clause was satisfied by external MCP clients
-and the Phase 4 harness executor, not an in-app agent — see work item 5.)*
+memory proposal that appears in the queue. *(The embedded Chat now covers read-only/suggest
+co-editing; durable memory proposals still rely on external MCP clients and the Phase 4 harness until
+the in-app MCP/tool channel lands.)*
 
 ---
 

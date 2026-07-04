@@ -30,7 +30,7 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overl
 | Repo | Owns | Must never |
 | --- | --- | --- |
 | **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
-| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, the memory proposal review queue UI, the overlay-gated agent-run/capture views (an in-app embedded agent surface is Rust-roadmap). | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
+| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, the memory proposal review queue UI, the overlay-gated agent-run/capture views, and the right-dock embedded Chat surface for governed read-only/suggest turns. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
 | **Agent-Runner** | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
@@ -77,12 +77,14 @@ honors the same write discipline Overlay's own writers do:
 The live surface. Overlay exposes the corpus as MCP **resources** (`overlay://memory/...`,
 `overlay://skills/{id}`, `overlay://policy/active`, `overlay://workflows/{id}`, `overlay://standards/{id}`,
 `overlay://triggers`, …), **tools** (`search-overlay`, `search-memory`, `get-skill`, `propose-memory`,
-`validate-output`, …), and **workflow-prompts**. Any MCP client — Claude Code, Codex, or Vault's
-*future* embedded agent (a post-migration Rust roadmap item; see [agent-vault.md](agent-vault.md)) —
-consumes the identical surface. This is the **single agent lens**, in *and* out:
-retrieval generalizes to any open vault, and Overlay serves two distinct content classes — **doctrine**
-(governs behavior) and **world-knowledge** (facts about the operator's world, never instructions). (See
-[agent-overlay.md](agent-overlay.md) → "The single agent lens"; [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).)
+`validate-output`, …), and **workflow-prompts**. External MCP clients — Claude Code, Codex, and the
+future tool-bearing tail of Vault's embedded agent — consume the identical surface. Vault's shipped
+right-dock Chat uses the library turn API instead because MCP has no sampling in this system, but it
+still executes under Overlay policy/workflow doctrine and records ordinary trajectories. This is the
+**single agent lens**, in *and* out: retrieval generalizes to any open vault, and Overlay serves two
+distinct content classes — **doctrine** (governs behavior) and **world-knowledge** (facts about the
+operator's world, never instructions). (See [agent-overlay.md](agent-overlay.md) → "The single agent
+lens"; [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).)
 
 ### 3. Trigger read seam — Runner ⇄ Overlay (read-only)
 Runner asks Overlay "what triggers are declared?" exactly the way a session asks "what skills exist?"
@@ -161,11 +163,12 @@ A `schedule` trigger (`0 9 * * 1-5`) fires in Runner, which invokes the `pr-revi
 captures the full run as a trajectory (metadata + append-only events + stdout/stderr). Vault surfaces
 the run and its predicate-scored outcome for the human to skim over coffee.
 
-**4. LLM-as-editor (Vault review, roadmap agent).**
-An agent — today any external MCP client of `overlay serve`; the *in-app* embedded agent is a
-post-migration Rust roadmap item (decided 2026-07-01) — maintains wiki notes, adds backlinks across
-the corpus, and proposes a `decision` fact. The human approves it in Vault's proposal queue; it
-becomes canonical memory served identically to every other client.
+**4. LLM-as-editor (Vault review, governed suggestions).**
+A human opens a note in Vault's Chat dock. A read-only or suggest turn executes through
+`overlay-core` under the `vault-chat` workflow, records a trajectory, and may return structured
+current-note suggestions. The human applies a suggestion through Vault's normal validated note-save
+API; memory facts still go through the proposal queue, and tool-bearing in-app MCP turns remain the
+roadmap tail.
 
 ## Where to read next
 
