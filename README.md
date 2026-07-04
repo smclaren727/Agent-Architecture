@@ -78,8 +78,8 @@ The live surface. Overlay exposes the corpus as MCP **resources** (`overlay://me
 `overlay://skills/{id}`, `overlay://policy/active`, `overlay://workflows/{id}`, `overlay://standards/{id}`,
 `overlay://triggers`, …), **tools** (`search-overlay`, `search-memory`, `get-skill`, `propose-memory`,
 `validate-output`, …), and **workflow-prompts**. External MCP clients — Claude Code, Codex, and the
-future tool-bearing tail of Vault's embedded agent — consume the identical surface. Vault's shipped
-right-dock Chat uses the library turn API instead because MCP has no sampling in this system, but it
+spawned agent behind Vault's tool-bearing chat turns — consume the identical surface. Vault's
+right-dock Chat executes over the library turn API because MCP has no sampling in this system, but it
 still executes under Overlay policy/workflow doctrine and records ordinary trajectories. This is the
 **single agent lens**, in *and* out: retrieval generalizes to any open vault, and Overlay serves two
 distinct content classes — **doctrine** (governs behavior) and **world-knowledge** (facts about the
@@ -167,8 +167,9 @@ the run and its predicate-scored outcome for the human to skim over coffee.
 A human opens a note in Vault's Chat dock. A read-only or suggest turn executes through
 `overlay-core` under the `vault-chat` workflow, records a trajectory, and may return structured
 current-note suggestions. The human applies a suggestion through Vault's normal validated note-save
-API; memory facts still go through the proposal queue, and tool-bearing in-app MCP turns remain the
-roadmap tail.
+API. A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory
+proposals; the reply links them for review, and canonical memory still changes only through the
+proposal queue.
 
 ## Where to read next
 

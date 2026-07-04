@@ -103,7 +103,14 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   chat-completions call) or **tool-bearing `claude-code`/`codex`** — the agent binary re-enters
   Overlay over MCP via the same generated re-entry config `overlay run` uses, so in-app turns reach
   doctrine tools like `search-overlay` and `propose-memory` (proposal-queue writes only, never
-  canonical memory). Permission is a per-turn selection: read-only, or suggest — structured
+  canonical memory). The status contract reports per-profile readiness — turn-capable direct,
+  turn-capable tool-bearing, or a closed `unavailableReason` when a profile exists but is
+  misconfigured — and surfaces the operator-configured claude-code tool allowlist read-only in the
+  Chat dock (codex tool surfaces are governed server-side by `overlay serve` policy). Tool-bearing
+  replies link back the memory proposals their run filed, closing the review round-trip: chat reply
+  → run-filtered proposal queue → Agent Runs. Graph-edge proposals need no separate contract —
+  they ride `propose-memory` with `type: relationship` through the same queue. Permission is a
+  per-turn selection: read-only, or suggest — structured
   suggestions applied only via explicit confirmation through the validated note-save API (frontmatter
   preserved). Context is also a per-turn selector, including a bounded, server-resolved Overlay
   workspace summary. Design + slice record:

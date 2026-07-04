@@ -34,9 +34,10 @@ JSON-RPC body cap, and a bounded live-session pool. Both transports expose:
 
 *Who consumes it:* the **executor sessions that Runner launches** (Claude Code / Codex connect their
 own `overlay serve` child) and any interactive MCP client. **Vault's embedded chat** (shipped
-2026-07-03) executes its turns over the *library* channel instead — MCP has no sampling, so it
-cannot produce a completion (see `adapters/turn.rs` in the contract table below); the planned
-in-app MCP client remains the roadmap tail that will give those turns doctrine tools. See
+2026-07-03) executes its turns over the *library* channel — MCP has no sampling, so it cannot
+produce a completion (see `adapters/turn.rs` in the contract table below); since 2026-07-04 a
+tool-bearing turn's *spawned agent* (claude-code/codex) is itself an MCP client of `overlay serve`,
+which is how in-app turns reach doctrine tools without an MCP client inside Vault. See
 [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).
 
 ### Execution surface — `overlay run` + trajectory store
