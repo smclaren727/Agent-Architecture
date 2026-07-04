@@ -116,10 +116,14 @@ audit record of a run is the rich *trajectory* Overlay captures; the Runner keep
 ledger of its own** (a thin append-only dispatch log was once planned and remains unimplemented).
 That derived state is also the Runner's **machine-readable inspection contract** for external
 operator tooling: `agent-runner status [--json]` reports the state dir, manifest, and the daemon's
-`runtime.json` snapshot (live-reload interval, reload count, last reload time/error, active trigger
-counts) offline, and `sync --json` emits the structured reconcile result — this is how Overlay's
-console Automations surface reads and actuates the Runner (as a configured subprocess; the arrow
-still points at Overlay, never back).
+`runtime.json` snapshot (live-reload interval, heartbeat interval and last-heartbeat stamp, reload
+count, last reload time/error, active trigger counts) offline, plus a `liveness` verdict on that
+snapshot — the daemon heartbeats `runtime.json` on its own ticker independent of trigger reload, and
+`status` grades the heartbeat's age (fresh/stale/missing/malformed, with a dead-pid probe as a
+downgrade-only signal), so a `runtime.json` that outlives a dead daemon is detected within seconds
+rather than trusted indefinitely. `sync --json` emits the structured reconcile result — this is how
+Overlay's console Automations surface reads and actuates the Runner (as a configured subprocess; the
+arrow still points at Overlay, never back).
 
 **Reliability is policy-in-doctrine, enforcement-in-Runner.** `debounce_ms` and `max_concurrency` are
 *declared on the trigger* (portable doctrine), then enforced by the Runner so a different runner reads
