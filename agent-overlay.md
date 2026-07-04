@@ -84,7 +84,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Secret resolution (env, keyring, 1password, bitwarden, pass, exec) | `secrets/` | Overlay tools/executors (server-side only) |
 | Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
 | Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
-| Governed chat turns — direct-adapter execution under the `vault-chat` workflow, trajectory-recorded, suggest-format parsing | `adapters/turn.rs` | Vault (embedded chat) |
+| Governed chat turns — direct or tool-bearing claude-code/codex execution (MCP re-entry) under the `vault-chat` workflow, trajectory-recorded, suggest-format parsing | `adapters/turn.rs` | Vault (embedded chat) |
 | Node-compatible filesystem/path helpers | `fs_util.rs` | Vault and Runner (shared Rust helper seam) |
 
 **Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on

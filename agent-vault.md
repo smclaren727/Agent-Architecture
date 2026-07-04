@@ -97,14 +97,16 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   routes, including `/api/agent/*`, return 503 with no `overlay.yaml` workspace connected). Chat
   turns are **governed agent turns**: `vault-server` calls `overlay-core`'s
   `adapters::turn::execute_agent_turn`, which resolves profile/policy, renders the canonical
-  `vault-chat` workflow's charter as the system prompt, executes the `direct` adapter, and records an
-  ordinary trajectory — so every turn is auditable in Agent Runs, and replies can be captured into
-  the triage inbox. Permission is a per-turn selection: read-only, or suggest — structured
+  `vault-chat` workflow's charter as the system prompt, executes the selected profile's adapter, and
+  records an ordinary trajectory — so every turn is auditable in Agent Runs, and replies can be
+  captured into the triage inbox. Since 2026-07-04 the adapter may be **`direct`** (a provider
+  chat-completions call) or **tool-bearing `claude-code`/`codex`** — the agent binary re-enters
+  Overlay over MCP via the same generated re-entry config `overlay run` uses, so in-app turns reach
+  doctrine tools like `search-overlay` and `propose-memory` (proposal-queue writes only, never
+  canonical memory). Permission is a per-turn selection: read-only, or suggest — structured
   suggestions applied only via explicit confirmation through the validated note-save API (frontmatter
-  preserved; never canonical memory). Design + slice record:
-  [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md). The **in-app MCP
-  client** to a local `overlay serve` (agentic turns with doctrine tools) remains the roadmap tail of
-  this surface.
+  preserved). Design + slice record:
+  [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).
 - **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
   caller-provided paths. Saves are atomic temp-create + rename writes, and "add to vault" copies only
@@ -141,10 +143,13 @@ it, so the schema is single-sourced.
    search index, memory operations, the file read/write APIs — and, since 2026-07-03, the **agent
    turn API** (`adapters::turn`) that executes the embedded chat's governed, trajectory-recorded
    turns (see the contract table in [agent-overlay.md](agent-overlay.md)).
-2. **Protocol (roadmap).** The embedded agent's *agentic* tail will speak **MCP** to a local
-   `overlay serve` — just another MCP client, reimplementing no doctrine access. The chat surface
-   shipped over the library channel (MCP has no sampling, so it cannot execute a completion); this
-   channel remains the roadmap for giving in-app turns doctrine tools like `propose-memory`.
+2. **Protocol (shipped 2026-07-04, via the spawned agent).** The embedded agent's *agentic* tail
+   speaks **MCP** to a local `overlay serve` — but the MCP client is the **spawned agent binary**
+   (claude-code/codex), wired by the same generated re-entry config `overlay run` uses, not a client
+   embedded in Vault's process. Vault only supplies the overlay CLI path
+   (`AGENT_VAULT_OVERLAY_CLI`); Overlay owns the config generation, tool allowlist, and recording.
+   The chat surface itself still executes over the library channel (MCP has no sampling, so it
+   cannot execute a completion); an in-Vault MCP client remains unnecessary while this holds.
 3. **Corpus / vaults.** Direct, **atomic** file read/write on each open vault, honoring that area's
    write-contract — for the overlay corpus: the canonical layout, the schemas, and the
    **propose-don't-write** rule for memory; for a knowledge vault: its convention checker. Agents read
