@@ -106,9 +106,9 @@ typed-area write-contract model — not a separate code path.
 4. **Wiki navigation / backlinks** across the corpus (workflow ↔ skills/standards, fact ↔ entities).
 5. **Embedded agent surface** for human+agent co-editing. *(Not built in the Node stack. The chat
    shipped 2026-07-03: a right-dock Chat executing governed, trajectory-recorded turns through
-   `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only
-   and suggest-with-explicit-apply permissions. The knowledge-vault convention checker and
-   managed-note write-time backstop shipped 2026-07-04; the in-app MCP client/tool channel to
+   `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only,
+   suggest-with-explicit-apply, and governed allow-edits permissions. The knowledge-vault convention
+   checker and managed-note write-time backstop shipped 2026-07-04; the in-app MCP client/tool channel to
    `overlay serve`, streaming, transcript persistence, and embeddings remain the open tail; see
    [agent-vault.md](agent-vault.md).)*
 
@@ -119,7 +119,7 @@ watches files only to *display* them. No silent canonical memory writes — huma
 
 **Done when:** a human can author/edit any canonical type in the Vault web app and have `overlay serve`
 reflect it live; the proposal queue is usable end-to-end; an agent can read doctrine and file a
-memory proposal that appears in the queue. *(The embedded Chat now covers read-only/suggest
+memory proposal that appears in the queue. *(The embedded Chat now covers read-only/suggest/allow-edits
 co-editing; durable memory proposals still rely on external MCP clients and the Phase 4 harness until
 the in-app MCP/tool channel lands.)*
 

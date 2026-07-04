@@ -112,10 +112,10 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   replies link back the memory proposals their run filed, closing the review round-trip: chat reply
   → run-filtered proposal queue → Agent Runs. Graph-edge proposals need no separate contract —
   they ride `propose-memory` with `type: relationship` through the same queue. Permission is a
-  per-turn selection: read-only, or suggest — structured
-  suggestions applied only via explicit confirmation through the validated note-save API (frontmatter
-  preserved). Context is also a per-turn selector, including a bounded, server-resolved Overlay
-  workspace summary. Design + slice record:
+  per-turn selection: read-only, suggest, or allow-edits. Suggest requires explicit confirmation;
+  allow-edits auto-applies exactly one current-note suggestion through the validated note-save API
+  (frontmatter preserved) and leaves multiple candidates for explicit review. Context is also a
+  per-turn selector, including a bounded, server-resolved Overlay workspace summary. Design + slice record:
   [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).
 - **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
