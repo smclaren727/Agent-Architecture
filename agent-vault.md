@@ -100,9 +100,11 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   `vault-chat` workflow's charter as the system prompt, executes the selected profile's adapter, and
   records an ordinary trajectory — so every turn is auditable in Agent Runs, and replies can be
   captured into the triage inbox. Since 2026-07-04 the adapter may be **`direct`** (a provider
-  chat-completions call) or **tool-bearing `claude-code`/`codex`** — the agent binary re-enters
-  Overlay over MCP via the same generated re-entry config `overlay run` uses, so in-app turns reach
-  doctrine tools like `search-overlay` and `propose-memory` (proposal-queue writes only, never
+  chat-completions call) or **tool-bearing `claude-code`/`codex`**. Direct profiles stream reply
+  deltas through `/api/agent/turn/stream`; tool-bearing profiles are final-only until their adapter
+  contracts expose token deltas. The agent binary re-enters Overlay over MCP via the same generated
+  re-entry config `overlay run` uses, so in-app turns reach doctrine tools like `search-overlay` and
+  `propose-memory` (proposal-queue writes only, never
   canonical memory). The status contract is a **passthrough of Overlay's own introspection**
   (`overlay-core`'s `describe_agent_profiles`): per-profile readiness — turn-capable direct,
   turn-capable tool-bearing, or a closed `unavailableReason` — plus `toolAccess` with provenance
@@ -164,7 +166,8 @@ than a second ruleset) and **never reimplements** it, so the schema is single-so
 1. **Library.** Links the Rust `overlay-core` crate for schemas, workspace loading, validation, the
    search index, memory operations, the file read/write APIs — and, since 2026-07-03, the **agent
    turn API** (`adapters::turn`) that executes the embedded chat's governed, trajectory-recorded
-   turns (see the contract table in [agent-overlay.md](agent-overlay.md)).
+   turns. Since 2026-07-04 the direct-provider path can stream reply deltas while preserving the same
+   trajectory record (see the contract table in [agent-overlay.md](agent-overlay.md)).
 2. **Protocol (shipped 2026-07-04, via the spawned agent).** The embedded agent's *agentic* tail
    speaks **MCP** to a local `overlay serve` — but the MCP client is the **spawned agent binary**
    (claude-code/codex), wired by the same generated re-entry config `overlay run` uses, not a client

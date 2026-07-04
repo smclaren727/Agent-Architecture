@@ -166,11 +166,13 @@ the run and its predicate-scored outcome for the human to skim over coffee.
 **4. LLM-as-editor (Vault review, governed suggestions).**
 A human opens a note in Vault's Chat dock. A read-only, suggest, or allow-edits turn executes
 through `overlay-core` under the `vault-chat` workflow, records a trajectory, and may return
-structured current-note suggestions. Suggest turns require explicit apply; allow-edits turns
-auto-apply exactly one unambiguous current-note suggestion through Vault's normal validated note-save
-API, while multiple candidates stay in explicit review. A tool-bearing turn (claude-code/codex
-re-entering Overlay over MCP) can also file memory proposals; the reply links them for review, and
-canonical memory still changes only through the proposal queue.
+structured current-note suggestions. Direct-provider replies stream into the dock; tool-bearing
+claude-code/codex turns are final-only until those adapter contracts expose token deltas. Suggest
+turns require explicit apply; allow-edits turns auto-apply exactly one unambiguous current-note
+suggestion through Vault's normal validated note-save API, while multiple candidates stay in explicit
+review. A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory
+proposals; the reply links them for review, and canonical memory still changes only through the
+proposal queue.
 
 ## Where to read next
 
