@@ -121,6 +121,14 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
   caller-provided paths. Saves are atomic temp-create + rename writes, and "add to vault" copies only
   into open-mode vaults, rejecting collisions instead of overwriting.
+- **The convention checker's inspection half (shipped 2026-07-04).** `GET /api/conventions/check` is a
+  standalone, overlay-independent, **read-only** quality pass: deterministic checks (duplicate ids,
+  invalid frontmatter, dangling references/wikilinks, empty notes, orphans, task-less active projects)
+  over the corpus and the disposable index, surfaced in a first-class **Conventions** view with
+  severity/category filters and open-the-note navigation. It persists nothing and applies nothing —
+  suggested fixes are text, and humans fix notes through the existing editing paths. Open vaults
+  degrade to the schema-free checks. Design + slice record:
+  [`Docs/convention-checker.md`](../Agent-Vault/Docs/convention-checker.md).
 
 ## Conventions — the agent-collaboration spec
 
@@ -139,13 +147,14 @@ goal that motivates the whole editor.
 - **Section-addressable, conflict-tolerant writes.** Edits target a named section, so a human and an
   agent can touch the same file without clobbering each other.
 - **Write-time validation.** Every write is checked against the area's write-contract before it
-  commits — the corpus via `overlay-core` schemas; knowledge vaults via a convention checker, which
-  is **not yet built** and remains separate from the shipped embedded Chat — so a malformed write
-  never lands.
+  commits — the corpus via `overlay-core` schemas; knowledge vaults via a convention checker — so a
+  malformed write never lands. The checker's **inspection half shipped 2026-07-04** (read-only
+  findings over the corpus; see above); managed-note saves are already schema-validated, but
+  convention-checker *write-time enforcement* as such remains the open half.
 
 Validation lives with the **owner** of each area; Vault *calls* it (links `overlay-core` for the
-corpus; will run the knowledge-vault convention checker once it exists) and **never reimplements**
-it, so the schema is single-sourced.
+corpus; the knowledge-vault convention checker reuses the same in-crate schema validation rather
+than a second ruleset) and **never reimplements** it, so the schema is single-sourced.
 
 ## How Vault talks to Overlay (three channels)
 

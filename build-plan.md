@@ -107,8 +107,9 @@ typed-area write-contract model — not a separate code path.
 5. **Embedded agent surface** for human+agent co-editing. *(Not built in the Node stack. The chat
    shipped 2026-07-03: a right-dock Chat executing governed, trajectory-recorded turns through
    `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only
-   and suggest-with-explicit-apply permissions. The in-app MCP client/tool channel to `overlay serve`
-   and the knowledge-vault convention checker remain the open tail; see
+   and suggest-with-explicit-apply permissions. The knowledge-vault convention checker's read-only
+   inspection half shipped 2026-07-04; the in-app MCP client/tool channel to `overlay serve` and
+   convention-checker write-time enforcement remain the open tail; see
    [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
