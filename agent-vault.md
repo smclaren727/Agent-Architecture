@@ -90,15 +90,21 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   computes* (`overlay-core`'s `memory/similarity.rs`). This is the human-approval step that keeps
   canonical memory disciplined — given a real interface instead of a CLI. (See
   [`docs/memory-cli.md`](../Agent-Overlay/docs/memory-cli.md).)
-- **Overlay-gated agent-facing views (current), an embedded agent surface (roadmap).** Today's
+- **Overlay-gated agent-facing views, including the embedded chat (shipped 2026-07-03).** The
   agent-facing surface is file-backed via `overlay-core`: **Capture, Proposals, Agent Runs
-  (trajectories), and Workspace**, gated client-side (`requiresOverlay` in
-  `web/src/views/registry.ts`) and server-side (the overlay routes return 503 with no `overlay.yaml`
-  workspace connected). There is **no in-app chat**. The embedded agent surface — in-app chat plus an
-  MCP client to a local `overlay serve`, in the spirit of wikiwise's embedded terminal — was never
-  built in the Node stack and is a **post-migration Rust roadmap item (decided 2026-07-01)**. When it
-  lands, the in-app AI sees *exactly* the same doctrine as Claude Code or any other client, and its
-  memory changes go through the same proposal queue a human's do.
+  (trajectories), Workspace — and the right-dock Chat**, gated client-side (`requiresOverlay` in
+  `web/src/views/registry.ts`; the Chat tab renders only when connected) and server-side (the overlay
+  routes, including `/api/agent/*`, return 503 with no `overlay.yaml` workspace connected). Chat
+  turns are **governed agent turns**: `vault-server` calls `overlay-core`'s
+  `adapters::turn::execute_agent_turn`, which resolves profile/policy, renders the canonical
+  `vault-chat` workflow's charter as the system prompt, executes the `direct` adapter, and records an
+  ordinary trajectory — so every turn is auditable in Agent Runs, and replies can be captured into
+  the triage inbox. Permission is a per-turn selection: read-only, or suggest — structured
+  suggestions applied only via explicit confirmation through the validated note-save API (frontmatter
+  preserved; never canonical memory). Design + slice record:
+  [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md). The **in-app MCP
+  client** to a local `overlay serve` (agentic turns with doctrine tools) remains the roadmap tail of
+  this surface.
 - **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
   caller-provided paths. Saves are atomic temp-create + rename writes, and "add to vault" copies only
@@ -132,12 +138,13 @@ it, so the schema is single-sourced.
 ## How Vault talks to Overlay (three channels)
 
 1. **Library.** Links the Rust `overlay-core` crate for schemas, workspace loading, validation, the
-   search index, memory operations, and the file read/write APIs (see the contract table in
-   [agent-overlay.md](agent-overlay.md)).
-2. **Protocol (roadmap).** The embedded agent surface will speak **MCP** to a local `overlay serve`
-   — just another MCP client, reimplementing no doctrine access. This channel is a post-migration
-   Rust roadmap item (decided 2026-07-01); today Vault reaches overlay state through `overlay-core`
-   and its own server routes, not an in-app MCP client.
+   search index, memory operations, the file read/write APIs — and, since 2026-07-03, the **agent
+   turn API** (`adapters::turn`) that executes the embedded chat's governed, trajectory-recorded
+   turns (see the contract table in [agent-overlay.md](agent-overlay.md)).
+2. **Protocol (roadmap).** The embedded agent's *agentic* tail will speak **MCP** to a local
+   `overlay serve` — just another MCP client, reimplementing no doctrine access. The chat surface
+   shipped over the library channel (MCP has no sampling, so it cannot execute a completion); this
+   channel remains the roadmap for giving in-app turns doctrine tools like `propose-memory`.
 3. **Corpus / vaults.** Direct, **atomic** file read/write on each open vault, honoring that area's
    write-contract — for the overlay corpus: the canonical layout, the schemas, and the
    **propose-don't-write** rule for memory; for a knowledge vault: its convention checker. Agents read

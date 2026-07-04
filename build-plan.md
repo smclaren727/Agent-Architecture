@@ -108,7 +108,11 @@ typed-area write-contract model — not a separate code path.
    doctrine as any other client, and its memory changes route through the proposal queue. *(Not built
    in the Node stack: the shipped agent-facing surface is the overlay-gated file-backed views —
    Capture / Proposals / Agent Runs / Workspace — and the in-app chat + MCP-client surface moved to
-   the post-migration Rust roadmap, decided 2026-07-01; see [agent-vault.md](agent-vault.md).)*
+   the post-migration Rust roadmap, decided 2026-07-01; see [agent-vault.md](agent-vault.md).
+   **The chat shipped 2026-07-03**: a right-dock Chat executing governed, trajectory-recorded turns
+   through `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with
+   read-only and suggest-with-explicit-apply permissions. The in-app MCP client and the
+   knowledge-vault convention checker remain the open tail.)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
 

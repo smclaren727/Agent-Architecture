@@ -33,9 +33,10 @@ JSON-RPC body cap, and a bounded live-session pool. Both transports expose:
 - **Workflow-prompts:** one rendered prompt per workflow.
 
 *Who consumes it:* the **executor sessions that Runner launches** (Claude Code / Codex connect their
-own `overlay serve` child) and any interactive MCP client. **Vault's embedded agent surface** — the
-planned in-app MCP client — is a post-migration Rust roadmap item (decided 2026-07-01; see
-[agent-vault.md](agent-vault.md)), so it is a *future* consumer, not a current one. See
+own `overlay serve` child) and any interactive MCP client. **Vault's embedded chat** (shipped
+2026-07-03) executes its turns over the *library* channel instead — MCP has no sampling, so it
+cannot produce a completion (see `adapters/turn.rs` in the contract table below); the planned
+in-app MCP client remains the roadmap tail that will give those turns doctrine tools. See
 [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).
 
 ### Execution surface — `overlay run` + trajectory store
@@ -83,6 +84,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Secret resolution (env, keyring, 1password, bitwarden, pass, exec) | `secrets/` | Overlay tools/executors (server-side only) |
 | Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
 | Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
+| Governed chat turns — direct-adapter execution under the `vault-chat` workflow, trajectory-recorded, suggest-format parsing | `adapters/turn.rs` | Vault (embedded chat) |
 | Node-compatible filesystem/path helpers | `fs_util.rs` | Vault and Runner (shared Rust helper seam) |
 
 **Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on
