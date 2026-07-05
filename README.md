@@ -30,7 +30,7 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overl
 | Repo | Owns | Must never |
 | --- | --- | --- |
 | **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
-| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, local feature-hash chunk search, the memory proposal review queue UI, the overlay-gated agent-run/capture views, and the right-dock embedded Chat surface for governed read-only/suggest/allow-edits turns. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
+| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, local feature-hash chunk search, bounded related-chunk chat context, the memory proposal review queue UI, the overlay-gated agent-run/capture views, and the right-dock embedded Chat surface for governed read-only/suggest/allow-edits turns. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
 | **Agent-Runner** | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
@@ -170,9 +170,9 @@ structured current-note suggestions. Direct-provider replies stream into the doc
 claude-code/codex turns are final-only until those adapter contracts expose token deltas. Suggest
 turns require explicit apply; allow-edits turns auto-apply exactly one unambiguous current-note
 suggestion through Vault's normal validated note-save API, while multiple candidates stay in explicit
-review. A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory
-proposals; the reply links them for review, and canonical memory still changes only through the
-proposal queue.
+review. The turn may explicitly include bounded related chunks from Vault's local feature-hash index.
+A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory proposals;
+the reply links them for review, and canonical memory still changes only through the proposal queue.
 
 ## Where to read next
 

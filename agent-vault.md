@@ -89,8 +89,8 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   feature-hash vectors for the same deterministic markdown chunks exposed by `/api/context`.
   `/api/search/semantic` and the Search view's Semantic mode return chunk-level hits with note ids,
   paths, line ranges, scores, and the feature-hash model id; the existing full-text `/api/search`
-  contract remains unchanged. Provider-backed embeddings and retrieval-augmented Chat context remain
-  future work.
+  contract remains unchanged. Chat can explicitly attach bounded related chunks from this same local
+  index; provider-backed embeddings remain future work.
 - **The memory proposal review queue as a first-class UI.** Proposals in `memory/proposals/` are
   surfaced for accept / reject / supersede, *showing the conflict-similarity warnings Overlay already
   computes* (`overlay-core`'s `memory/similarity.rs`). This is the human-approval step that keeps
@@ -123,8 +123,9 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   per-turn selection: read-only, suggest, or allow-edits. Suggest requires explicit confirmation;
   allow-edits auto-applies exactly one current-note suggestion through the validated note-save API
   (frontmatter preserved) and leaves multiple candidates for explicit review. Context is also a
-  per-turn selector, including a bounded, server-resolved Overlay workspace summary. The Info
-  dock's prompt-assisted "Summarize with agent" and "Propose graph edges" actions open this
+  per-turn selector, including a bounded, server-resolved Overlay workspace summary and an optional
+  related-chunks block from Vault's local feature-hash index. The Info dock's prompt-assisted
+  "Summarize with agent" and "Propose graph edges" actions open this
   same Chat path with current-note context; summaries do not create a separate store, and graph
   edges ride Overlay-owned `type: relationship` proposals. Design + slice record:
   [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).

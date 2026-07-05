@@ -113,7 +113,8 @@ typed-area write-contract model — not a separate code path.
    claude-code/codex turns are final-only until their adapter contracts expose token deltas. The
    in-app MCP client/tool channel to `overlay serve` is not built because spawned-agent MCP re-entry
    is the shipped tool path; Vault now has local feature-hash chunk vectors and similarity search,
-   while provider-backed retrieval and retrieval-augmented chat remain open; see
+   and Chat can explicitly attach bounded related chunks from that index, while provider-backed
+   embeddings/retrieval remain open; see
    [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
