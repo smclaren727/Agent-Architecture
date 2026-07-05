@@ -316,9 +316,10 @@ hardening and should stay visible as the system moves toward production packagin
   and per-trigger systemd/launchd unit generation remain backlog (cron fragment projection is
   implemented); the Tauri v2 wraps shipped 2026-06-30, with signing/updater and webview QA parked
   as distribution follow-up work after the completed Rust backend migration.
-- **Backlog — structured profile editor.** A richer profile editor may be useful later, but it should
-  remain an editor over `profiles/*.yaml`, policies, tools, and other canonical markdown/YAML files,
-  not a second source of truth.
+- **Done — first structured profile editor.** Vault now exposes a typed profile-properties panel over
+  `profiles/*.yaml`; field edits rewrite the draft YAML and persist through the canonical file writer.
+  Structured editors for policies, tools, skills, workflows, standards, and memory facts remain
+  backlog and must follow the same markdown/YAML source-of-truth rule.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.

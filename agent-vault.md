@@ -77,10 +77,10 @@ browser during development and as a local app in production.
 
 A generic editor would let you type into the files. Vault is *corpus-aware*:
 
-- **Raw canonical editing with schema-aware validation.** Today's overlay Workspace path is a raw
-  markdown/YAML editor backed by `overlay-core` schemas and file APIs for canonical saves. Per-type
-  structured editors for skills, workflows, standards, policies, profiles, and memory facts are not
-  shipped yet.
+- **Raw canonical editing with schema-aware validation.** Today's overlay Workspace path is a
+  markdown/YAML editor backed by `overlay-core` schemas and file APIs for canonical saves. Profile
+  files also have a typed properties panel over `profiles/*.yaml`; structured editors for skills,
+  workflows, standards, policies, and memory facts remain backlog.
 - **Live file watching.** Files changed outside Vault (by an agent, by Runner, by `git pull`) reflect
   immediately, the way wikiwise watches with FSEvents.
 - **Wiki navigation and backlinks** across the corpus: jump from a workflow to the skills and
