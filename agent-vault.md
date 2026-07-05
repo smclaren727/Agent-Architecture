@@ -129,7 +129,9 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   widget over ordinary note `summary` frontmatter and an Entities widget that deterministically
   matches saved note text against known people, organizations, projects, and areas, then adds missing
   `entities` ids only through explicit metadata PATCH. Its prompt-assisted "Summarize with agent"
-  action and "Propose graph edges" action open this same Chat path with current-note context.
+  action and "Propose graph edges" action open this same Chat path with current-note context. Chat's
+  "Plan workflow" action preloads a multi-agent planning brief without changing the selected context,
+  permission, or profile; it is a starter over the existing governed turn path, not a new scheduler.
   Summaries do not create a separate store, and graph edges ride Overlay-owned `type: relationship`
   proposals. Design + slice record:
   [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).

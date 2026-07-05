@@ -116,7 +116,8 @@ typed-area write-contract model — not a separate code path.
    similarity search, Chat can explicitly attach bounded related chunks from that configured
    embedding index, the Info dock exposes a Summary widget over ordinary note `summary`
    frontmatter with optional Chat handoff, and deterministic entity candidates over known people,
-   organizations, projects, and areas; see
+   organizations, projects, and areas; Chat also ships a prompt-only "Plan workflow" starter for
+   multi-agent planning over the existing governed turn path; see
    [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
