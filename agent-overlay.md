@@ -30,8 +30,9 @@ JSON-RPC body cap, and a bounded live-session pool. Both transports expose:
 - **Tools:** `search-overlay`, `search-memory`, `get-skill`, `get-workflow`, `list-skills`,
   `propose-memory`, `record-decision`, `validate-output`, `refresh-overlay`, plus user-defined
   shell/HTTP tools. Built-in and custom tools pass the **same active-policy tool allowlist and
-  approval gates** (list filtering + fail-closed denials; tool-level gates can proceed only with a
-  scoped console-issued approval token, with audit events recorded on the trajectory).
+  approval gates** (list filtering + fail-closed denials; tool-level gates and rendered
+  shell/network gates can proceed only with scoped console-issued approval tokens, with audit events
+  recorded on the trajectory).
 - **Workflow-prompts:** one rendered prompt per workflow.
 
 *Who consumes it:* the **executor sessions that Runner launches** (Claude Code / Codex connect their
@@ -120,14 +121,17 @@ These Overlay-specific review items are now part of the implementation contract:
 - **MCP tool policy fails closed for built-ins and custom tools alike.** One shared gate
   (`overlay-core` `policy_gate`) enforces the active policy's allow/deny and `tool:` approval gates on
   both tool classes, on both transports: disallowed tools are omitted from `tools/list`, calls fail
-  closed, and denials are recorded as `tool_call_denied` trajectory events. `requires_approval` and
-  `tool:*` gates can proceed only with an Overlay-minted, scoped, one-use approval token created by an
-  out-of-band console decision; that decision route requires the packaged desktop's per-launch
-  operator token, delivered to the webview outside the loopback API. `bash:*` and network approval
-  gates still block execution in this slice. Approval request/approved events are recorded without
-  arguments or tokens. HTTP custom tools do not follow redirects; shell custom tools drain
-  stdout/stderr before returning bounded tails, so child output cannot deadlock the
-  server.
+  closed, and denials are recorded as `tool_call_denied` trajectory events. `requires_approval`,
+  `tool:*`, `bash:*`, and network approval gates can proceed only with an Overlay-minted, scoped,
+  one-use approval token created by an out-of-band console decision; combined tool/effect gates mint
+  one composite request. The decision route requires the packaged desktop's per-launch operator
+  token, delivered to the webview outside the loopback API.
+  Tool-level approvals bind to the exact run, tool, policy, requirement, and argument hash; rendered
+  shell/network approvals also bind to an effect kind/hash. Network `default: deny` still
+  hard-denies non-allowlisted targets instead of creating an approval request. Approval
+  request/approved events are recorded without arguments, rendered effects, hashes, or tokens. HTTP
+  custom tools do not follow redirects; shell custom tools drain stdout/stderr before returning
+  bounded tails, so child output cannot deadlock the server.
 - **Enforcement truth lives in Overlay; consumers only display it.** The introspection surface
   (`describe_agent_profiles`, console `GET /api/agents/status`) reports each profile's tool access
   with provenance and each known local agent CLI's passive readiness instead of letting siblings

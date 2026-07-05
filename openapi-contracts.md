@@ -29,7 +29,7 @@ generates a typed client. The phased build is [build-plan.md](build-plan.md) →
 Vault and the console **serve their own spec**: `GET /openapi.yaml` and `/openapi.json`
 return the embedded contract, and `GET /docs` is a self-contained Redoc explorer — build
 against a running server without leaving it. The Overlay console contract includes operator-only
-surfaces such as Agent Runtimes, Automations, trusted MCP tool approvals (`GET /api/approvals`,
+surfaces such as Agent Runtimes, Automations, trusted runtime approvals (`GET /api/approvals`,
 `POST /api/approvals/{approvalId}/decision`), and local-agent lifecycle hooks (`GET /api/agents/hooks`,
 `POST /api/agents/hooks/ingest`); the approval decision POST also requires the packaged desktop's
 per-launch operator token, delivered to the webview outside the HTTP API. Those routes are still
