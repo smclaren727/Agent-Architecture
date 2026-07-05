@@ -103,7 +103,10 @@ typed-area write-contract model — not a separate code path.
    IDs, write section-addressably — and call `overlay-core`'s validator rather than reimplementing it.
 3. **Proposal review queue UI.** Surface `memory/proposals/` for accept/reject/supersede, showing the
    conflict-similarity warnings from `memory/similarity.ts`.
-4. **Wiki navigation / backlinks** across the corpus (workflow ↔ skills/standards, fact ↔ entities).
+4. **Wiki navigation / backlinks** across the corpus. *(Shipped as Vault's read-only Workspace
+   Corpus Links panel: workflows ↔ skills/standards, profiles/policies ↔ tools, eval suites ↔
+   profiles/workflows, and memory facts/proposals ↔ supersession or non-global memory-scope links.
+   It derives from canonical file content and does not introduce a stored graph.)*
 5. **Embedded agent surface** for human+agent co-editing. *(Not built in the Node stack. The chat
    shipped 2026-07-03: a right-dock Chat executing governed, trajectory-recorded turns through
    `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only,

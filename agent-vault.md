@@ -84,8 +84,10 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   in structured read-only cards because canonical memory writes still flow through Proposals.
 - **Live file watching.** Files changed outside Vault (by an agent, by Runner, by `git pull`) reflect
   immediately, the way wikiwise watches with FSEvents.
-- **Wiki navigation and backlinks** across the corpus: jump from a workflow to the skills and
-  standards it references, from a memory fact to the entities it mentions, and back.
+- **Wiki navigation and backlinks** across the corpus: the Workspace detail pane now derives
+  read-only Corpus Links from canonical file content, so a workflow can jump to its skills and
+  standards, profiles and policies can jump to tools, eval suites can jump to profiles/workflows,
+  and memory facts/proposals can jump through supersession or non-global memory-scope links.
 - **Semantic similarity search over chunks.** Vault's disposable SQLite index now stores rebuildable
   chunk embeddings for the same deterministic markdown chunks exposed by `/api/context`.
   The default backend is local/provider-free feature hashes; the opt-in OpenAI-compatible backend
