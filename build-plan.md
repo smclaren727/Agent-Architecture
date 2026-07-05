@@ -114,8 +114,9 @@ typed-area write-contract model — not a separate code path.
    in-app MCP client/tool channel to `overlay serve` is not built because spawned-agent MCP re-entry
    is the shipped tool path; Vault now has local-default/provider-opt-in chunk embeddings and
    similarity search, Chat can explicitly attach bounded related chunks from that configured
-   embedding index, and the Info dock exposes a Summary widget over ordinary note `summary`
-   frontmatter with optional Chat handoff; see
+   embedding index, the Info dock exposes a Summary widget over ordinary note `summary`
+   frontmatter with optional Chat handoff, and deterministic entity candidates over known people,
+   organizations, projects, and areas; see
    [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
