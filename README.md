@@ -174,6 +174,9 @@ review. The turn may explicitly include bounded related chunks from Vault's conf
 index, local feature-hash by default or provider-backed when opted in.
 A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory proposals;
 the reply links them for review, and canonical memory still changes only through the proposal queue.
+Vault's runtime selector is display-only over Overlay's passive local-agent catalog: Direct/API plus
+detected Claude Code, Codex CLI, and unsupported Gemini CLI, with no Vault-side host probing or policy
+derivation.
 
 ## Where to read next
 

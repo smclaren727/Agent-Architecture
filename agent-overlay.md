@@ -88,7 +88,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
 | Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
 | Governed chat turns — direct or tool-bearing claude-code/codex execution (MCP re-entry) under the `vault-chat` workflow, trajectory-recorded, suggest-format parsing | `adapters/turn.rs` | Vault (embedded chat) |
-| Agent/profile introspection — per-profile readiness + `toolAccess` with provenance (`adapter` \| `policy` \| `unknown`); the same answer the console serves at `GET /api/agents/status` | `adapters/introspection.rs` (policy gate in `policy_gate.rs`) | Vault (chat profile status display) |
+| Agent/profile introspection — per-profile readiness + `toolAccess` with provenance (`adapter` \| `policy` \| `unknown`) + passive local-agent CLI discovery; the same answer the console serves at `GET /api/agents/status` | `adapters/introspection.rs` (policy gate in `policy_gate.rs`) | Vault (chat profile/runtime status display) |
 | Node-compatible filesystem/path helpers | `fs_util.rs` | Vault and Runner (shared Rust helper seam) |
 
 **Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on
@@ -126,9 +126,12 @@ These Overlay-specific review items are now part of the implementation contract:
   server.
 - **Enforcement truth lives in Overlay; consumers only display it.** The introspection surface
   (`describe_agent_profiles`, console `GET /api/agents/status`) reports each profile's tool access
-  with provenance instead of letting siblings re-derive policy from config files — Vault renders that
-  answer and never becomes a policy authority. The dependency arrow is unchanged: Vault depends on
-  `overlay-core`; Overlay depends on neither sibling.
+  with provenance and each known local agent CLI's passive readiness instead of letting siblings
+  re-derive policy from config files or probe the host themselves. Discovery checks configured
+  binaries, curated install paths, and sanitized absolute `PATH` entries; it does not execute
+  candidate binaries or return executable paths. Vault renders that answer and never becomes a
+  policy authority. The dependency arrow is unchanged: Vault depends on `overlay-core`; Overlay
+  depends on neither sibling.
 - **Sandbox enforcement remains caller-selected.** `overlay run --enforce` exists for local adapters,
   and Runner now has a matching `--enforce` pass-through. Claude Code and Codex remain documented
   pass-through adapters under that flag.

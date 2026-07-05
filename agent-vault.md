@@ -117,7 +117,11 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   turn-capable tool-bearing, or a closed `unavailableReason` — plus `toolAccess` with provenance
   (`adapter` = the claude-code client allowlist, `policy` = the policy-gated `overlay serve` tool
   surface a codex profile actually gets, `unknown` = honest fallback). The Chat dock displays that
-  answer read-only; Vault never derives or owns tool policy. Tool-bearing
+  answer read-only; Vault never derives or owns tool policy. The same status now includes Overlay's
+  passive local-agent catalog, so the Chat dock can show Direct/API plus detected Claude Code,
+  Codex CLI, and Gemini CLI as runtime choices without probing the host or storing automation
+  behavior in Vault. Unsupported or incomplete runtimes are disabled until an Overlay profile can
+  execute them. Tool-bearing
   replies link back the memory proposals their run filed, closing the review round-trip: chat reply
   → run-filtered proposal queue → Agent Runs. Graph-edge proposals need no separate contract —
   they ride `propose-memory` with `type: relationship` through the same queue. Permission is a
