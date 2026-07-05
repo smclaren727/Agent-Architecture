@@ -277,6 +277,15 @@ carried into Phase 5:
   desktop app), Runner (service units), with install/update detection. **Unblocked by the completed Rust
   backend migration, but still parked behind F1/F2 distribution work** — the Tauri wraps run locally today;
   signing, updating, and cross-machine distribution only matter for other machines.
+- **Agent lifecycle hook integration for Codex/Claude.** Codex and Claude Code can fire lifecycle
+  hooks such as session start, prompt submit, pre/post tool use, compaction, and stop — but those
+  events are owned by the running agent process, not observable from the outside. The buildable shape
+  is: Overlay owns declarative hook definitions and generated `.codex` / `.claude` hook config
+  snippets; Codex/Claude open the lifecycle surface by loading those configs; hook handlers call a
+  small Overlay/Runner-owned ingest surface that can append audit events, run convention checks, or
+  drive Runner `http` triggers. Hook config remains a derived artifact over plain YAML doctrine, never
+  app-private state; hook trust, local-process permissions, and secret material stay in the
+  Codex/Claude/daemon environment rather than the corpus.
 
 **Current implementation-risk status:** the following review findings were captured during Phase 5
 hardening and should stay visible as the system moves toward production packaging.
@@ -316,10 +325,11 @@ hardening and should stay visible as the system moves toward production packagin
   and per-trigger systemd/launchd unit generation remain backlog (cron fragment projection is
   implemented); the Tauri v2 wraps shipped 2026-06-30, with signing/updater and webview QA parked
   as distribution follow-up work after the completed Rust backend migration.
-- **Done — first structured profile editor.** Vault now exposes a typed profile-properties panel over
-  `profiles/*.yaml`; field edits rewrite the draft YAML and persist through the canonical file writer.
-  Structured editors for policies, tools, skills, workflows, standards, and memory facts remain
-  backlog and must follow the same markdown/YAML source-of-truth rule.
+- **Done — Vault structured canonical editors.** Vault exposes typed panels over profiles, policies,
+  tools, skills, workflows, and standards. The panels rewrite the underlying YAML (or a standard's
+  Markdown frontmatter) and persist only through the canonical file writer; they do not create
+  app-private state. Memory facts are inspectable in a structured read-only panel, but canonical
+  memory writes still flow through Proposals.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
