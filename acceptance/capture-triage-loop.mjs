@@ -10,15 +10,15 @@
 // Prerequisites (build the siblings first):
 //   - Agent-Overlay: cargo build  (target/debug/overlay — the Rust CLI, the R1 default)
 //   - Agent-Runner:  cargo build  (target/debug/agent-runner — the Rust runner, the R2 default)
-//   - Agent-Vault:   no build (plain JS), Node 24+ for node:sqlite
+//   - Agent-Vault:   cargo build --release -p vault-server  (target/release/agent-vault-server — the Rust server, the R3 default)
 //
 // Run: node acceptance/capture-triage-loop.mjs
 //
 // Implementation selection: the three planes are spawned from env-selected JSON argv
 // arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_RUNNER_CMD / ACCEPTANCE_VAULT_CMD).
-// Since the R1/R2 cutovers the Overlay and Runner defaults are the Rust binaries;
-// Vault defaults to its TS entry point until R3. Any plane can be substituted
-// without touching the harness. See acceptance/README.md.
+// Since the R1/R2/R3 cutovers the Overlay, Runner, and Vault defaults are all the
+// Rust binaries. Any plane can be substituted without touching the harness (the
+// frozen TS forms remain selectable explicitly). See acceptance/README.md.
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";

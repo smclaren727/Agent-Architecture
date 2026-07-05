@@ -55,8 +55,9 @@ point it at the served spec (or the `.yaml` file directly):
 1. **Get the spec.** From a running server: `curl http://127.0.0.1:4173/openapi.yaml`
    (Vault) or `:4180` (console). Or read the committed file in the repo.
 2. **TypeScript** — [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript)
-   (+ `openapi-fetch`). This is already how both web apps get their types; each repo's
-   `openapi/README.md` has the exact `openapi:gen` command.
+   (+ `openapi-fetch`). This is already how both web apps get their types; the Vault and
+   console `openapi/README.md` guides have the exact `openapi:gen` command, while Runner (pure
+   Rust, no web app) documents `agent-runner openapi` for emitting a concrete webhook spec.
 3. **Python** — [`openapi-python-client`](https://github.com/openapi-generators/openapi-python-client).
    A **runnable, reproducible** example lives at
    [`Agent-Vault/examples/python-portability/`](../Agent-Vault/examples/python-portability/):

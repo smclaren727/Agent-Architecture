@@ -15,15 +15,15 @@
 //
 // Prerequisites (build the siblings first):
 //   - Agent-Overlay: cargo build  (target/debug/overlay — the Rust CLI, the R1 default)
-//   - Agent-Vault:   no build (plain JS), Node 24+ for node:sqlite
+//   - Agent-Vault:   cargo build --release -p vault-server  (target/release/agent-vault-server — the Rust server, the R3 default)
 //
 // Run: node acceptance/world-knowledge-loop.mjs
 //
 // Implementation selection: the two planes exercised here are spawned from env-selected
-// JSON argv arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_VAULT_CMD). Since the R1
-// cutover the Overlay default is the Rust `overlay` binary; Vault defaults to its TS
-// entry point until R3. Either plane can be substituted without touching the harness.
-// See acceptance/README.md.
+// JSON argv arrays (ACCEPTANCE_OVERLAY_CMD / ACCEPTANCE_VAULT_CMD). Since the R1/R3
+// cutovers the Overlay default is the Rust `overlay` binary and Vault defaults to the
+// Rust `agent-vault-server` binary. Either plane can be substituted without touching the
+// harness. See acceptance/README.md.
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
