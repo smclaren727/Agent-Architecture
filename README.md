@@ -176,7 +176,10 @@ A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also fi
 the reply links them for review, and canonical memory still changes only through the proposal queue.
 Vault's runtime selector is display-only over Overlay's passive local-agent catalog: Direct/API plus
 detected Claude Code, Codex CLI, and unsupported Gemini CLI, with no Vault-side host probing or policy
-derivation.
+derivation. Overlay's Agent Runtimes console complements that display by writing supported local-agent
+profile/adapter YAML and exposing lifecycle hook doctrine from `hooks/*.yaml`; installed Codex/Claude
+hooks call Overlay's bounded ingest route, but the local agent process still owns hook execution and
+trust.
 
 ## Where to read next
 

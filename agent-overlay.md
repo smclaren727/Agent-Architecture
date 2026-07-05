@@ -89,6 +89,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Trajectory read/write | `trajectory/store.rs` | Vault (run history), Runner (via `overlay run`) |
 | Governed chat turns — direct or tool-bearing claude-code/codex execution (MCP re-entry) under the `vault-chat` workflow, trajectory-recorded, suggest-format parsing | `adapters/turn.rs` | Vault (embedded chat) |
 | Agent/profile introspection — per-profile readiness + `toolAccess` with provenance (`adapter` \| `policy` \| `unknown`) + passive local-agent CLI discovery; the same answer the console serves at `GET /api/agents/status` | `adapters/introspection.rs` (policy gate in `policy_gate.rs`) | Vault (chat profile/runtime status display) |
+| Local agent lifecycle hook doctrine — canonical `hooks/*.yaml` definitions plus console install snippets and bounded ingest events | `schemas/hook.rs`, console `GET /api/agents/hooks`, `POST /api/agents/hooks/ingest` | Overlay console (Codex/Claude hook setup and audit display) |
 | Node-compatible filesystem/path helpers | `fs_util.rs` | Vault and Runner (shared Rust helper seam) |
 
 **Treat `overlay-core`'s exported surface as a public contract.** Once Vault and Runner depend on
@@ -137,6 +138,12 @@ These Overlay-specific review items are now part of the implementation contract:
   writes canonical `profiles/*.yaml` and `adapters/*.yaml` through Overlay's validated file writer,
   then returns refreshed profile/local-agent status. It is deliberately narrower than a generic
   profile editor.
+- **Agent lifecycle hooks are YAML doctrine plus local-agent-owned execution.** Overlay loads canonical
+  `hooks/*.yaml` files, exposes them through the Agent Runtimes view, and generates copyable Claude
+  Code/Codex hook snippets. Installed hooks call `POST /api/agents/hooks/ingest`, which validates the
+  supplied hook id, agent, and phase against active hook doctrine, appends bounded audit events under
+  `.cache/agent-hooks/events.jsonl`, and never executes request-provided values. Hook trust, process
+  permissions, and secrets stay in the local agent's own environment.
 - **Sandbox enforcement remains caller-selected.** `overlay run --enforce` exists for local adapters,
   and Runner now has a matching `--enforce` pass-through. Claude Code and Codex remain documented
   pass-through adapters under that flag.

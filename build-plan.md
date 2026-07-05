@@ -280,15 +280,14 @@ carried into Phase 5:
   desktop app), Runner (service units), with install/update detection. **Unblocked by the completed Rust
   backend migration, but still parked behind F1/F2 distribution work** — the Tauri wraps run locally today;
   signing, updating, and cross-machine distribution only matter for other machines.
-- **Agent lifecycle hook integration for Codex/Claude.** Codex and Claude Code can fire lifecycle
-  hooks such as session start, prompt submit, pre/post tool use, compaction, and stop — but those
-  events are owned by the running agent process, not observable from the outside. The buildable shape
-  is: Overlay owns declarative hook definitions and generated `.codex` / `.claude` hook config
-  snippets; Codex/Claude open the lifecycle surface by loading those configs; hook handlers call a
-  small Overlay/Runner-owned ingest surface that can append audit events, run convention checks, or
-  drive Runner `http` triggers. Hook config remains a derived artifact over plain YAML doctrine, never
-  app-private state; hook trust, local-process permissions, and secret material stay in the
-  Codex/Claude/daemon environment rather than the corpus.
+- **Done — Agent lifecycle hook integration for Codex/Claude.** Overlay now owns canonical
+  `hooks/*.yaml` doctrine, exposes it in the Agent Runtimes view, and serves `GET /api/agents/hooks`
+  plus `POST /api/agents/hooks/ingest` from the console API. Codex and Claude Code still own whether
+  and how local hook configs are installed; Overlay only generates copyable snippets and records
+  bounded ingest events after validating the hook id, agent, and phase against active YAML doctrine.
+  Hook config remains a derived artifact over plain YAML doctrine, never app-private state; hook trust,
+  local-process permissions, and secret material stay in the Codex/Claude/daemon environment rather
+  than the corpus.
 
 **Current implementation-risk status:** the following review findings were captured during Phase 5
 hardening and should stay visible as the system moves toward production packaging.
