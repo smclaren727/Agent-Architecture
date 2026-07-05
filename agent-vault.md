@@ -85,6 +85,12 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   immediately, the way wikiwise watches with FSEvents.
 - **Wiki navigation and backlinks** across the corpus: jump from a workflow to the skills and
   standards it references, from a memory fact to the entities it mentions, and back.
+- **Local similarity search over chunks.** Vault's disposable SQLite index now stores provider-free
+  feature-hash vectors for the same deterministic markdown chunks exposed by `/api/context`.
+  `/api/search/semantic` and the Search view's Semantic mode return chunk-level hits with note ids,
+  paths, line ranges, scores, and the feature-hash model id; the existing full-text `/api/search`
+  contract remains unchanged. Provider-backed embeddings and retrieval-augmented Chat context remain
+  future work.
 - **The memory proposal review queue as a first-class UI.** Proposals in `memory/proposals/` are
   surfaced for accept / reject / supersede, *showing the conflict-similarity warnings Overlay already
   computes* (`overlay-core`'s `memory/similarity.rs`). This is the human-approval step that keeps
