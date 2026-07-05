@@ -107,10 +107,11 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   `vault-chat` workflow's charter as the system prompt, executes the selected profile's adapter, and
   records an ordinary trajectory — so every turn is auditable in Agent Runs, and replies can be
   captured into the triage inbox. Since 2026-07-04 the adapter may be **`direct`** (a provider
-  chat-completions call) or **tool-bearing `claude-code`/`codex`**. Direct profiles stream reply
-  deltas through `/api/agent/turn/stream`; tool-bearing profiles are final-only until their adapter
-  contracts expose token deltas. The agent binary re-enters Overlay over MCP via the same generated
-  re-entry config `overlay run` uses, so in-app turns reach doctrine tools like `search-overlay` and
+  chat-completions call) or **tool-bearing `claude-code`/`codex`**. Direct profiles and supported
+  tool-bearing profiles stream reply deltas through `/api/agent/turn/stream`; suggestions and
+  proposals remain final-completion artifacts. The agent binary re-enters Overlay over MCP via the
+  same generated re-entry config `overlay run` uses, so in-app turns reach doctrine tools like
+  `search-overlay` and
   `propose-memory` (proposal-queue writes only, never
   canonical memory). The status contract is a **passthrough of Overlay's own introspection**
   (`overlay-core`'s `describe_agent_profiles`): per-profile readiness — turn-capable direct,

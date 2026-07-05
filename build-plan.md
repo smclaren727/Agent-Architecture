@@ -109,8 +109,8 @@ typed-area write-contract model — not a separate code path.
    `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only,
    suggest-with-explicit-apply, and governed allow-edits permissions. The knowledge-vault convention
    checker, managed-note write-time backstop, and browser-session transcript persistence shipped
-   2026-07-04. Direct-provider chat replies stream over Vault's SSE route; tool-bearing
-   claude-code/codex turns are final-only until their adapter contracts expose token deltas. The
+   2026-07-04. Direct-provider and supported tool-bearing claude-code/codex chat replies stream
+   over Vault's SSE route; final turn completion owns suggestions and proposals. The
    in-app MCP client/tool channel to `overlay serve` is not built because spawned-agent MCP re-entry
    is the shipped tool path; Vault now has local-default/provider-opt-in chunk embeddings and
    similarity search, Chat can explicitly attach bounded related chunks from that configured
