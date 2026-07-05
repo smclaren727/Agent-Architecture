@@ -29,10 +29,13 @@ generates a typed client. The phased build is [build-plan.md](build-plan.md) →
 Vault and the console **serve their own spec**: `GET /openapi.yaml` and `/openapi.json`
 return the embedded contract, and `GET /docs` is a self-contained Redoc explorer — build
 against a running server without leaving it. The Overlay console contract includes operator-only
-surfaces such as Agent Runtimes, Automations, and local-agent lifecycle hooks (`GET /api/agents/hooks`,
-`POST /api/agents/hooks/ingest`); those routes are still loopback-console APIs, not a public remote
-control plane. Runner is different in kind: its routes are per-deployment (one path per active
-configured `http` trigger), so `runner-webhooks.yaml` is a **template** of the contract *shape* and
+surfaces such as Agent Runtimes, Automations, trusted MCP tool approvals (`GET /api/approvals`,
+`POST /api/approvals/{approvalId}/decision`), and local-agent lifecycle hooks (`GET /api/agents/hooks`,
+`POST /api/agents/hooks/ingest`); the approval decision POST also requires the packaged desktop's
+per-launch operator token, delivered to the webview outside the HTTP API. Those routes are still
+loopback-console APIs, not a public remote control plane. Runner is different in kind: its routes are
+per-deployment (one path per active configured `http` trigger), so `runner-webhooks.yaml` is a
+**template** of the contract *shape* and
 `agent-runner openapi` generates the concrete live spec for the active HTTP trigger set, intentionally
 omitting inactive HTTP triggers and non-HTTP triggers.
 

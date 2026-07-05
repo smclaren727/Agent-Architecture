@@ -295,9 +295,11 @@ hardening and should stay visible as the system moves toward production packagin
 - **Done — Runner trigger reliability.** `debounce_ms` / `max_concurrency` are trigger doctrine, and
   Runner enforces them through the in-process dispatch gate plus state-dir process slots for generated
   cron dispatch. Absent `max_concurrency` means one in-flight run per trigger.
-- **Done — Overlay custom-tool approvals.** Custom shell/HTTP tools that require approval, or match
-  supported policy approval gates, fail closed until a trusted approval protocol exists; HTTP tools do
-  not follow redirects, and shell tools drain stdout/stderr before returning bounded tails.
+- **Done — Overlay tool-level approval protocol.** Custom shell/HTTP tools that require approval, or
+  built-in/custom calls that match `tool:<id>` / `tool:*`, create a trusted approval request and can
+  run only after the token-bearing desktop console returns a scoped one-use token. `bash:*` and network
+  approval gates remain fail-closed; HTTP tools do not follow redirects, and shell tools drain
+  stdout/stderr before returning bounded tails.
 - **Done — Runner-to-Overlay enforcement.** Runner has `--enforce` pass-through for `overlay run`,
   including generated cron dispatch commands.
 - **Done — write atomicity and serialization.** Overlay, Vault, and Runner use unique temp files and

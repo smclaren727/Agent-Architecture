@@ -135,9 +135,11 @@ they mark the hardening work that keeps the implementation honest against the sy
   adapters only** (bwrap on Linux, sandbox-exec on macOS); the `claude-code`/`codex` agent adapters
   are **loud pass-throughs** — they keep their own sandboxes and Overlay warns on stderr that
   enforcement is delegated — and every run records its effective `sandbox_mode` on the trajectory.
-  Custom MCP tools that require approval fail closed until a trusted approval protocol exists.
-  HTTP custom tools do not follow redirects, and shell custom tools drain stdout/stderr before returning
-  bounded tails.
+  Tool-level MCP approval gates fail closed unless Overlay validates a scoped one-use approval token
+  minted by an out-of-band console decision. That decision route is gated by the packaged desktop's
+  per-launch operator token, delivered to the webview outside the loopback API; shell-command and
+  network approval gates still fail closed. HTTP custom tools do not follow redirects, and shell
+  custom tools drain stdout/stderr before returning bounded tails.
 - **The Rust migration window is closed (2026-07-02).** All three repos are Rust end-to-end behind the
   unchanged seams; Vault and Runner now depend on the `overlay-core` crate as a Cargo path dependency.
   Through the window they consumed the frozen TS `@overlay/core` dist (Agent-Overlay tag

@@ -30,8 +30,8 @@ JSON-RPC body cap, and a bounded live-session pool. Both transports expose:
 - **Tools:** `search-overlay`, `search-memory`, `get-skill`, `get-workflow`, `list-skills`,
   `propose-memory`, `record-decision`, `validate-output`, `refresh-overlay`, plus user-defined
   shell/HTTP tools. Built-in and custom tools pass the **same active-policy tool allowlist and
-  approval gates** (list filtering + fail-closed calls, denials recorded as `tool_call_denied`
-  trajectory events).
+  approval gates** (list filtering + fail-closed denials; tool-level gates can proceed only with a
+  scoped console-issued approval token, with audit events recorded on the trajectory).
 - **Workflow-prompts:** one rendered prompt per workflow.
 
 *Who consumes it:* the **executor sessions that Runner launches** (Claude Code / Codex connect their
@@ -121,9 +121,12 @@ These Overlay-specific review items are now part of the implementation contract:
   (`overlay-core` `policy_gate`) enforces the active policy's allow/deny and `tool:` approval gates on
   both tool classes, on both transports: disallowed tools are omitted from `tools/list`, calls fail
   closed, and denials are recorded as `tool_call_denied` trajectory events. `requires_approval` and
-  supported policy approval gates (`tool:*`, `bash:*`, and network approval gates) block execution
-  until a trusted approval token/protocol exists. HTTP custom tools do not follow redirects; shell
-  custom tools drain stdout/stderr before returning bounded tails, so child output cannot deadlock the
+  `tool:*` gates can proceed only with an Overlay-minted, scoped, one-use approval token created by an
+  out-of-band console decision; that decision route requires the packaged desktop's per-launch
+  operator token, delivered to the webview outside the loopback API. `bash:*` and network approval
+  gates still block execution in this slice. Approval request/approved events are recorded without
+  arguments or tokens. HTTP custom tools do not follow redirects; shell custom tools drain
+  stdout/stderr before returning bounded tails, so child output cannot deadlock the
   server.
 - **Enforcement truth lives in Overlay; consumers only display it.** The introspection surface
   (`describe_agent_profiles`, console `GET /api/agents/status`) reports each profile's tool access
