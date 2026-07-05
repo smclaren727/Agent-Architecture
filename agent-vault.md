@@ -117,7 +117,9 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   per-turn selection: read-only, suggest, or allow-edits. Suggest requires explicit confirmation;
   allow-edits auto-applies exactly one current-note suggestion through the validated note-save API
   (frontmatter preserved) and leaves multiple candidates for explicit review. Context is also a
-  per-turn selector, including a bounded, server-resolved Overlay workspace summary. Design + slice record:
+  per-turn selector, including a bounded, server-resolved Overlay workspace summary. The Info
+  dock's prompt-assisted "Summarize with agent" action opens this same Chat path with
+  current-note context; it does not create a separate summary store. Design + slice record:
   [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).
 - **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
