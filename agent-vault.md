@@ -125,10 +125,11 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   allow-edits auto-applies exactly one current-note suggestion through the validated note-save API
   (frontmatter preserved) and leaves multiple candidates for explicit review. Context is also a
   per-turn selector, including a bounded, server-resolved Overlay workspace summary and an optional
-  related-chunks block from Vault's configured embedding index. The Info dock's prompt-assisted
-  "Summarize with agent" and "Propose graph edges" actions open this
-  same Chat path with current-note context; summaries do not create a separate store, and graph
-  edges ride Overlay-owned `type: relationship` proposals. Design + slice record:
+  related-chunks block from Vault's configured embedding index. The Info dock exposes a Summary
+  widget over ordinary note `summary` frontmatter; its prompt-assisted "Summarize with agent" action
+  and "Propose graph edges" action open this same Chat path with current-note context. Summaries do
+  not create a separate store, and graph edges ride Overlay-owned `type: relationship` proposals.
+  Design + slice record:
   [`Docs/embedded-agent-chat.md`](../Agent-Vault/Docs/embedded-agent-chat.md).
 - **Open-file sessions for arbitrary markdown files.** `POST /api/open-file` mints an opaque in-memory
   token for one absolute `.md` / `.markdown` file; later reads and saves go by token, not by joining
