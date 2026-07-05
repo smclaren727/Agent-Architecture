@@ -85,12 +85,13 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   immediately, the way wikiwise watches with FSEvents.
 - **Wiki navigation and backlinks** across the corpus: jump from a workflow to the skills and
   standards it references, from a memory fact to the entities it mentions, and back.
-- **Local similarity search over chunks.** Vault's disposable SQLite index now stores provider-free
-  feature-hash vectors for the same deterministic markdown chunks exposed by `/api/context`.
-  `/api/search/semantic` and the Search view's Semantic mode return chunk-level hits with note ids,
-  paths, line ranges, scores, and the feature-hash model id; the existing full-text `/api/search`
-  contract remains unchanged. Chat can explicitly attach bounded related chunks from this same local
-  index; provider-backed embeddings remain future work.
+- **Semantic similarity search over chunks.** Vault's disposable SQLite index now stores rebuildable
+  chunk embeddings for the same deterministic markdown chunks exposed by `/api/context`.
+  The default backend is local/provider-free feature hashes; the opt-in OpenAI-compatible backend
+  uses the configured `/embeddings` model. `/api/search/semantic` and the Search view's Semantic
+  mode return chunk-level hits with note ids, paths, line ranges, scores, and the embedding model
+  id; the existing full-text `/api/search` contract remains unchanged. Chat can explicitly attach
+  bounded related chunks from this same configured embedding index.
 - **The memory proposal review queue as a first-class UI.** Proposals in `memory/proposals/` are
   surfaced for accept / reject / supersede, *showing the conflict-similarity warnings Overlay already
   computes* (`overlay-core`'s `memory/similarity.rs`). This is the human-approval step that keeps
@@ -124,7 +125,7 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   allow-edits auto-applies exactly one current-note suggestion through the validated note-save API
   (frontmatter preserved) and leaves multiple candidates for explicit review. Context is also a
   per-turn selector, including a bounded, server-resolved Overlay workspace summary and an optional
-  related-chunks block from Vault's local feature-hash index. The Info dock's prompt-assisted
+  related-chunks block from Vault's configured embedding index. The Info dock's prompt-assisted
   "Summarize with agent" and "Propose graph edges" actions open this
   same Chat path with current-note context; summaries do not create a separate store, and graph
   edges ride Overlay-owned `type: relationship` proposals. Design + slice record:

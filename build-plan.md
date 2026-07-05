@@ -112,9 +112,9 @@ typed-area write-contract model — not a separate code path.
    2026-07-04. Direct-provider chat replies stream over Vault's SSE route; tool-bearing
    claude-code/codex turns are final-only until their adapter contracts expose token deltas. The
    in-app MCP client/tool channel to `overlay serve` is not built because spawned-agent MCP re-entry
-   is the shipped tool path; Vault now has local feature-hash chunk vectors and similarity search,
-   and Chat can explicitly attach bounded related chunks from that index, while provider-backed
-   embeddings/retrieval remain open; see
+   is the shipped tool path; Vault now has local-default/provider-opt-in chunk embeddings and
+   similarity search, and Chat can explicitly attach bounded related chunks from that configured
+   embedding index; see
    [agent-vault.md](agent-vault.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.

@@ -170,7 +170,8 @@ structured current-note suggestions. Direct-provider replies stream into the doc
 claude-code/codex turns are final-only until those adapter contracts expose token deltas. Suggest
 turns require explicit apply; allow-edits turns auto-apply exactly one unambiguous current-note
 suggestion through Vault's normal validated note-save API, while multiple candidates stay in explicit
-review. The turn may explicitly include bounded related chunks from Vault's local feature-hash index.
+review. The turn may explicitly include bounded related chunks from Vault's configured embedding
+index, local feature-hash by default or provider-backed when opted in.
 A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory proposals;
 the reply links them for review, and canonical memory still changes only through the proposal queue.
 
