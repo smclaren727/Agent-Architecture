@@ -119,8 +119,11 @@ typed-area write-contract model — not a separate code path.
    organizations, projects, and areas; Chat also ships a prompt-only "Plan workflow" starter for
    multi-agent planning over the existing governed turn path. The Chat dock also renders Overlay's
    passive local-agent catalog as an Agent runtime selector — Direct/API, Claude Code, Codex CLI,
-   and currently unsupported Gemini CLI — without making Vault a host-probing or policy authority; see
-   [agent-vault.md](agent-vault.md).)*
+   and currently unsupported Gemini CLI — without making Vault a host-probing or policy authority.
+   Overlay's console now owns the complementary setup surface for supported local CLIs, writing
+   `profiles/*.yaml` and `adapters/*.yaml` through the canonical file writer rather than storing
+   runtime config in app-private state; see [agent-vault.md](agent-vault.md) and
+   [agent-overlay.md](agent-overlay.md).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
 
@@ -313,6 +316,9 @@ hardening and should stay visible as the system moves toward production packagin
   and per-trigger systemd/launchd unit generation remain backlog (cron fragment projection is
   implemented); the Tauri v2 wraps shipped 2026-06-30, with signing/updater and webview QA parked
   as distribution follow-up work after the completed Rust backend migration.
+- **Backlog — structured profile editor.** A richer profile editor may be useful later, but it should
+  remain an editor over `profiles/*.yaml`, policies, tools, and other canonical markdown/YAML files,
+  not a second source of truth.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.

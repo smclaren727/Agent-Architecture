@@ -132,6 +132,11 @@ These Overlay-specific review items are now part of the implementation contract:
   candidate binaries or return executable paths. Vault renders that answer and never becomes a
   policy authority. The dependency arrow is unchanged: Vault depends on `overlay-core`; Overlay
   depends on neither sibling.
+- **Runtime setup writes doctrine, not hidden app state.** The console's Agent Runtimes view can call
+  `POST /api/agents/setup` for supported local CLIs (currently Claude Code and Codex). That route
+  writes canonical `profiles/*.yaml` and `adapters/*.yaml` through Overlay's validated file writer,
+  then returns refreshed profile/local-agent status. It is deliberately narrower than a generic
+  profile editor.
 - **Sandbox enforcement remains caller-selected.** `overlay run --enforce` exists for local adapters,
   and Runner now has a matching `--enforce` pass-through. Claude Code and Codex remain documented
   pass-through adapters under that flag.
