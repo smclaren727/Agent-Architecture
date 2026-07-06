@@ -280,6 +280,32 @@ carried into Phase 5:
   desktop app), Runner (service units), with install/update detection. **Unblocked by the completed Rust
   backend migration, but still parked behind F1/F2 distribution work** — the Tauri wraps run locally today;
   signing, updating, and cross-machine distribution only matter for other machines.
+
+  The remaining consumer-grade Mac app gap is the path from "developer/operator starts binaries with
+  env vars" to "download a DMG, drag to Applications, open the app, and complete setup in UI":
+
+  1. **Signed/notarized DMG releases.** Produce Developer ID signed, notarized `.dmg` artifacts for
+     Overlay and Vault, with the bundled Rust sidecars hash-verified before packaging.
+  2. **First-run Overlay workspace setup.** If no workspace is configured, the app offers create from
+     the shipped template, choose existing, validate, and persist the selected path. No terminal
+     `overlay init` should be required for the happy path.
+  3. **Persisted app settings instead of env-only wiring.** Workspace paths, Runner command/state dir,
+     Vault's connected Overlay workspace, and Vault's Overlay CLI path are discovered or stored in
+     app configuration; environment variables remain an override/debug escape hatch, not the primary
+     setup flow.
+  4. **Runner service installation and control.** Overlay's Automations surface can install/update the
+     macOS launchd agent (and systemd user unit on Linux), start/stop/restart it, enable run-at-login,
+     and keep the daemon command pinned to the selected workspace, state dir, Runner binary, and Overlay
+     CLI. Runner still owns the loop and writes only machine-local derived state.
+  5. **Vault-to-Overlay connection setup.** Vault can connect to an existing Overlay workspace and
+     resolve a usable Overlay CLI/bundled binary path automatically, while remaining fully usable as a
+     standalone markdown/vault editor when no Overlay workspace is connected.
+  6. **Secrets and local-agent runtime onboarding.** API keys, local Claude Code/Codex availability,
+     and supported agent runtime setup are guided in UI. Runtime setup writes canonical YAML doctrine
+     through Overlay's validated writer where appropriate; secret values live in Keychain or
+     user-owned secret/env files, never in the corpus or app-private doctrine.
+  7. **Updater and release CI.** A release workflow builds, signs, notarizes, publishes, and smoke-tests
+     the app artifacts; the apps check a signed update manifest from the chosen release host.
 - **Done — Agent lifecycle hook integration for Codex/Claude.** Overlay now owns canonical
   `hooks/*.yaml` doctrine, exposes it in the Agent Runtimes view, and serves `GET /api/agents/hooks`
   plus `POST /api/agents/hooks/ingest` from the console API. Codex and Claude Code still own whether
