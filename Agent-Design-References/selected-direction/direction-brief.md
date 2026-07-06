@@ -1,8 +1,14 @@
 # Direction Brief
 
-Status: Draft (Phase-1 architecture)
+Status: **Accepted — Phase-1 build brief**
 Date: 2026-07-06
 Owner: Sean (smclaren727)
+
+> **Phase-1 build boundary.** Implement **slices 1–3 only** (token foundation + native-feel base →
+> shell & panels → menu/popover recipe). **Do not restructure Chat or Automations** in Phase 1 —
+> they *inherit* token, native-feel, and menu-recipe changes automatically (buttons lose
+> `cursor:pointer`, selects adopt the new menu recipe, etc.), but their **layouts are not
+> redesigned** until Phase 2. Touch them only where a shell/token/menu change requires it.
 
 ## Selected Direction
 
@@ -39,7 +45,10 @@ Surfaces:
 - One **flat panel level** on the paper/ink background with a hairline border — **kill card-in-card**
   (Material tonal elevation, not nested shadows). Reserve raised/glass for menus, popovers, docks.
 - **Native vibrancy** for the window/sidebar material (Tauri `window-vibrancy` / NSVisualEffectView)
-  — the *real* Liquid Glass; CSS `backdrop-filter` + opaque fallback only for menus/non-vibrancy.
+  — the *real* Liquid Glass. **Treat as a de-risking SPIKE, not a guaranteed implementation**
+  (WKWebView + Tauri vibrancy has real caveats). Risk is contained: the **CSS glass + opaque
+  fallback is already the baseline**, so if the spike fails we lose nothing — menus keep CSS glass,
+  window/sidebar stay opaque flat. Nothing else may depend on vibrancy landing.
 - **Master/detail** (list + detail) and a **dense-row/log** recipe for operator surfaces (Linear,
   Overlay Canonical Files/Trajectories).
 
@@ -80,8 +89,9 @@ Make the webview read as a **native local app, not a website**:
   the Material "state layers everywhere" idea — native apps don't light up every button.
 - **`user-select: none` on chrome** (nav, labels, toolbars, buttons); opt selection back in only for
   the editor/note body and content.
-- **Native vibrancy over CSS blur** (above); **kill the startup white-flash** (theme-colored Tauri
-  window `background_color` + show-on-ready, not on-create).
+- **Native vibrancy over CSS blur** (spike — see above); **kill the startup white-flash**
+  (theme-colored Tauri window `background_color` + show-on-ready, not on-create). The no-flash fix
+  is guaranteed; the vibrancy is the spike.
 - Optional/later: native-window tooltips & popovers, settings in a separate window (higher effort).
 
 ## What To Avoid
@@ -157,6 +167,12 @@ follow, layered on this architecture.
 - Everything expressed through shared tokens + reusable recipes, not one-off per-view styling.
 - No CSP/font/render regressions in the real Tauri/WKWebView path; narrow viewport works (single
   drawer, collapsible nav).
+- **Seeded Vault fixture exists before visual QA** — Vault's live data is sparse (empty Tasks/Graph/
+  Notes), so QA needs a populated fixture: a note with frontmatter + body, a few tasks across
+  statuses, a conventions finding, and `[[wikilinks]]` so the graph renders. (Overlay already has
+  real automations/runtimes/trajectories.) Prerequisite for slices that screenshot-compare.
+- **Native vibrancy is a spike, not an acceptance gate** — shipping is fine with the CSS glass +
+  opaque fallback if the spike doesn't pan out.
 
 ## Traceability
 

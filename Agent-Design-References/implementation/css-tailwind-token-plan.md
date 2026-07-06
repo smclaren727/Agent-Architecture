@@ -262,9 +262,12 @@ Vault defaults comfortable; Overlay sets `data-density="compact"` on its shell (
 
 - **Flatten card-in-card:** one `--surface-panel` level + a hairline `--border-subtle`; get hierarchy
   from **tonal shift + spacing**, not nested cards/shadows.
-- **Material = native vibrancy** for window/sidebar: Tauri `window-vibrancy`
-  (`NSVisualEffectView`, e.g. `sidebar`/`under-window` material) behind the webview; make the webview
-  root background transparent where vibrancy shows through.
+- **Material = native vibrancy** for window/sidebar (**SPIKE — verify before depending on it**):
+  Tauri `window-vibrancy` (`NSVisualEffectView`, e.g. `sidebar`/`under-window` material) behind the
+  webview; make the webview root background transparent where vibrancy shows through. WKWebView +
+  Tauri vibrancy has caveats (transparent-root behavior, macOS-version differences, redraw glitches
+  under the web compositor) — prove it on the real path first. If it fails, fall back to the opaque
+  flat surface below; nothing else depends on vibrancy landing.
 - **CSS glass only for menus/popovers/non-vibrancy**, with the opaque `@supports` fallback already
   documented above, plus a reduce-transparency fallback.
 - **No startup white-flash:** set the Tauri window `background_color` to the theme ink/paper and

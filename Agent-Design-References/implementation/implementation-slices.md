@@ -49,8 +49,10 @@ Phase-1 concrete (from the direction brief):
 - **Responsive-collapse discipline** — below a breakpoint, a **single** drawer (Vault opens one
   panel at a time, not both); Overlay's sidebar collapses instead of stacking the whole nav.
 - **Flatten card-in-card** to one `--surface-panel` level + hairline; hierarchy via tone + spacing.
-- **Native vibrancy** (Tauri `window-vibrancy`) for window/sidebar material; **no startup white-flash**
-  (theme window `background_color` + show-on-ready). Verify on the real WKWebView path.
+- **Native vibrancy SPIKE FIRST** (Tauri `window-vibrancy`) for window/sidebar material — prove it on
+  the real WKWebView path *before* building on it; if it fails, keep opaque flat surfaces + CSS glass
+  for menus (no loss). **No startup white-flash** (theme window `background_color` + show-on-ready) —
+  this one is guaranteed, do it regardless of the spike.
 
 Validation:
 - No clipped content.

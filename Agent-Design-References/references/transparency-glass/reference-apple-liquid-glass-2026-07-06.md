@@ -61,10 +61,13 @@ Pair with Raycast (`menus-popovers/`) for menu structure and with Material Desig
 Glass governs overlay/dock *materials*; Material governs *state/elevation/motion* logic.**
 Legibility + opaque fallback are non-negotiable (acceptance criteria + webview reality).
 
-**Native vibrancy is the *real* way to do this in Tauri** (see
+**Native vibrancy is the most promising way to do this in Tauri — but treat it as a SPIKE** (see
 `../motion-interaction/reference-raycast-native-feel`): Raycast 2.0 uses Apple's Liquid Glass via
-`NSVisualEffectView` behind its WKWebView — and Tauri on macOS is *also* WKWebView, so we can get
+`NSVisualEffectView` behind its WKWebView — and Tauri on macOS is *also* WKWebView, so we *may* get
 authentic material via native window vibrancy (e.g. the `window-vibrancy` crate) instead of faking
-it with `backdrop-filter`. Preferred stack: **native vibrancy for window/sidebar material; CSS
-`backdrop-filter` + opaque `@supports` fallback for menus/popovers and non-vibrancy contexts.**
-This is a Phase-1 shell concern, not late polish.
+it with `backdrop-filter`. Caveats are real (transparent webview root, macOS-version behavior,
+redraw glitches under the web compositor), so **prove it on the real Tauri path before anything
+depends on it.** Preferred *if it lands*: native vibrancy for window/sidebar; CSS `backdrop-filter`
++ opaque `@supports` fallback for menus/popovers. **Fallback if it doesn't:** opaque flat
+window/sidebar + CSS glass for menus — no loss. The spike belongs in the Phase-1 shell slice; the
+*outcome* is not guaranteed.
