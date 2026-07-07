@@ -64,8 +64,8 @@ Vault ships in two stages:
    `http://localhost:5173` and does not spawn the bundled sidecar. **Agent-Overlay's operator console
    shipped the same model-B Tauri v2 wrap** (its
    sidecars likewise now the cargo binaries), so both repos converge on one desktop delivery story.
-   Signed packaging + auto-updater (F1) and cross-webview QA (F2) are done **once, in Rust**, in the R4
-   tail. The trusted origin holds privileged IPC, so the app document carries a script-restricting CSP,
+   Signed packaging + auto-updater (F1) and cross-webview QA (F2) remain **open distribution work**,
+   to be done once, in Rust, in the R4 tail. The trusted origin holds privileged IPC, so the app document carries a script-restricting CSP,
    and — since 2026-07-07 — user-controlled vault assets are served from a **separate unprivileged
    origin** so they never touch that IPC-bearing origin at all (see "Current hardening status" below).
 
@@ -267,9 +267,9 @@ is therefore:
   carried forward — and is now gone from Overlay itself.
 - **`apps/desktop` continues as the operator console.** It was not retired in favor of Vault; the
   Electron shell was swapped for a local web app **in place**, and both repos have since shipped
-  their **Tauri v2 wraps (2026-06-30)** — model-B shells over the cargo-built sidecar binaries, with
-  signing/updater (F1) and cross-webview QA (F2) handled once in Rust in the R4 tail. A
-  packaging step, not a retirement.
+  their **Tauri v2 wraps (2026-06-30)** — model-B shells over the cargo-built sidecar binaries;
+  signing/updater (F1) and cross-webview QA (F2) remain open, to be handled once in Rust in the R4
+  tail. A packaging step, not a retirement.
 
 - **Authoring leaves Overlay; operations stay.** As file authoring/editing moves to Vault, Overlay's
   own console **narrows to an operational surface** — server status, validation reports, trajectories,

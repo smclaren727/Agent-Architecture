@@ -114,8 +114,9 @@ they mark the hardening work that keeps the implementation honest against the sy
   [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) and Runner enforces it fail-closed
   (constant-time compares, `401` on mismatch, `503` when the secret env var is unset or empty);
   Runner bounds HTTP request bodies; Vault serves active vault assets inertly (attachment treatment
-  now covers SVG) and gives the app document a script-restricting CSP. The **full privileged-origin
-  split is re-scoped to the Rust/Tauri packaging phase** — consciously deferred, not dropped.
+  now covers SVG), gives the app document a script-restricting CSP, and — since 2026-07-07 — serves
+  user-controlled vault assets from a **separate unprivileged loopback origin** (the IPC-bearing app
+  origin 404s `/assets`; the asset origin serves no API), completing the privileged-origin split.
   Overlay's Streamable HTTP MCP transport is also bounded for trusted-local use: 5 MiB JSON-RPC
   bodies, 64 live sessions per process, explicit `DELETE /mcp` teardown, and 30-minute idle reaping.
 - **Write safety has to be end-to-end.** The corpus is plain files, but all writers still need unique

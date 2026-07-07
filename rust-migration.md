@@ -369,12 +369,16 @@ created by R3.1):**
 
 ### R4 — Demolition + the unblocked tail
 
-Delete residual TS infra (pnpm shrinks to the web apps); final doc close-out. Immediately-unblocked
-post-migration roadmap (explicitly **not** migration scope): signing/notarize/updater + cross-webview
-QA done **once** in Rust (cargo cross-targets replace the mac-arm64-only SEA); the full Vault
-privileged-origin split; Windows/Linux single-instance; the remaining **Vault embedded-agent tail**
-(an rmcp-client/tool channel against `overlay serve`, plus convention checking); Runner notify-based
-watching as its own decision; dynamic overlay-connected.
+**Demolition is done** — residual TS infra is deleted (pnpm shrank to the web apps) and no Node
+runtime remains outside the two `web/` build chains (re-verified 2026-07-07). Of the
+immediately-unblocked post-migration roadmap (explicitly **not** migration scope): the **Vault
+privileged-origin split shipped 2026-07-07** (user assets on a separate unprivileged loopback
+origin; the app origin 404s `/assets`) and the **Vault embedded-agent surface shipped
+2026-07-03/04** (governed turns plus convention checking; spawned-agent MCP re-entry is the shipped
+tool path — the planned rmcp-client channel was deliberately not built). Still open:
+**signing/notarize/updater + cross-webview QA done once in Rust** (cargo cross-targets replace the
+mac-arm64-only SEA) — the remaining distribution work; Windows/Linux single-instance; Runner
+notify-based watching as its own decision; dynamic overlay-connected.
 
 ## Mixed-mode acceptance matrix
 
@@ -409,3 +413,12 @@ Both harnesses run **unmodified** at every gate — only the `ACCEPTANCE_*_CMD` 
 the Tauri apps boot from Rust sidecars on a clean machine; the NixOS node runs the Rust runner and
 vault server; the acceptance matrix passes all-Rust (R→R→R); and no Node runtime remains in the
 three product repos outside the two `web/` build chains.
+
+**Status (2026-07-07):** all four binaries build and their suites pass locally (Overlay's GitHub
+CI workflow is still the pre-Rust Node pipeline and stays red pending a rewrite — tracked with the
+distribution work); both packaged apps boot from hash-verified bundled Rust sidecars and quit
+cleanly in a verified clean-ish local state (free ports, no orphaned sidecars, no manually exported
+env vars); both acceptance harnesses pass on the all-Rust defaults; the NixOS-node deployment was
+proven earlier in the campaign and was not re-verified in this local smoke. The literal
+clean-machine boot proof rides with the remaining distribution work (signed DMG, first-run setup) —
+see [build-plan.md](build-plan.md) → Phase 5 → "Distribution/packaging".

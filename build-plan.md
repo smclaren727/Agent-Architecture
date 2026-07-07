@@ -338,10 +338,10 @@ hardening and should stay visible as the system moves toward production packagin
   returning content; canonical writes realpath-check parents and refuse symlinked final targets.
 - **Done — Runner direct dispatch scoring.** The direct path evaluates Overlay predicates before
   recording run completion.
-- **Re-scoped — Vault privileged-origin split.** Active vault assets are served inertly on the
-  trusted app origin (attachment treatment now covers SVG) and the app document carries a
-  script-restricting CSP; the full privileged-origin split moves to the **Rust/Tauri packaging
-  phase** — consciously deferred, not dropped.
+- **Done — Vault privileged-origin split (2026-07-07).** Active vault assets are served inertly
+  (attachment treatment covers SVG) from a **separate unprivileged loopback origin**; the
+  IPC-bearing app origin 404s `/assets` and carries a script-restricting CSP, and the asset origin
+  serves no API. See [agent-vault.md](agent-vault.md).
 - **Done — Runner webhook authentication.** HTTP triggers match route before body drain and cap/time
   out request bodies, and the header/HMAC authentication contract is now doctrine (an `on.auth` block
   in Overlay's trigger schema — [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) enforced
@@ -416,9 +416,13 @@ implementation.
    deleted, and the frozen TS `packages/core` — its last consumer now Rust — was **deleted here,
    closing the migration window** (recoverable at `ts-core-final`). Ledger: Agent-Vault
    `Docs/rust-migration-notes.md`.
-5. **6.4 Demolition + packaging-once (R4).** Residual TS infra removed; the parked
-   signing/updater/cross-webview packaging (Phase 5's F1/F2) is done **once**, in Rust; the
-   post-migration roadmap (Vault embedded agent, origin split, notify watchers) unblocks.
+5. **6.4 Demolition + packaging-once (R4)** — **demolition ✅ done; packaging open.** Residual TS
+   infra is removed (no Node runtime outside the two `web/` build chains) and the packaged apps
+   boot from the bundled, hash-verified Rust sidecars (local smoke 2026-07-07). The parked
+   signing/updater/cross-webview packaging (Phase 5's F1/F2) remains the **open distribution
+   work**, to be done **once**, in Rust. Of the unblocked post-migration roadmap, the Vault
+   embedded agent (2026-07-03/04) and the privileged-origin split (2026-07-07) have since
+   shipped; Runner notify-based watching remains an open decision.
 
 **Guardrail:** contracts are frozen as **executable artifacts** — every cutover gate is the R0
 snapshot/golden/transcript suites plus the mixed-mode acceptance matrix (R→T→T → R→R→T → R→R→R)
