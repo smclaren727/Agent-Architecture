@@ -1,4 +1,4 @@
-Packaged-app quit smoke — status 2026-07-07 ~15:45 EDT
+Packaged-app quit smoke — COMPLETE 2026-07-07 ~17:35 EDT (all legs PASS)
 
 Bundle freshness (stale-binary trap check): PASS
   Agent Vault.app Contents/MacOS/agent-vault-server  sha256 c50975ca3cf6… == staged target/release binary
@@ -6,18 +6,29 @@ Bundle freshness (stale-binary trap check): PASS
   (both bundles rebuilt from the fixed commits Vault 0e0655a / Overlay 69131a8)
 
 Fixed-release-binary reap proof (the exact pre-fix failure mode): PASS
-  Repro: python parent spawns the bundled binary with the parent-PID env and
-  PIPED stderr, sleeps 4s, dies without killing the child.
-  - agent-vault-server  (pid 84303): exited on its own after parent death
-  - agent-overlay-server (pid 84309): exited on its own after parent death
-  Pre-fix, the identical run left both children alive indefinitely
-  (see sidecar-reap-repro.md).
+  Python parent spawns the bundled binary with the parent-PID env and PIPED
+  stderr, then dies → both fixed binaries exit on their own (pre-fix: both
+  survived indefinitely; see sidecar-reap-repro.md).
 
-Full .app launch → quit → verify smoke: PENDING PORT RELEASE
-  The two pre-existing orphans from the 13:57 pre-fix session (pids
-  34879/34880, PPID 1) still hold the fixed ports 4173/4183/4180. They are
-  user processes the agent session may not terminate. To finish the smoke:
-    kill 34879 34880          # graceful SIGTERM; the servers release the ports
-    open the two .app bundles, wait for the windows, Cmd+Q each,
-    then: lsof -nP -iTCP:4173 -iTCP:4183 -iTCP:4180 -sTCP:LISTEN   # expect empty
-    and:  pgrep -fl 'agent-vault-server|agent-overlay-server'      # expect empty
+Real .app smoke, Vault (ports 4173/4183): PASS
+  Launch: sidecar (91641) child of app (91632); /api/health ok:true with the
+  matching per-launch instanceToken in <1s; clean boot in the app log.
+  Graceful quit (osascript quit ≙ Cmd+Q): app + sidecar gone ≤3s, both ports
+  released.
+  Abnormal death (kill -9 the shell, app 92232 / server 92238): sidecar
+  self-reaped ≤3s via the fixed watchdog, ports released.
+
+Real .app smoke, Overlay (port 4180): PASS
+  Launch: sidecar (92271) child of app (92266); /api/health ok:true.
+  Graceful quit: app + sidecar gone ≤3s, port released.
+  Abnormal death (kill -9 the shell, app 92299 / server 92304): sidecar
+  self-reaped ≤3s, port released.
+
+Note on the one red Vault launch smoke observed between the fix landing and
+this run: with the ports free the packaged app boots green in ~1s, so the red
+run matches the known port-collision trap — a pre-fix orphan (or a prior test
+instance) still on 4173 answers the health poll with the WRONG instanceToken,
+the shell's 10s gate correctly refuses the stale server and kills its own
+just-spawned sidecar (which could never bind). "Direct sidecar works" fits:
+a direct run used a free port. The per-launch token gate behaved as designed;
+the fixed watchdog now prevents the orphan that set the trap.

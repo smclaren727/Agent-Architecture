@@ -33,10 +33,12 @@ repairs: the loopback-denied silent-skip path was removed (a sandboxed runner
 can no longer green-skip the regression), and the Vault test retries with
 fresh ports to dodge the ephemeral-port reuse race.
 
-**Real `.app` smoke:** the two *pre-existing* orphans still hold the fixed
-ports and could not be terminated from the agent session (permission
-classifier); the packaged-app quit smoke on the rebuilt bundles is recorded in
-`sidecar-reap-smoke.txt` once the ports were released.
+**Real `.app` smoke: PASS (both apps, both quit modes).** Graceful quit reaps
+the sidecar via the shell's exit handler; `kill -9` of the shell reaps it ≤3s
+via the fixed watchdog; all fixed ports released. A red Vault launch smoke in
+between was the known port-collision trap (stale server on 4173 fails the
+instance-token health gate), not a regression — details in
+`sidecar-reap-smoke.txt`.
 
 ## 2. Vault Ask-agent prefill drop (unindexed notes)
 
