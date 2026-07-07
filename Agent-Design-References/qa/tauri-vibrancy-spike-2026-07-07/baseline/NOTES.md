@@ -36,3 +36,13 @@ the ship/no-ship contrast gate, are blocked until the permission is granted.
 
 - Tauri sidecar parent-death watchdog failed to reap sidecars after app quit (both apps,
   observed once each; ports stayed bound until manual SIGTERM).
+
+## Resolution (2026-07-07, autonomous close-out)
+
+The user was unavailable to grant permissions mid-session. Per the campaign's blocker clause,
+the spike closes as **BLOCKED-BUT-READY**: capability confirmed, architecture decided, bundles
+rebuilt and functionally smoked, no app-repo changes shipped (native transparency must not
+ship unverified, and fallback CSS alphas should be tuned against the visible material, not
+blind). To resume: grant Screen Recording (+ Accessibility) to the session's host terminal in
+System Settings → Privacy & Security, then re-run this campaign from Slice 0's capture step —
+the implementation plan in ../DECISION.md is one session of work.
