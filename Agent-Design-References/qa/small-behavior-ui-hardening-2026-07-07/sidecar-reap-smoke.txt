@@ -1,0 +1,23 @@
+Packaged-app quit smoke — status 2026-07-07 ~15:45 EDT
+
+Bundle freshness (stale-binary trap check): PASS
+  Agent Vault.app Contents/MacOS/agent-vault-server  sha256 c50975ca3cf6… == staged target/release binary
+  Agent Overlay Console.app agent-overlay-server     sha256 e32dfeb5e0db… == staged target/release binary
+  (both bundles rebuilt from the fixed commits Vault 0e0655a / Overlay 69131a8)
+
+Fixed-release-binary reap proof (the exact pre-fix failure mode): PASS
+  Repro: python parent spawns the bundled binary with the parent-PID env and
+  PIPED stderr, sleeps 4s, dies without killing the child.
+  - agent-vault-server  (pid 84303): exited on its own after parent death
+  - agent-overlay-server (pid 84309): exited on its own after parent death
+  Pre-fix, the identical run left both children alive indefinitely
+  (see sidecar-reap-repro.md).
+
+Full .app launch → quit → verify smoke: PENDING PORT RELEASE
+  The two pre-existing orphans from the 13:57 pre-fix session (pids
+  34879/34880, PPID 1) still hold the fixed ports 4173/4183/4180. They are
+  user processes the agent session may not terminate. To finish the smoke:
+    kill 34879 34880          # graceful SIGTERM; the servers release the ports
+    open the two .app bundles, wait for the windows, Cmd+Q each,
+    then: lsof -nP -iTCP:4173 -iTCP:4183 -iTCP:4180 -sTCP:LISTEN   # expect empty
+    and:  pgrep -fl 'agent-vault-server|agent-overlay-server'      # expect empty
