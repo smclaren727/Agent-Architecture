@@ -39,11 +39,13 @@ agent-runner/                   # its own git repo; depends on Agent-Overlay's o
       watchers/file.rs          # file-created / file-changed (1 s recursive mtime+size polling scan)
       watchers/http.rs          # inbound webhook listener (loopback; per-trigger auth)
       dispatch.rs               # single path: resolve binding → invoke executor against workflow
-      reconcile.rs              # sync: state-dir manifest + cron fragment projection
+      reconcile.rs              # sync: state-dir manifest + cron/systemd/launchd unit projection
+      crontab.rs                # explicit live-crontab flow (cron preview/status/install/remove)
   test/fixtures/                # golden tables captured from the pre-port TS implementation
   units/
     overlay-runner.service      # systemd unit (Linux / NixOS node; proven path)
-    com.overlay.runner.plist    # launchd template (macOS; not yet proven as a second node)
+    com.overlay.runner.plist    # launchd template (macOS; plist-lint-proven, bootstrap operator-run;
+                                #   not yet proven as a second node)
 ```
 
 Watcher modules are added in order of payoff — **schedule, then file, then http** — and every one of
@@ -93,16 +95,22 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
   every second comparing each file's mtime and size against the previous scan.
 - **OS-projection (optional, `schedule` only).** A `schedule` trigger can be rendered to a native
   unit — deterministic templating from `{cron, workflow, executor}` — for schedules that must fire
-  when no daemon is resident. **Implemented today: cron fragments only.** `agent-runner sync
-  --unit-target cron` writes generated user-crontab fragments under the state directory (derived
-  files; installing them into a live crontab is an operator step), and every sync sweeps fragments
-  whose triggers are gone. Per-trigger systemd `.timer` / launchd unit *generation* remains backlog;
-  the daemon itself runs under a proven systemd user unit, while the launchd daemon template is not
-  yet proven. Generated units are **derived artifacts: never hand-edited**; edit the declaration and
-  re-reconcile. **Run-mode and the cron projection are mutually exclusive per state directory** — an
-  installed fragment plus the in-process schedule watcher would double-dispatch the same trigger, so
-  `agent-runner run` warns when the state dir's manifest records `unit_target: cron`
-  (see the [Runner README](../Agent-Runner/README.md)).
+  when no daemon is resident. **Implemented today: cron fragments, per-trigger systemd
+  `.timer`/`.service` pairs, and per-trigger launchd plists** — `agent-runner sync --unit-target
+  <cron|systemd|launchd>` writes the generated units under the state directory (derived files),
+  every projected unit dispatches through the same `agent-runner … dispatch <trigger-id>` path,
+  and every sync sweeps generated units whose triggers are gone (across all unit dirs, so target
+  switches leave no orphans). Unprojectable triggers (invalid cron, launchd calendar expansion
+  over the cap, unrepresentable arguments) are skipped with recorded sync warnings rather than
+  failing the reconcile. Installing generated units into the live system stays an explicit
+  operator step: `agent-runner cron install|remove|preview|status` manages one marker-delimited,
+  backed-up block in the user crontab (never touched by `sync`), while systemd/launchd unit
+  installation remains manual (copy/symlink + `systemctl --user`/`launchctl`). Generated units are
+  **derived artifacts: never hand-edited**; edit the declaration and re-reconcile. **Run-mode and
+  an installed schedule projection are mutually exclusive per state directory** — an installed
+  unit plus the in-process schedule watcher would double-dispatch the same trigger, so
+  `agent-runner run` warns when the state dir's manifest records any `unit_target` other than
+  `none` (see the [Runner README](../Agent-Runner/README.md)).
 
 **Lifecycle.** The reconciler owns both *add* and *remove*, so deleting a declaration cleanly tears
 down its watcher/unit — no orphans. Desired-state lives in doctrine; actual-state is reconciled to
@@ -155,10 +163,11 @@ These Runner-specific review items are now part of the implementation contract:
   `owner.json` pid records; staleness is judged by a dead-pid probe plus mtime grace windows, and
   stale locks are reclaimed with a single retry. The verbatim on-disk contract lives in the
   [Runner README](../Agent-Runner/README.md) ("State-directory lock protocol").
-- **Run-mode and cron projection are mutually exclusive per state directory.** An installed cron
-  fragment plus the in-process schedule watcher would double-dispatch the same trigger;
-  `agent-runner run` warns when the manifest records `unit_target: cron`, and
-  `sync --unit-target none` removes the projection.
+- **Run-mode and an installed schedule projection are mutually exclusive per state directory.**
+  An installed unit (cron, systemd, or launchd) plus the in-process schedule watcher would
+  double-dispatch the same trigger; `agent-runner run` warns when the manifest records any
+  `unit_target` other than `none`, `cron install` warns when a fresh daemon heartbeat is
+  present, and `sync --unit-target none` removes the projection.
 - **Runner-dispatched local adapters can opt into enforcement.** `agent-runner --enforce` passes
   `--enforce` through to `overlay run`, including generated cron dispatch commands.
 - **Non-direct dispatch output is drained but bounded.** When Runner shells out to `overlay run`, it
@@ -168,10 +177,14 @@ These Runner-specific review items are now part of the implementation contract:
   records `predicate_results` / `score` before declaring a run complete.
 - **State writes are serialized.** Runner sync holds a state-dir lock and writes manifests/cron
   fragments with temp-file-then-rename discipline before stale cleanup.
-- **Projection status is narrower than the target model.** Only cron fragment projection exists
-  (`sync --unit-target cron`; generated user-crontab fragments in the state directory, installed by
-  the operator). The daemon's NixOS/systemd user unit is proven; the launchd template and
-  per-trigger systemd `.timer` / launchd unit generation remain implementation backlog.
+- **Projection generation is complete; live installation is deliberately operator-gated.** All
+  three unit targets generate deterministically (`sync --unit-target cron|systemd|launchd`,
+  golden-pinned bytes). Live installation: cron has the explicit managed flow (`agent-runner cron
+  preview|status|install|remove`, marker-delimited block, backup-before-write, byte-idempotent);
+  systemd/launchd unit installation and the daemon's launchd bootstrap remain manual operator
+  steps. The daemon's NixOS/systemd user unit is proven end-to-end; the launchd daemon template
+  is plist-lint-proven (a macOS-gated test lints shipped templates and a generated trigger plist)
+  but not yet proven as a running second node.
 
 ## How Runner relates to Vault
 

@@ -353,10 +353,11 @@ hardening and should stay visible as the system moves toward production packagin
 - **Done — Runner reliability polish.** `agent-runner openapi` emits only active HTTP trigger routes,
   and non-direct dispatch drains `overlay run` stdout/stderr while retaining only a bounded diagnostic
   tail.
-- **Docs/status corrections.** systemd is proven as a Runner user unit, while the launchd template
-  and per-trigger systemd/launchd unit generation remain backlog (cron fragment projection is
-  implemented); the Tauri v2 wraps shipped 2026-06-30, with signing/updater and webview QA parked
-  as distribution follow-up work after the completed Rust backend migration.
+- **Docs/status corrections.** systemd is proven as a Runner user unit; per-trigger
+  systemd/launchd unit generation and the explicit live-crontab install flow shipped 2026-07-07
+  (all three `--unit-target` projections golden-pinned; launchd daemon template plist-lint-proven,
+  live bootstrap still operator-run); the Tauri v2 wraps shipped 2026-06-30, with signing/updater
+  and webview QA parked as distribution follow-up work after the completed Rust backend migration.
 - **Done — Vault structured canonical editors.** Vault exposes typed panels over profiles, policies,
   tools, skills, workflows, and standards. The panels rewrite the underlying YAML (or a standard's
   Markdown frontmatter) and persist only through the canonical file writer; they do not create
