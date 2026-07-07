@@ -415,8 +415,10 @@ vault server; the acceptance matrix passes all-Rust (R→R→R); and no Node run
 three product repos outside the two `web/` build chains.
 
 **Status (2026-07-07):** all four binaries build and their suites pass locally (Overlay's GitHub
-CI workflow is still the pre-Rust Node pipeline and stays red pending a rewrite — tracked with the
-distribution work); both packaged apps boot from hash-verified bundled Rust sidecars and quit
+CI was rewritten for the Rust reality the same day — a `rust` job runs fmt/build/test/clippy over
+the whole workspace including the Tauri shell, a `web` job runs the docs/contract/OpenAPI/desktop
+suites against freshly built Rust binaries, and both jobs are green on hosted runners; release
+preflight and bundling stay with the distribution work); both packaged apps boot from hash-verified bundled Rust sidecars and quit
 cleanly in a verified clean-ish local state (free ports, no orphaned sidecars, no manually exported
 env vars); both acceptance harnesses pass on the all-Rust defaults; the NixOS-node deployment was
 proven earlier in the campaign and was not re-verified in this local smoke. The literal
