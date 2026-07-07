@@ -65,9 +65,9 @@ Vault ships in two stages:
    shipped the same model-B Tauri v2 wrap** (its
    sidecars likewise now the cargo binaries), so both repos converge on one desktop delivery story.
    Signed packaging + auto-updater (F1) and cross-webview QA (F2) are done **once, in Rust**, in the R4
-   tail. The trusted origin still holds privileged IPC, so the app document carries a script-restricting
-   CSP; the full privileged-origin split is a Rust packaging-phase item (see "Current hardening status"
-   below).
+   tail. The trusted origin holds privileged IPC, so the app document carries a script-restricting CSP,
+   and — since 2026-07-07 — user-controlled vault assets are served from a **separate unprivileged
+   origin** so they never touch that IPC-bearing origin at all (see "Current hardening status" below).
 
 The references above (`clearly`, `wikiwise`) are native Swift apps; Vault borrows their *form factor*
 (local-first, file-based, agent-collaborative) while taking a web→Tauri path so the same UI runs in a
@@ -209,13 +209,21 @@ than a second ruleset) and **never reimplements** it, so the schema is single-so
 
 These Vault-specific review items are now part of the implementation contract:
 
-- **Vault assets are inert on the trusted origin.** The Tauri shell still grants IPC to the local app
-  origin, so `/assets/*` must never execute user-controlled code there. Active asset types are served
-  with `nosniff`, script-denying CSP/sandbox headers, and attachment treatment — plain-text for HTML
-  and JavaScript, and `Content-Disposition: attachment` for SVG (which keeps `image/svg+xml` so
-  note-preview `<img>` embeds still render). The app document itself carries a script-restricting
-  CSP. The full privileged-origin split is **re-scoped to the Rust/Tauri packaging phase** —
-  consciously deferred, not dropped.
+- **User-controlled vault assets live on a separate unprivileged origin (privileged-origin split,
+  shipped 2026-07-07).** The Tauri shell grants IPC (including `terminal_open` → `$SHELL`) to the app
+  origin, so user bytes must never execute there. `/assets/*` is now served **only** from a second,
+  unprivileged loopback listener (`AGENT_VAULT_ASSET_PORT`, default main port + 10 = `4183` in
+  release) whose router exposes no `/api`, no app document, no `/docs`, and no SPA fallback, and which
+  is **never granted a Tauri capability** (`remote.urls` names only the app origin). The app/API origin
+  now returns `404` for `/assets/*`. The asset origin keeps the existing defenses — `nosniff`, the
+  inert `sandbox`/`script-src 'none'` CSP, and `Content-Disposition: attachment` on active types (HTML/
+  JS downgraded to `text/plain`; SVG keeps `image/svg+xml` so `<img>` previews render) — but now on a
+  capability-less, Same-Origin-Policy-isolated origin, so even a scripted asset loaded as a document
+  reaches no privileged API. The app-document CSP is composed at bind time to permit only the asset
+  origin in `img-src` (nothing else relaxes); the renderer rewrites `/assets/…` image URLs to the asset
+  origin discovered via `/api/health`. A dedicated Host-allowlist guard closes DNS-rebinding on the
+  asset port (GET/HEAD only, no Origin/CORS). Reverse-proxy/Tailscale deployments must front the asset
+  origin too and set `AGENT_VAULT_ASSET_ORIGIN`.
 - **Managed-note writes use Overlay-grade write discipline.** Managed notes validate before commit and
   use unique temp files, file sync, atomic rename, and cleanup on failure, matching the corpus write
   contract.
