@@ -1,0 +1,2 @@
+83de13ab9348e27dc58c7347cee6732c45b7933d6920f7a6ca1a4a9d9328ba7c  /Users/seanmclaren/Developer/Agent-Vault/target/release/bundle/macos/Agent Vault.app/Contents/MacOS/app
+7f373866de90b4c9d48592ae441b5ca18771f3728167b4e49639187742987e18  /Users/seanmclaren/Developer/Agent-Overlay/target/release/bundle/macos/Agent Overlay Console.app/Contents/MacOS/app

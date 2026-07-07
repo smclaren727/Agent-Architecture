@@ -1,0 +1,3 @@
+# final post-vibrancy bundle hashes (F1/F3 applied, built 13:54)
+9cd216fb836672827197a0cefa2fb0e8d0717891adec082c9b44808f6dd3bdcc  /Users/seanmclaren/Developer/Agent-Vault/target/release/bundle/macos/Agent Vault.app/Contents/MacOS/app
+302b435963fca8ef4ba697a2e49a2cb36a68351d030fd6f82f2f00886ffcf56a  /Users/seanmclaren/Developer/Agent-Overlay/target/release/bundle/macos/Agent Overlay Console.app/Contents/MacOS/app

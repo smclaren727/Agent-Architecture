@@ -1,5 +1,12 @@
 # Vibrancy spike — architecture decision (2026-07-07)
 
+> **SHIPPED 2026-07-07** — this decision was implemented and verified with real `.app`
+> captures once Screen Recording TCC became available. See
+> [`../tauri-vibrancy-2026-07-07/NOTES.md`](../tauri-vibrancy-2026-07-07/NOTES.md) for the
+> shipped architecture, bundle hashes, dark/light contrast + browser-fallback evidence, and the
+> adversarial-review repairs (non-macOS config gate).
+
+
 Probe: both shells are Tauri 2.11.5 (locked), no `macos-private-api` feature, opaque
 `backgroundColor` windows, `visible: false` + show-on-ready. The 2.11 config schema exposes
 `windows[].transparent`, `windows[].windowEffects` (NSVisualEffectView materials incl.

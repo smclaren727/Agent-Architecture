@@ -1,0 +1,12 @@
+Browser fallback proof — plain Chrome tab at http://127.0.0.1:4173 (the Vault
+served origin), captured 2026-07-07. The vibrancy attribute is never set and
+the body stays opaque, byte-identical to pre-change:
+
+  isTauri:        false      (no __TAURI_INTERNALS__ in a browser)
+  hasVibrancyAttr:false      (data-native-vibrancy absent)
+  bodyBg:         oklch(0.985 0.006 95)   (opaque --background, NOT transparent)
+  bodyBgImage:    radial-gradient(...)    (paper-grain still present; the
+                                           [data-native-vibrancy] background-image:none
+                                           override does not apply)
+
+The Playwright browser smoke (15/15) also renders against this opaque path.
