@@ -398,7 +398,9 @@ hardening and should stay visible as the system moves toward production packagin
 - **Remaining Vault property-control polish.** The relationship picker is intentionally a first-pass
   typeahead plus explicit create action. If real vaults make those lists feel heavy, upgrade it to a
   richer keyboard-first combobox/popover without changing the source-of-truth rule: every edit still
-  rewrites the underlying Markdown/YAML file, not app-private state.
+  rewrites the underlying Markdown/YAML file, not app-private state. (2026-07-08: create-related-note
+  now threads the note's owning vault instead of silently creating into the default vault; the
+  typeahead-first shape is deliberately unchanged.)
 - **Remaining Vault switcher polish.** The header vault selector still uses the system/native select
   menu, which visually clashes with the Agent-Vault surface. Replace it with the shared themed dropdown
   pattern used elsewhere in the app, preserve keyboard and screen-reader behavior, and fold `+ Add vault`
@@ -427,12 +429,11 @@ hardening and should stay visible as the system moves toward production packagin
   Proposals/audit surface so the decision has the same review trail as other governed agent/user changes;
   when Overlay is absent, keep the accept/reject dialog local to Vault and still write only ordinary
   Markdown/YAML changes.
-- **Remaining Vault picker-first file/folder flows.** In the packaged Tauri app, remove absolute-path
-  text entry from the primary Add Vault and Open File flows now that native folder/file pickers are
-  available. The main experience should be "Choose folder..." for Add Vault and "Choose markdown file..."
-  for Open File, with the selected path shown as confirmation rather than typed by hand. If browser/dev
-  mode still needs manual paths because Tauri dialogs are unavailable, keep that as a visually secondary
-  advanced fallback instead of the default end-user UI.
+- **Done — Vault picker-first file/folder flows (2026-07-08).** Under Tauri, Add Vault leads with
+  "Choose folder…" and Open File with "Choose markdown file…"; the picked path renders as read-only
+  confirmation and manual path entry is a collapsed secondary disclosure. Browser/dev mode keeps
+  manual entry primary. Unit-tested behind `isTauri`; the packaged-`.app` proof rides with the
+  titlebar slice's real-app smoke.
 - **Done — Vault daily-note template polish (2026-07-08).** New daily notes seed only the top-level
   `# YYYY-MM-DD` heading; the `## Log` scaffold is gone from the handler, starter template, and fixtures.
 - **Done — Vault editor action chrome polish (2026-07-08).** The managed-note editor dropped its manual
@@ -448,13 +449,14 @@ hardening and should stay visible as the system moves toward production packagin
   cross-vault duplicate ids invalid instead of wedging on the `notes.id` primary key. The web create
   flows target the active managed vault and switch scope so the new note is immediately visible in the
   Notes panel. Known gaps recorded below (runtime-added vault live-watch; cross-vault daily 409 UX).
-- **Remaining Vault backlink creation and type conversion.** While editing markdown, typing/selecting a
-  `[[wikilink]]` target that does not already exist should be able to create a placeholder managed note
-  immediately, so unresolved backlinks can collect references before the destination is fleshed out. The
-  placeholder must be an ordinary markdown file with valid YAML frontmatter, not app-private state. Add a
-  governed type-conversion flow so a placeholder or existing note can later change type (`note` ->
-  `project`, `note` -> `task`, `task` -> `project`, etc.) by rewriting the same markdown/frontmatter
-  through schema validation and moving/renaming the file only when the destination type convention requires it.
+- **Done — Vault backlink creation and type conversion (2026-07-08).** Unresolved `[[wikilinks]]`
+  render distinctly and offer explicit placeholder-note creation (chip dialog + autocomplete entry)
+  into the note's own vault — ordinary markdown with valid frontmatter, collecting backlinks
+  immediately. `POST /api/notes/{id}/convert` provides governed type conversion: schema-validated
+  frontmatter rewrite with per-type field mapping (dropped fields reported), schema-derived required
+  defaults, and a self-healing rename-first move into the target type's folder; ids never change so
+  wikilinks survive; `daily` is not a valid target. The note header's Convert dialog previews type,
+  file move, dropped fields, and added defaults before any write.
 - **Done — Vault markdown-list indent behavior (2026-07-08).** Tab/Shift-Tab on a collapsed cursor in a
   list line indents/outdents while preserving the marker and keeping the cursor collapsed, so typing
   continues the nested item instead of deleting the marker.
