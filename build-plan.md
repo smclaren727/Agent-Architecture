@@ -399,6 +399,74 @@ hardening and should stay visible as the system moves toward production packagin
   typeahead plus explicit create action. If real vaults make those lists feel heavy, upgrade it to a
   richer keyboard-first combobox/popover without changing the source-of-truth rule: every edit still
   rewrites the underlying Markdown/YAML file, not app-private state.
+- **Remaining Vault switcher polish.** The header vault selector still uses the system/native select
+  menu, which visually clashes with the Agent-Vault surface. Replace it with the shared themed dropdown
+  pattern used elsewhere in the app, preserve keyboard and screen-reader behavior, and fold `+ Add vault`
+  into that same menu instead of keeping a separate pill button to the right. Prefer a conventional
+  bottom action row separated from the vault choices by a divider unless rendered testing shows the top
+  placement scans better.
+- **Remaining Vault native titlebar integration.** Explore a macOS/Tauri titlebar treatment that blends
+  the window chrome with the app surface and places the sidebar or navigation toggle in the native
+  titlebar area beside the traffic-light controls where possible. This is a packaged-app shell slice, not
+  browser-only CSS: verify the locked Tauri version's `titleBarStyle`, `trafficLightPosition`, `hiddenTitle`,
+  and overlay constraints; preserve the existing `data-native-vibrancy` opaque/browser fallback; define
+  draggable and non-draggable regions; keep traffic-light/safe-area spacing correct; and test the real
+  `.app` for light/dark, reduce-transparency, startup flash, keyboard/accessibility, and double-click/drag
+  window behavior. If true native placement is too constrained, the fallback should still visually merge
+  the titlebar/header boundary instead of keeping the current detached white titlebar.
+- **Remaining Vault management view.** Move vault management out of the header and into a dedicated
+  left-nav icon/view. That view should list registered vaults with useful metadata (label, path, mode,
+  note count/index status, and any validation/index warnings), provide add/remove actions, and let the
+  operator toggle a vault between `open` and `managed`. Mode changes must be governed: switching to
+  `managed` should validate that the folder can satisfy the managed schema before enabling typed lenses,
+  and switching to `open` should clearly explain that structured managed features are being disabled while
+  leaving the underlying markdown files untouched. Treat `open` -> `managed` as an adoption proposal, not
+  a casual toggle: Vault should produce a preflight report plus a proposed set of frontmatter/file moves
+  before any write, then require an explicit accept/reject decision in the Vault management view. When an
+  Overlay workspace is connected, also file/associate that adoption proposal through the existing
+  Proposals/audit surface so the decision has the same review trail as other governed agent/user changes;
+  when Overlay is absent, keep the accept/reject dialog local to Vault and still write only ordinary
+  Markdown/YAML changes.
+- **Remaining Vault picker-first file/folder flows.** In the packaged Tauri app, remove absolute-path
+  text entry from the primary Add Vault and Open File flows now that native folder/file pickers are
+  available. The main experience should be "Choose folder..." for Add Vault and "Choose markdown file..."
+  for Open File, with the selected path shown as confirmation rather than typed by hand. If browser/dev
+  mode still needs manual paths because Tauri dialogs are unavailable, keep that as a visually secondary
+  advanced fallback instead of the default end-user UI.
+- **Remaining Vault daily-note template polish.** New daily notes should contain only the top-level date
+  heading (`# YYYY-MM-DD`) by default. Remove the seeded `## Log` section from the daily-note template so
+  the editor opens on a clean date note and users can structure the day themselves.
+- **Remaining Vault editor action chrome polish.** Now that note bodies and properties autosave, remove
+  manual Save buttons/icons from every editor surface where autosave is authoritative. Move destructive
+  delete actions out of the bottom action row and into the top note header area, preferably far right and
+  visually secondary/dangerous so it stays away from normal writing flow. Move the autosave/saved status
+  message into the upper editor toolbar area near the Body/Source controls so the bottom of the editor is
+  clutter-free.
+- **Remaining Vault indexing/sidebar consistency.** Newly created or opened managed notes must appear in
+  the left Notes panel without requiring an app restart or manual index repair. Current dogfood symptom:
+  a daily note and a regular note can open in the editor while the Notes panel still says "No notes
+  indexed yet." Verify the create-note, daily-note, autosave, active-vault scoping, watcher/reindex, and
+  post-write list-refresh paths so the browser column reflects the markdown source of truth immediately.
+- **Remaining Vault backlink creation and type conversion.** While editing markdown, typing/selecting a
+  `[[wikilink]]` target that does not already exist should be able to create a placeholder managed note
+  immediately, so unresolved backlinks can collect references before the destination is fleshed out. The
+  placeholder must be an ordinary markdown file with valid YAML frontmatter, not app-private state. Add a
+  governed type-conversion flow so a placeholder or existing note can later change type (`note` ->
+  `project`, `note` -> `task`, `task` -> `project`, etc.) by rewriting the same markdown/frontmatter
+  through schema validation and moving/renaming the file only when the destination type convention requires it.
+- **Remaining Vault markdown-list indent behavior.** In the markdown editor, pressing Enter at the end of
+  an unordered list item correctly creates the next `- ` item, but pressing Tab on that new list item can
+  highlight/select the line so the next typed character deletes the marker. Tab should indent the list
+  item and place the cursor after the moved marker/content position, preserving the `- ` marker and letting
+  the next typed character continue the nested list item.
+- **Remaining Vault markdown-toolbar completeness.** Add an ordered-list icon/action immediately to the
+  right of the unordered-list icon. Review the rest of the markdown toolbar for common missing commands
+  before expanding the visible button row: likely candidates are task/checklist, heading level selector,
+  strikethrough, code block (distinct from inline code), horizontal rule, table, and image/attachment.
+  For the first implementation pass, keep all available Markdown action icons visible rather than hiding
+  lower-frequency actions in a menu. Order them logically so the user can learn the surface: text styling
+  first, code/link next, lists/tasks together, then quote/block/insert actions. Grouping or overflow menus
+  can come later after real usage makes the preferred organization obvious.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
