@@ -385,36 +385,20 @@ hardening and should stay visible as the system moves toward production packagin
   Markdown frontmatter) and persist only through the canonical file writer; they do not create
   app-private state. Memory facts are inspectable in a structured read-only panel, but canonical
   memory writes still flow through Proposals.
-- **Packaged-app dogfood backlog — Vault note and property ergonomics.** Capture first-use UX findings
-  from running the packaged apps before turning them into piecemeal fixes.
-  - Note creation: creating `project` and `task` notes should render `status` as a select/dropdown
-    instead of a free-text field, seeded from the schema-supported statuses (project: `idea`, `active`,
-    `paused`, `completed`, `cancelled`, `archived`; task: `inbox`, `todo`, `next`, `waiting`, `hold`,
-    `done`, `cancelled`) or a deliberately revised starting list. Quick entry must allow Projects and
-    Tasks to be created without filling status or optional dependency fields such as Project, Area, or
-    People; status and relationships can be added afterward.
-  - Properties editing: property edits should auto-save when a value is added, changed, or removed, and
-    the manual "Update properties" button should go away. The Properties surface should start empty/minimal
-    and should move out of the center editor column into the right dock as its own tab beside Info and
-    Chat. The center note view should stay Markdown-first, with only compact metadata chips or an affordance
-    to open Properties; a collapsible inline Properties panel is acceptable as a short-term fallback but
-    is not the preferred mature UX.
-  - Property controls: fields should start empty/minimal
-    rather than showing placeholder-like fields. Small closed enums (`status`, `priority`, `visibility`,
-    `memory_type`, `source_type`) should use selects, while note-relationship fields (People, Project,
-    Area, Organization, Related Tasks, References, etc.) should use autocomplete comboboxes populated from
-    existing notes of the matching type. When no good match exists, the combobox menu should expose an
-    explicit action row such as `Create "Agent-Suite" as Project` (with keyboard support), create the
-    related note in the background, save it to the markdown vault, populate the property, and keep the
-    user in the current note workflow.
-  - Markdown-editor toolbar follow-up: the List button should insert a new `-` marker at the cursor when
-    no text is selected; today it only behaves usefully after the user types and highlights text first,
-    unlike the other formatting toolbar buttons. Wikilinks/backlinks rendered in the markdown editor
-    should navigate to the linked note when clicked with the expected editor gesture; today clicking a
-    visible `[[note-id]]` link in the editor does not move to that note.
-  - Open File: in the packaged Tauri app, the Open File view should offer the native macOS file picker
-    for choosing a markdown file. Manual absolute-path entry can remain as an advanced fallback, but the
-    primary end-user path should not require copying a filesystem path into a text field.
+- **Done — Vault packaged-app dogfood ergonomics.** The first-use Vault pass made the note editor
+  markdown-first and moved typed frontmatter into the right dock as a `Properties` tab beside Info/Chat.
+  Property edits autosave, the manual "Update properties" button is gone, and metadata refreshes preserve
+  body edits typed while a property save is in flight. Project/task quick creation now uses schema-backed
+  status selects and omits blank optional metadata so quick entry does not require status, Project, Area,
+  People, or dependency fields. Closed enums render as selects; relationship fields render with typed
+  suggestions and an explicit create-related-note action that saves the new markdown note in the background
+  and keeps the user in the current workflow. The markdown toolbar List button inserts a `-` marker at an
+  empty cursor, visible `[[wikilink]]` chips navigate to the linked note, and packaged Tauri builds expose
+  a native Open File picker while keeping manual absolute-path entry as the fallback.
+- **Remaining Vault property-control polish.** The relationship picker is intentionally a first-pass
+  typeahead plus explicit create action. If real vaults make those lists feel heavy, upgrade it to a
+  richer keyboard-first combobox/popover without changing the source-of-truth rule: every edit still
+  rewrites the underlying Markdown/YAML file, not app-private state.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
