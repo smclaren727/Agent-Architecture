@@ -433,20 +433,21 @@ hardening and should stay visible as the system moves toward production packagin
   for Open File, with the selected path shown as confirmation rather than typed by hand. If browser/dev
   mode still needs manual paths because Tauri dialogs are unavailable, keep that as a visually secondary
   advanced fallback instead of the default end-user UI.
-- **Remaining Vault daily-note template polish.** New daily notes should contain only the top-level date
-  heading (`# YYYY-MM-DD`) by default. Remove the seeded `## Log` section from the daily-note template so
-  the editor opens on a clean date note and users can structure the day themselves.
-- **Remaining Vault editor action chrome polish.** Now that note bodies and properties autosave, remove
-  manual Save buttons/icons from every editor surface where autosave is authoritative. Move destructive
-  delete actions out of the bottom action row and into the top note header area, preferably far right and
-  visually secondary/dangerous so it stays away from normal writing flow. Move the autosave/saved status
-  message into the upper editor toolbar area near the Body/Source controls so the bottom of the editor is
-  clutter-free.
-- **Remaining Vault indexing/sidebar consistency.** Newly created or opened managed notes must appear in
-  the left Notes panel without requiring an app restart or manual index repair. Current dogfood symptom:
-  a daily note and a regular note can open in the editor while the Notes panel still says "No notes
-  indexed yet." Verify the create-note, daily-note, autosave, active-vault scoping, watcher/reindex, and
-  post-write list-refresh paths so the browser column reflects the markdown source of truth immediately.
+- **Done — Vault daily-note template polish (2026-07-08).** New daily notes seed only the top-level
+  `# YYYY-MM-DD` heading; the `## Log` scaffold is gone from the handler, starter template, and fixtures.
+- **Done — Vault editor action chrome polish (2026-07-08).** The managed-note editor dropped its manual
+  Save button; autosave gained a visible Retry affordance on failure, window-refocus self-healing, a
+  dirty-draft flush on note switch/unmount, and a beforeunload guard, so autosave is genuinely
+  authoritative. Delete moved into the note header as a secondary danger action (confirmation dialog
+  unchanged) and the autosave status sits beside the Body/Source controls; the bottom action row is gone.
+  Loose/open-file editors keep their explicit Save because they do not autosave.
+- **Done — Vault indexing/sidebar consistency (2026-07-08).** Managed-note create/daily/update/patch/
+  delete (and task PATCH) are vault-aware: an optional API-only `vault` field targets a registered
+  managed vault, handlers resolve a note's actual vault from the index, write there, and additively
+  reindex just that vault. The watcher covers every boot-registered vault root; scoped rebuilds mark
+  cross-vault duplicate ids invalid instead of wedging on the `notes.id` primary key. The web create
+  flows target the active managed vault and switch scope so the new note is immediately visible in the
+  Notes panel. Known gaps recorded below (runtime-added vault live-watch; cross-vault daily 409 UX).
 - **Remaining Vault backlink creation and type conversion.** While editing markdown, typing/selecting a
   `[[wikilink]]` target that does not already exist should be able to create a placeholder managed note
   immediately, so unresolved backlinks can collect references before the destination is fleshed out. The
@@ -454,19 +455,20 @@ hardening and should stay visible as the system moves toward production packagin
   governed type-conversion flow so a placeholder or existing note can later change type (`note` ->
   `project`, `note` -> `task`, `task` -> `project`, etc.) by rewriting the same markdown/frontmatter
   through schema validation and moving/renaming the file only when the destination type convention requires it.
-- **Remaining Vault markdown-list indent behavior.** In the markdown editor, pressing Enter at the end of
-  an unordered list item correctly creates the next `- ` item, but pressing Tab on that new list item can
-  highlight/select the line so the next typed character deletes the marker. Tab should indent the list
-  item and place the cursor after the moved marker/content position, preserving the `- ` marker and letting
-  the next typed character continue the nested list item.
-- **Remaining Vault markdown-toolbar completeness.** Add an ordered-list icon/action immediately to the
-  right of the unordered-list icon. Review the rest of the markdown toolbar for common missing commands
-  before expanding the visible button row: likely candidates are task/checklist, heading level selector,
-  strikethrough, code block (distinct from inline code), horizontal rule, table, and image/attachment.
-  For the first implementation pass, keep all available Markdown action icons visible rather than hiding
-  lower-frequency actions in a menu. Order them logically so the user can learn the surface: text styling
-  first, code/link next, lists/tasks together, then quote/block/insert actions. Grouping or overflow menus
-  can come later after real usage makes the preferred organization obvious.
+- **Done — Vault markdown-list indent behavior (2026-07-08).** Tab/Shift-Tab on a collapsed cursor in a
+  list line indents/outdents while preserving the marker and keeping the cursor collapsed, so typing
+  continues the nested item instead of deleting the marker.
+- **Done — Vault markdown-toolbar completeness (2026-07-08).** The toolbar now shows, always visible and
+  grouped with separators: Bold/Italic/Strikethrough · H1–H3 dropdown (active level indicated) · inline
+  Code/Code block/Link · Unordered/Ordered/Task list · Quote/Horizontal rule/Table. Standalone blocks
+  insert with blank-line boundaries (an HR after a paragraph no longer parses as a setext heading).
+  Image/attachment was deliberately deferred — Vault has no attachment story yet.
+- **Remaining Vault dogfood follow-ups (2026-07-08 slice).** Recorded during the slice-1 adversarial
+  reviews: (a) live-watching vaults registered at runtime (today they index on add and on every API
+  write; external file edits there need a restart); (b) the cross-vault daily-note 409 is an error-only
+  dead-end — offer "open the existing daily (switches vault)" instead; (c) list-kind conversion in the
+  toolbar (UL ↔ OL ↔ task on already-listed lines currently no-ops); (d) NotesView blocks vault-targeted
+  creates with an error when `/api/vaults` cannot be fetched rather than retrying automatically.
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
