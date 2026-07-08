@@ -422,5 +422,6 @@ preflight and bundling stay with the distribution work); both packaged apps boot
 cleanly in a verified clean-ish local state (free ports, no orphaned sidecars, no manually exported
 env vars); both acceptance harnesses pass on the all-Rust defaults; the NixOS-node deployment was
 proven earlier in the campaign and was not re-verified in this local smoke. The literal
-clean-machine boot proof rides with the remaining distribution work (signed DMG, first-run setup) —
-see [build-plan.md](build-plan.md) → Phase 5 → "Distribution/packaging".
+clean-machine boot proof rides with the remaining distribution work, now split between
+pre-Developer-account setup/package rehearsal and Developer ID signing/notarization — see
+[build-plan.md](build-plan.md) → Phase 5 → "Distribution/packaging".

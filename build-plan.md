@@ -282,30 +282,52 @@ carried into Phase 5:
   signing, updating, and cross-machine distribution only matter for other machines.
 
   The remaining consumer-grade Mac app gap is the path from "developer/operator starts binaries with
-  env vars" to "download a DMG, drag to Applications, open the app, and complete setup in UI":
+  env vars" to "download a DMG, drag to Applications, open the app, and complete setup in UI". Keep
+  that work split in two so the install/setup product work can proceed before Apple Developer Program
+  credentials exist, while the trust/distribution work stays clearly scoped to Developer ID signing.
 
-  1. **Signed/notarized DMG releases.** Produce Developer ID signed, notarized `.dmg` artifacts for
-     Overlay and Vault, with the bundled Rust sidecars hash-verified before packaging.
-  2. **First-run Overlay workspace setup.** If no workspace is configured, the app offers create from
+  **Pre-Developer-account distribution groundwork** — can be built and tested with unsigned/ad-hoc
+  local artifacts:
+
+  1. **First-run Overlay workspace setup.** If no workspace is configured, the app offers create from
      the shipped template, choose existing, validate, and persist the selected path. No terminal
      `overlay init` should be required for the happy path.
-  3. **Persisted app settings instead of env-only wiring.** Workspace paths, Runner command/state dir,
+  2. **Persisted app settings instead of env-only wiring.** Workspace paths, Runner command/state dir,
      Vault's connected Overlay workspace, and Vault's Overlay CLI path are discovered or stored in
      app configuration; environment variables remain an override/debug escape hatch, not the primary
      setup flow.
-  4. **Runner service installation and control.** Overlay's Automations surface can install/update the
+  3. **Runner service installation and control.** Overlay's Automations surface can install/update the
      macOS launchd agent (and systemd user unit on Linux), start/stop/restart it, enable run-at-login,
      and keep the daemon command pinned to the selected workspace, state dir, Runner binary, and Overlay
      CLI. Runner still owns the loop and writes only machine-local derived state.
-  5. **Vault-to-Overlay connection setup.** Vault can connect to an existing Overlay workspace and
+  4. **Vault-to-Overlay connection setup.** Vault can connect to an existing Overlay workspace and
      resolve a usable Overlay CLI/bundled binary path automatically, while remaining fully usable as a
      standalone markdown/vault editor when no Overlay workspace is connected.
-  6. **Secrets and local-agent runtime onboarding.** API keys, local Claude Code/Codex availability,
+  5. **Secrets and local-agent runtime onboarding.** API keys, local Claude Code/Codex availability,
      and supported agent runtime setup are guided in UI. Runtime setup writes canonical YAML doctrine
      through Overlay's validated writer where appropriate; secret values live in Keychain or
      user-owned secret/env files, never in the corpus or app-private doctrine.
-  7. **Updater and release CI.** A release workflow builds, signs, notarizes, publishes, and smoke-tests
+  6. **Unsigned/ad-hoc package rehearsal.** Build local `.app`/`.dmg` artifacts, hash-check bundled
+     Rust sidecars, and run clean-ish install smokes that prove the first-run flows work without a repo
+     checkout or manually exported env vars. Gate out any step that would require real signing,
+     notarization, or hosted update secrets. Known warning cleanup before this is called polished:
+     rename Vault's bundle identifier away from the `.app` suffix (`com.agentvault.app` currently
+     triggers a macOS bundle-extension warning), and either code-split the larger Vault web chunks or
+     consciously raise the Vite/Rolldown warning threshold with evidence that startup size is acceptable.
+
+  **Developer ID distribution work** — requires Apple Developer Program credentials and release
+  secrets:
+
+  1. **Signed/notarized DMG releases.** Produce Developer ID signed, notarized `.dmg` artifacts for
+     Overlay and Vault, with the bundled Rust sidecars hash-verified before packaging and notarization
+     stapled before publishing.
+  2. **Updater and release CI.** A release workflow builds, signs, notarizes, publishes, and smoke-tests
      the app artifacts; the apps check a signed update manifest from the chosen release host.
+  3. **Clean-machine install proof.** Verify the published artifacts on a fresh account/VM with no repo
+     checkout, no developer env, no prebuilt binaries on PATH, and no manual env setup. This is the
+     proof that the DMG experience is truly consumer-grade rather than merely clean-ish local.
+  4. **Optional package channels.** Homebrew/Scoop/native package channels are follow-ons after the
+     signed DMG and updater path are stable.
 - **Done — Agent lifecycle hook integration for Codex/Claude.** Overlay now owns canonical
   `hooks/*.yaml` doctrine, exposes it in the Agent Runtimes view, and serves `GET /api/agents/hooks`
   plus `POST /api/agents/hooks/ingest` from the console API. Codex and Claude Code still own whether
