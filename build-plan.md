@@ -712,9 +712,28 @@ multi-note edits (undecided — may stay Engaged-only), native streaming, local-
 Keychain-backed secrets.
 
 Follow-up from the Slice 3 close-out: current-note context for notes in a non-default registered
-vault may resolve through the default vault directory. The existing `baseContentHash` apply gate fails
-closed with a 409 if that context diverges, but the context lookup itself should be made vault-scoped
-before native multi-vault chat, draft-note creation, or broader edit planning leans on it.
+vault may resolve through the default vault directory. *(✅ Resolved in Slice 4 — see below.)*
+
+**Progress (2026-07-09) — Slice 4 shipped.** Native draft-note creation, on top of a multi-vault
+correctness fix. The Slice 3 context follow-up is **resolved first**: note/vault context now
+resolves each note's **owning managed-vault root** through the registry (context routes, Engaged
+note context, native chat, CLI call sites — default-vault behavior unchanged), so note context and
+the native `baseContentHash` are correct for registered non-default vaults. Native allow-edits
+turns may now return either the Slice 3 edit suggestion or **one creation suggestion** parsed from
+a `vault-create` fenced block (`{title, type?, body}` — type defaults to `note`, must be a
+supported schema type with `daily` excluded; bounded; the target vault is **always
+server-resolved** from the context note's owning vault, never model-chosen; degradations extend
+the closed `suggestionError` enum with `invalid-type`). The turn still never writes: the Chat
+dock's distinct "Create draft note" card (title/type/target-vault/body preview) posts the
+suggestion verbatim to the existing validated `POST /api/notes` after a confirm-armed click —
+single-note, vault-scoped, schema-validated, 409 duplicate conflicts surfaced with an Open-existing
+action and no retry-create; success offers Open note. Editor-side placeholder creation from
+unresolved `[[wikilinks]]` had already shipped 2026-07-08 and was verified against this slice's
+requirements (a missing duplicate-conflict test was added). Proven by contract tests and a
+disconnected live smoke on a **second registered managed vault**: suggestion carries
+`vault: second`, no write before confirmation, explicit create lands in the second vault's root,
+zero Overlay artifacts. Remaining 8.1 work: whole-vault/multi-note edits (undecided — may stay
+Engaged-only), native streaming, local-runtime discovery, Keychain-backed secrets.
 
 **Work:**
 
