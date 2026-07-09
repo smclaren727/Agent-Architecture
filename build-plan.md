@@ -670,10 +670,26 @@ Follow-ups from the Slice 1 close-out:
 - Disconnected native-chat smokes must set an explicit empty `AGENT_VAULT_WORKSPACE`; running the
   binary from the repo can otherwise resolve the default Overlay template relative to CWD and
   silently connect Overlay, invalidating the independence proof.
-- Before the next UI-heavy Vault pass, clear or quarantine the two pre-existing browser-smoke reds
-  observed on clean main: `vault-switcher options` and `checkbox toggle`.
-- The next highest-value 8.1 slice is persisted provider/local-runtime setup UI. Native read-only Q&A
-  works, but env-only provider configuration is still operator-shaped rather than end-user-shaped.
+- ✅ Cleared (2026-07-09): the two pre-existing browser-smoke reds were stale tests, not product
+  bugs — the vault switcher became a Radix dropdown and the managed-note editor dropped its manual
+  Save button for autosave in the 2026-07-08 polish; the smoke now drives the menu and polls the
+  autosaved note. 15/15 green.
+- ✅ Done (Slice 2): persisted provider setup UI.
+
+**Progress (2026-07-09) — Slice 2 shipped.** Native chat setup is end-user-shaped. Vault persists
+non-secret provider settings (backend/model/base URL/API-key **env-var name**/timeout) in app
+settings — `data/settings.json`, `AGENT_VAULT_SETTINGS` override — via `GET|PUT
+/api/native-chat/settings`, applied live without restart; `POST /api/native-chat/test` is an
+operator-initiated connection test with the same no-leak error mapping, and the status route now
+reports the config source (`env` wins wholesale over `settings` as the override/debug path). A new
+left-nav Settings view owns the Native Chat panel (status + source badge, env-override notice,
+per-field validation errors, confirm-gated clear, connection test) and states the boundary: it
+configures Vault-native Read Only chat only, never Engaged/Overlay profiles; secret values are
+never accepted or stored — the key value lives in the server environment under the configured
+name (Keychain remains future work). The Chat dock's native-unavailable states link into Settings.
+Native turns remain read-only with no proposals/trajectories/writes (re-proven by contract tests
+and a disconnected live smoke through the settings path). Remaining 8.1 work: native write/apply
+paths, streaming, local-runtime discovery, Keychain-backed secrets.
 
 **Work:**
 
