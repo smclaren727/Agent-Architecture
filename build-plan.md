@@ -406,15 +406,19 @@ hardening and should stay visible as the system moves toward production packagin
   `+ Add vault…` plus `Manage vaults…` folded in as a divider-separated bottom action row (the
   separate pill button is gone). The menu refetches the registry on open so management changes
   appear without a reload.
-- **Remaining Vault native titlebar integration.** Explore a macOS/Tauri titlebar treatment that blends
-  the window chrome with the app surface and places the sidebar or navigation toggle in the native
-  titlebar area beside the traffic-light controls where possible. This is a packaged-app shell slice, not
-  browser-only CSS: verify the locked Tauri version's `titleBarStyle`, `trafficLightPosition`, `hiddenTitle`,
-  and overlay constraints; preserve the existing `data-native-vibrancy` opaque/browser fallback; define
-  draggable and non-draggable regions; keep traffic-light/safe-area spacing correct; and test the real
-  `.app` for light/dark, reduce-transparency, startup flash, keyboard/accessibility, and double-click/drag
-  window behavior. If true native placement is too constrained, the fallback should still visually merge
-  the titlebar/header boundary instead of keeping the current detached white titlebar.
+- **Shipped, operator QA pending — Vault native titlebar integration (2026-07-08).** The packaged
+  macOS window uses `titleBarStyle: Overlay` + `hiddenTitle` + `trafficLightPosition x16/y20` (keys
+  verified against the locked Tauri 2.11 schema; non-mac config overlays replace the windows array so
+  Windows/Linux are untouched). The app header doubles as the titlebar behind the same packaged-mac
+  gate as vibrancy (`data-mac-titlebar`): 52px bar height, 80px traffic-light safe area, and a
+  `data-tauri-drag-region="deep"` header whose interactive children stay clickable. Adversarial
+  review caught that `start_dragging` is ACL-gated outside `core:default` — the main-window
+  capability now grants `core:window:allow-start-dragging` (the window was otherwise immovable).
+  Browser/vibrancy fallbacks preserved and proven. **Pending:** the visual/interactive `.app` pass
+  (light/dark blend, traffic-light alignment, drag/double-click, reduce-transparency, startup flash,
+  and the Slice-2 picker-first dialogs) needs operator eyes — the automation context lacked Screen
+  Recording/Accessibility TCC grants. Known limitation: the reservation persists in native
+  fullscreen while the traffic lights auto-hide (backlog: toggle on the fullscreen event).
 - **Done — Vault management view (2026-07-08).** A dedicated left-nav Vaults view lists registry
   entries (label, path, mode explained, note counts, index status) with picker-first Add, registry-only
   Remove (index rows pruned, files untouched, default vault protected), and governed mode changes.
