@@ -691,6 +691,26 @@ Native turns remain read-only with no proposals/trajectories/writes (re-proven b
 and a disconnected live smoke through the settings path). Remaining 8.1 work: native write/apply
 paths, streaming, local-runtime discovery, Keychain-backed secrets.
 
+**Progress (2026-07-09) — Slice 3 shipped.** Native **Allow Edits** is live as a Vault-owned
+product guardrail, per the pinned permission vocabulary. The native turn takes `permission:
+read-only` (default, contract-unchanged) or `allow-edits` (Current-note context only); allow-edits
+turns may return at most **one** bounded body-only **suggestion** parsed from a Vault-owned
+`vault-edit` fenced contract (`{noteId, summary, replacement}` + a server-computed
+`baseContentHash`; malformed/multiple/wrong-target/too-large degrade to a closed `suggestionError`
+without failing the turn). **The turn never writes.** The explicit write is
+`POST /api/native-chat/apply`: a sha256 body-hash staleness gate (409 when the note changed),
+frontmatter preserved verbatim, and the same validated save core as `PUT /api/notes/{id}` (shared
+helper — schema validation, id-match, write backstop, atomic write, reindex). The Chat dock's
+Native route gains a Read Only / Allow Edits permission select; suggestion cards are visually
+distinct from Engaged proposals with confirm-armed explicit Apply, stale handling, and no
+run/capture/proposal affordances. **No auto-apply exists on the native path** — a deliberate,
+documented difference from Engaged allow-edits. Suggestions are never Overlay proposals; no
+trajectories, no `overlay-core` involvement — proven by contract tests and a disconnected live
+smoke (suggestion without write → explicit apply → frontmatter-preserved change → stale re-apply
+409 → zero Overlay artifacts). Remaining 8.1 work: draft-note/placeholder creation, whole-vault or
+multi-note edits (undecided — may stay Engaged-only), native streaming, local-runtime discovery,
+Keychain-backed secrets.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
