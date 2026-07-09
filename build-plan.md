@@ -219,7 +219,8 @@ carried into Phase 5:
 
 ## Phase 5 — Hardening
 
-**Goal:** production-grade enforcement, transport, and distribution across all three repos.
+**Goal:** production-grade enforcement, transport, and distribution across the shipped products:
+Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
 
 **Prerequisite:** Phase 4.
 
@@ -245,7 +246,8 @@ carried into Phase 5:
   capture→triage→proposal loop with a predicate-scored trajectory; SIGKILL→restart verified). Scoped by
   design to a **single server runner fed by Syncthing-synced vaults** — edits replicate to the server and
   one runner acts on them, which avoids second-node double-fire. The launchd path stays templated
-  (`Agent-Runner/units/com.overlay.runner.plist`); a literal second node is deferred.
+  under Overlay (`Agent-Overlay/units/runner/com.overlay.runner.plist`); a literal second node is
+  deferred.
 - **Knowledge vaults & generalized retrieval.** Let Vault open *multiple* knowledge vaults / arbitrary
   folders beyond the overlay corpus, and **generalize Overlay's index** so agents retrieve that content
   through the single agent lens — served as **world-knowledge**, kept distinct from doctrine. This
@@ -276,10 +278,11 @@ carried into Phase 5:
   Signed packaging + auto-updater (F1) and cross-webview QA (F2) are **consciously parked** pending
   distribution work; the Rust backend migration has already removed the SEA sidecar toolchain they
   originally would have hardened.
-- **Distribution/packaging** for all three: Overlay (single binary + Tauri desktop), Vault (Tauri
-  desktop app), Runner (service units), with install/update detection. **Unblocked by the completed Rust
-  backend migration, but still parked behind F1/F2 distribution work** — the Tauri wraps run locally today;
-  signing, updating, and cross-machine distribution only matter for other machines.
+- **Distribution/packaging** for the shipped products: Overlay (Tauri desktop app, `overlay` CLI, and
+  bundled/standalone `agent-runner` daemon artifact) and Vault (Tauri desktop app), with install/update
+  detection. **Unblocked by the completed Rust backend migration, but still parked behind F1/F2
+  distribution work** — the Tauri wraps run locally today; signing, updating, and cross-machine
+  distribution only matter for other machines.
 
   The remaining consumer-grade Mac app gap is the path from "developer/operator starts binaries with
   env vars" to "download a DMG, drag to Applications, open the app, and complete setup in UI". Keep
@@ -328,6 +331,10 @@ carried into Phase 5:
      proof that the DMG experience is truly consumer-grade rather than merely clean-ish local.
   4. **Optional package channels.** Homebrew/Scoop/native package channels are follow-ons after the
      signed DMG and updater path are stable.
+  5. **Distribution-doc cleanup.** During the release pass, sweep product docs, CI comments, and
+     release checklists for old "three repo/product" language. The release shape is two user-facing
+     apps, Vault and Overlay; Runner is documented, packaged, and optionally installed from Overlay,
+     not released as a third standalone product.
 - **Done — Agent lifecycle hook integration for Codex/Claude.** Overlay now owns canonical
   `hooks/*.yaml` doctrine, exposes it in the Agent Runtimes view, and serves `GET /api/agents/hooks`
   plus `POST /api/agents/hooks/ingest` from the console API. Codex and Claude Code still own whether
@@ -489,7 +496,8 @@ hardening and should stay visible as the system moves toward production packagin
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
 
 **Done when:** policies are enforced (not merely advised) on `overlay run`; an MCP client can connect
-over HTTP/SSE; all three repos have signed/packaged, self-updating distributions.
+over HTTP/SSE; Vault and Overlay have signed/packaged, self-updating distributions, and Overlay's
+distribution includes the Runner daemon binary.
 
 ---
 
@@ -635,6 +643,10 @@ The user-facing mode ladder becomes:
 
 **Work:**
 
+- Start with a doc/design preflight before implementation: Vault docs must spell out the
+  **Open / Managed / Engaged** feature matrix, the native-vs-Engaged chat split, provider/local-runtime
+  setup, and the permission vocabulary. The first implementation slice should be read-only
+  current-note/vault Q&A; write/apply behavior follows only after the native permission model is pinned.
 - Split Vault's current Overlay-gated chat into a Vault-native path and an Overlay-engaged path.
   The UI may stay one Chat surface, but status, permissions, and run labels must make the active
   mode obvious.
