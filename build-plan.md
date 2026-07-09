@@ -711,6 +711,11 @@ smoke (suggestion without write → explicit apply → frontmatter-preserved cha
 multi-note edits (undecided — may stay Engaged-only), native streaming, local-runtime discovery,
 Keychain-backed secrets.
 
+Follow-up from the Slice 3 close-out: current-note context for notes in a non-default registered
+vault may resolve through the default vault directory. The existing `baseContentHash` apply gate fails
+closed with a 409 if that context diverges, but the context lookup itself should be made vault-scoped
+before native multi-vault chat, draft-note creation, or broader edit planning leans on it.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
