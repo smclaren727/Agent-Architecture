@@ -336,6 +336,17 @@ carried into Phase 5:
   Hook config remains a derived artifact over plain YAML doctrine, never app-private state; hook trust,
   local-process permissions, and secret material stay in the Codex/Claude/daemon environment rather
   than the corpus.
+- **Remaining Overlay native titlebar integration.** Bring the same macOS-only titlebar-overlay polish
+  now proven in Vault to the Agent-Overlay desktop console. The slice should blend the packaged `.app`
+  window chrome into the Overlay header/sidebar shell, place a sidebar or navigation control in the
+  titlebar-safe area near the traffic-light controls where the design supports it, and preserve the
+  existing `data-native-vibrancy` opaque/browser/non-macOS fallback. Verify the locked Tauri schema
+  support for `titleBarStyle`, `trafficLightPosition`, and `hiddenTitle`; grant only the window IPC
+  capabilities required for drag behavior; define draggable and non-draggable regions so command
+  buttons, menus, and status controls remain clickable; and keep Windows/Linux untouched unless a later
+  platform-specific pass intentionally designs those variants. Validation must include a real packaged
+  Overlay `.app` smoke for light/dark, reduce-transparency, startup flash, traffic-light alignment,
+  header drag, double-click zoom, and fullscreen behavior.
 
 **Current implementation-risk status:** the following review findings were captured during Phase 5
 hardening and should stay visible as the system moves toward production packaging.
