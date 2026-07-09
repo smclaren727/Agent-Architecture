@@ -652,6 +652,19 @@ permission vocabulary. The pinned first implementation target is Vault-native re
 current-note Q&A plus whole-vault Q&A over existing Vault search/indexing, working with Overlay
 disconnected — no proposal queue, no trajectory dependency, no write/apply path, no Runner.
 
+**Progress (2026-07-09) — Slice 1 shipped.** Vault-native read-only Q&A is live. Vault owns
+`GET /api/native-chat/status` and `POST /api/native-chat/turn` (OpenAI-compatible provider via
+`AGENT_VAULT_NATIVE_CHAT_*` env config; key values only in the named env var): current-note context
+through the existing note-context builder, whole-vault context through bounded deterministic
+semantic retrieval over the existing index, and cited sources in the response. The routes are not
+Overlay-gated, call no `overlay-core` code, record no trajectories, file no proposals, and write no
+files — proven by contract tests that run the real binary with Overlay disconnected and assert
+byte-identical vault trees plus an artifact scan. The Chat dock now has a route selector: **Native ·
+Read Only** (fixed Read Only chip, note/vault context only, source links, no run/capture/proposal/
+apply affordances) beside the unchanged **Engaged (Overlay)** surface, with value-free unavailable
+reasons. Write/apply paths, native streaming, persisted app-settings provider UI, and local-runtime
+discovery remain future 8.1 work.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
