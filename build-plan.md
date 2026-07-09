@@ -751,6 +751,28 @@ unchanged non-streaming route. Nothing in the streaming path writes files; abort
 artifacts and the server healthy. Remaining 8.1 work: whole-vault/multi-note edits (undecided —
 may stay Engaged-only), local-runtime discovery, Keychain-backed secrets.
 
+**Progress (2026-07-09) — Slice 6 shipped.** Native local-runtime discovery and the first local
+backend. `GET /api/native-chat/runtimes` is passive fixed-table discovery (claude/codex/gemini on
+sanitized absolute PATH entries; only Claude Code runs a bounded `--version` probe; closed
+statuses; no executable paths or env values in responses). **Honest classification:** Claude Code
+is the one selectable native runtime — a verified tools-off pure-completion shape (`claude -p
+--output-format json --tools "" --setting-sources "" --strict-mcp-config
+--no-session-persistence`, prompt on stdin, fixed argv/no shell, env-cleared allowlist
+HOME/PATH/USER/LOGNAME/TERM — USER required by its Keychain auth — fresh empty temp cwd, timeout
+kill, closed 502/504, stderr never echoed) using the user's existing Claude Code login with no API
+key and no Overlay; **Codex CLI and Gemini CLI are discovery-only** (`unsupported-interface`) —
+their agentic interfaces belong to the Engaged path and are not faked as native-chat-capable.
+`nativeChat.backend` gains `claude-code` (settings + env-override parity; baseUrl/apiKeyEnv
+rejected for it); Read Only / Allow Edits ride the same prompt assembly, finalizer, and suggestion
+parser as the provider path; streaming degrades honestly to one delta + completed for this backend
+(CLI stream-json = backlog). The Settings panel gained the backend selector and a Local runtimes
+list with statuses/reasons/Refresh; no custom command/path input exists anywhere. Proven by
+contract tests over a fake claude binary (argv, env allowlist, stdin prompt, failure/timeout
+mapping) and a disconnected live smoke where the **real** Claude Code answered from note context
+(tools-off) with zero writes and zero Overlay artifacts; the OpenAI-compatible path re-verified.
+Remaining 8.1 work: whole-vault/multi-note edits (undecided — may stay Engaged-only),
+Keychain-backed secrets, claude-code stream-json.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
