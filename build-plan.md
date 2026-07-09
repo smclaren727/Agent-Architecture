@@ -735,6 +735,22 @@ disconnected live smoke on a **second registered managed vault**: suggestion car
 zero Overlay artifacts. Remaining 8.1 work: whole-vault/multi-note edits (undecided — may stay
 Engaged-only), native streaming, local-runtime discovery, Keychain-backed secrets.
 
+**Progress (2026-07-09) — Slice 5 shipped.** Native chat streams. `POST
+/api/native-chat/turn/stream` mirrors the Engaged SSE seam (same request; validation/config errors
+as plain JSON before the stream; frames `turn-started {model, backend, mode, permission}` /
+`reply-delta` / `turn-completed` = **exactly the non-streaming response** from the single canonical
+finalizer / `turn-error` with the bounded no-leak 502/504 mapping; client disconnect aborts the
+task and closes the provider connection). The provider call streams OpenAI-compatible SSE with a
+non-SSE JSON fallback for compat providers and a total-raw-read cap. On allow-edits turns a
+line-based hold-back gate guarantees fenced `vault-edit`/`vault-create` payloads never flash into
+visible deltas — proven live with a fence split across 7-char provider frames — while suggestion
+parsing stays the one non-streaming parser over the full raw reply. The Chat dock streams native
+turns when available (badges stay permission-accurate; the completed entry is indistinguishable
+from a non-streaming one, confirm-armed apply/create cards included) and falls back to the
+unchanged non-streaming route. Nothing in the streaming path writes files; abort leaves no
+artifacts and the server healthy. Remaining 8.1 work: whole-vault/multi-note edits (undecided —
+may stay Engaged-only), local-runtime discovery, Keychain-backed secrets.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
