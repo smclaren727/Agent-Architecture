@@ -401,12 +401,11 @@ hardening and should stay visible as the system moves toward production packagin
   rewrites the underlying Markdown/YAML file, not app-private state. (2026-07-08: create-related-note
   now threads the note's owning vault instead of silently creating into the default vault; the
   typeahead-first shape is deliberately unchanged.)
-- **Remaining Vault switcher polish.** The header vault selector still uses the system/native select
-  menu, which visually clashes with the Agent-Vault surface. Replace it with the shared themed dropdown
-  pattern used elsewhere in the app, preserve keyboard and screen-reader behavior, and fold `+ Add vault`
-  into that same menu instead of keeping a separate pill button to the right. Prefer a conventional
-  bottom action row separated from the vault choices by a divider unless rendered testing shows the top
-  placement scans better.
+- **Done — Vault switcher polish (2026-07-08).** The header selector is the shared themed Radix
+  dropdown: radio items with mode subtitles, keyboard/screen-reader semantics preserved, and
+  `+ Add vault…` plus `Manage vaults…` folded in as a divider-separated bottom action row (the
+  separate pill button is gone). The menu refetches the registry on open so management changes
+  appear without a reload.
 - **Remaining Vault native titlebar integration.** Explore a macOS/Tauri titlebar treatment that blends
   the window chrome with the app surface and places the sidebar or navigation toggle in the native
   titlebar area beside the traffic-light controls where possible. This is a packaged-app shell slice, not
@@ -416,19 +415,18 @@ hardening and should stay visible as the system moves toward production packagin
   `.app` for light/dark, reduce-transparency, startup flash, keyboard/accessibility, and double-click/drag
   window behavior. If true native placement is too constrained, the fallback should still visually merge
   the titlebar/header boundary instead of keeping the current detached white titlebar.
-- **Remaining Vault management view.** Move vault management out of the header and into a dedicated
-  left-nav icon/view. That view should list registered vaults with useful metadata (label, path, mode,
-  note count/index status, and any validation/index warnings), provide add/remove actions, and let the
-  operator toggle a vault between `open` and `managed`. Mode changes must be governed: switching to
-  `managed` should validate that the folder can satisfy the managed schema before enabling typed lenses,
-  and switching to `open` should clearly explain that structured managed features are being disabled while
-  leaving the underlying markdown files untouched. Treat `open` -> `managed` as an adoption proposal, not
-  a casual toggle: Vault should produce a preflight report plus a proposed set of frontmatter/file moves
-  before any write, then require an explicit accept/reject decision in the Vault management view. When an
-  Overlay workspace is connected, also file/associate that adoption proposal through the existing
-  Proposals/audit surface so the decision has the same review trail as other governed agent/user changes;
-  when Overlay is absent, keep the accept/reject dialog local to Vault and still write only ordinary
-  Markdown/YAML changes.
+- **Done — Vault management view (2026-07-08).** A dedicated left-nav Vaults view lists registry
+  entries (label, path, mode explained, note counts, index status) with picker-first Add, registry-only
+  Remove (index rows pruned, files untouched, default vault protected), and governed mode changes.
+  `open` -> `managed` is proposal-shaped: a read-only preflight reports per-file status with
+  current -> proposed frontmatter, dropped keys, and warnings; apply is fingerprint-gated on content
+  hashes (409 on any change), refuses blockers (broken YAML, CRLF frontmatter, non-UTF-8), merges
+  existing frontmatter so user metadata survives, preserves bodies byte-exact, and flips the registry
+  mode last. `managed` -> `open` is an explained confirmation with no file changes. See
+  Agent-Vault `Docs/vault-management.md`. **Limitation:** the adoption decision is not filed through
+  the Overlay Proposals/audit surface — the existing overlay-core surfaces have no generic
+  accept/reject audit event and adding one needs Agent-Overlay changes; accept/reject stays local to
+  Vault (backlog if a cross-plane review trail becomes necessary).
 - **Done — Vault picker-first file/folder flows (2026-07-08).** Under Tauri, Add Vault leads with
   "Choose folder…" and Open File with "Choose markdown file…"; the picked path renders as read-only
   confirmation and manual path entry is a collapsed secondary disclosure. Browser/dev mode keeps
