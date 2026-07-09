@@ -593,11 +593,123 @@ server.
 
 ---
 
+## Phase 8 — Product boundary realignment (planned)
+
+**Goal:** make the product split match the way the system is now being used: Vault should stand alone
+as a knowledge app with native intelligence; Overlay should remain the doctrine/governance layer; and
+Runner should stay a separate daemon binary but move under the Overlay product/repo boundary.
+
+**Prerequisite:** Phase 7. The Rust implementations and OpenAPI surfaces are stable enough that this
+is a product-boundary and packaging migration, not a runtime rewrite.
+
+**Dependency arrows:** Vault may depend on Overlay only for **Engaged** behavior. Overlay still
+depends on neither Vault nor Vault-owned schemas. Runner's code may move into the Overlay repo, but
+the daemon remains a separate binary/process whose doctrine still comes from Overlay triggers.
+
+### 8.1 Vault-native intelligence
+
+Vault should own the basic knowledge-agent experience. A fresh Vault install should be useful before
+Overlay is configured:
+
+- connect to an API provider or supported local model/runtime;
+- chat about the current note or the whole vault;
+- search/traverse notes, backlinks, related notes, and structured properties;
+- summarize, explain, and find relationships;
+- propose simple current-note edits, draft notes, or placeholder notes;
+- keep all writes going through Vault's own markdown/frontmatter validation and confirmation paths.
+
+This is **not** Overlay governance. Vault validates whether a note write is structurally safe for the
+target vault; Overlay decides whether a governed agent is allowed to do broader work. Basic "ask my
+vault" chat should therefore not require Overlay. It should also not create a second source of truth:
+messages, suggestions, created notes, and property edits still resolve to ordinary markdown/YAML or
+ephemeral UI state unless the user explicitly saves something.
+
+The user-facing mode ladder becomes:
+
+1. **Open Vault** — arbitrary markdown folder; edit, search, backlinks, graph.
+2. **Managed Vault** — Vault conventions/structured views active; tasks, projects, properties,
+   conventions, type conversion, and richer graph/search. This has value with or without any LLM.
+3. **Engaged Vault** — Overlay connected; agent actions can use workflows, policies, tools,
+   approvals, proposals, trajectories, shared memory, and Runner automation.
+
+**Work:**
+
+- Split Vault's current Overlay-gated chat into a Vault-native path and an Overlay-engaged path.
+  The UI may stay one Chat surface, but status, permissions, and run labels must make the active
+  mode obvious.
+- Add or reuse provider/local-runtime setup in Vault for native chat. Secrets belong in Keychain or
+  user-owned secret files; provider/runtime choices belong in persisted app settings, not in
+  Overlay doctrine unless the user chooses the Engaged path.
+- Preserve the Cogito-style permission simplicity for the native path: **Read Only**, **Allow
+  Edits**, and possibly **Full Access** as a future local-tools mode. These are product guardrails,
+  not Overlay policy. Engaged mode can map the same labels onto Overlay profiles/policies.
+- Keep write discipline boring: the model may propose or request a note change, but Vault performs
+  the write through the same validated note APIs the UI uses.
+- Record in Vault docs which features work in Open, Managed, and Engaged modes so "standalone" does
+  not accidentally mean "no agent help."
+
+**Guardrail:** Vault-native intelligence must not reimplement Overlay's workflow/policy/proposal
+engine. If the user asks for a named workflow, tool policy, approval gate, trajectory, shared memory,
+or automation, the turn is Engaged and belongs on the Overlay path.
+
+### 8.2 Runner into Overlay
+
+Agent-Runner is a standalone **daemon**, but it is not a standalone **product**. It has no useful
+doctrine without Overlay, reads Overlay trigger declarations, dispatches Overlay workflows, and cannot
+integrate directly with Vault without Overlay in the path. Move the Runner code into the Agent-Overlay
+repo as a first-class binary while preserving the daemon/process boundary.
+
+Target shape:
+
+```text
+Agent-Overlay/
+  crates/
+    overlay-core/
+    overlay-cli/
+    overlay-mcp/
+    overlay-console/
+    agent-runner/        # same daemon, now shipped with Overlay
+  apps/
+    desktop/
+  units/
+    runner/
+  docs/
+    triggers.md
+    runner.md
+```
+
+**Work:**
+
+- Move `Agent-Runner/crates/agent-runner` into `Agent-Overlay/crates/agent-runner` without changing
+  the binary name (`agent-runner`) or the public CLI contract.
+- Preserve state-dir formats, `runtime.json`, liveness JSON, `sync --json`, generated cron/systemd/
+  launchd bytes, process-slot locks, OpenAPI generation, and all existing golden fixtures.
+- Move unit templates and runner docs under Overlay while leaving compatibility links from
+  Agent-Architecture. If the old Agent-Runner repo remains, turn it into a pointer/archive rather than
+  a second source of truth.
+- Update Overlay CI/release packaging so the Overlay product ships both `overlay` and `agent-runner`.
+  The daemon remains deployable on a remote/headless machine; it simply comes from the Overlay release.
+- Update the Overlay console Automations setup to prefer the bundled Runner binary once available,
+  while still allowing an operator override for advanced deployments.
+- Update API-contract docs so Runner's generated webhook OpenAPI is described as an Overlay-owned
+  artifact emitted by the `agent-runner` binary.
+
+**Guardrail:** do not merge Runner into the Overlay server/console process. Runner remains the
+always-on loop with machine-local state; Overlay remains the doctrine/runtime surface. The repo moves,
+not the responsibility boundary.
+
+**Done when:** Vault can answer and work over a vault without Overlay for basic knowledge-agent tasks;
+Engaged mode clearly adds Overlay doctrine/governance rather than being the baseline; and the Runner
+binary is built, tested, packaged, documented, and optionally installed from Agent-Overlay with no
+separate Agent-Runner repo required for normal use.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
-                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts)
+                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment)
 
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
@@ -608,3 +720,6 @@ Vault (Phase 2) and Runner (Phase 3) proceed in parallel and converge at Phase 4
 order is forced by the same arrow — Overlay ported first because both siblings depend on it, and the
 frozen TS core bridged the window until Vault, its last consumer, ported (R3, 2026-07-02) — at which
 point the frozen core was deleted and the window closed.
+Phase 8 is a product-boundary correction on top of the stable Rust/OpenAPI base: Vault gets a
+standalone native-intelligence path, while Runner becomes an Overlay-shipped daemon binary instead of
+a separate product repo.
