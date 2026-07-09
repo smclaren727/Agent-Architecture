@@ -665,6 +665,16 @@ apply affordances) beside the unchanged **Engaged (Overlay)** surface, with valu
 reasons. Write/apply paths, native streaming, persisted app-settings provider UI, and local-runtime
 discovery remain future 8.1 work.
 
+Follow-ups from the Slice 1 close-out:
+
+- Disconnected native-chat smokes must set an explicit empty `AGENT_VAULT_WORKSPACE`; running the
+  binary from the repo can otherwise resolve the default Overlay template relative to CWD and
+  silently connect Overlay, invalidating the independence proof.
+- Before the next UI-heavy Vault pass, clear or quarantine the two pre-existing browser-smoke reds
+  observed on clean main: `vault-switcher options` and `checkbox toggle`.
+- The next highest-value 8.1 slice is persisted provider/local-runtime setup UI. Native read-only Q&A
+  works, but env-only provider configuration is still operator-shaped rather than end-user-shaped.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
