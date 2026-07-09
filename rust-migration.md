@@ -9,8 +9,9 @@
 > **Agent-Vault** is Rust end-to-end (crate `vault-server`, default = serve; `server/` + `tools/*.js`
 > + the Node SEA sidecar deleted; Tauri externalBin = the cargo-built `agent-vault-server`; both it
 > and Runner take `overlay-core` as a Cargo path dep — the `file:` `@overlay/core` deps are gone).
-> **Agent-Runner** is Rust end-to-end (crate `agent-runner`; the TS implementation is deleted —
-> the repo is the crate + golden fixtures + units + docs; ledger and deviations in its
+> **Agent-Runner** is Rust end-to-end (crate `agent-runner`, hosted in Agent-Overlay since Phase 8.2;
+> the old repo is archived; the TS implementation is deleted —
+> the historical repo was the crate + golden fixtures + units + docs; ledger and deviations in its
 > `docs/rust-migration-notes.md`). Operator-visible R2 cutover facts: cron fragments record the
 > **native binary** as the runner command (the R1 agent-re-entry analog), so cron-projected state
 > dirs need **one `agent-runner sync`** after upgrading while `none`-target dirs are zero-churn;

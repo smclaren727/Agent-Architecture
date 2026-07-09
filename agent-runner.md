@@ -1,12 +1,13 @@
 # Agent-Runner — role definition
 
-> The trigger/execution plane. **Repo home in transition (Phase 8.2, slices 1–2 shipped):** the
-> crate builds from [`Agent-Overlay/crates/agent-runner`](../Agent-Overlay/docs/runner.md) as an
+> The trigger/execution plane. **Repo home migrated (Phase 8.2, slices 1–3 shipped):** the
+> crate is hosted at [`Agent-Overlay/crates/agent-runner`](../Agent-Overlay/crates/agent-runner) as an
 > Overlay-shipped daemon binary — the Overlay desktop app bundles it as a sidecar and its console
-> prefers the bundled binary (operator override preserved), while the standalone release build
-> remains the remote/headless artifact. The old Agent-Runner repo remains a read-only reference
-> until the migration completes. Everything below about the Runner's *role* — a separate daemon
-> process, machine-local state, no doctrine — is unchanged by the move. This consolidates the
+> prefers the bundled binary (operator override preserved), while
+> `cargo build --release -p agent-runner` remains the standalone remote/headless artifact. The old
+> Agent-Runner repo is an archived historical pointer, frozen read-only; its README redirects here
+> and to Overlay. Everything below about the Runner's *role* — a separate daemon process,
+> machine-local state, no doctrine — is unchanged by the move. This consolidates the
 > existing trigger architecture into the three-plane frame; it does not duplicate it. Read alongside
 > [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) and
 > [`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md).
@@ -220,7 +221,7 @@ these is violated, the model has drifted back toward a framework:
 - **No doctrine in the Runner.** "What happens when a file lands?" must be answerable entirely by
   reading the corpus — not by reading the Runner's source.
 - **Never add `overlay watch`.** A watcher subcommand inside Overlay reverses the dependency arrow.
-  The loop lives here, in its own repo.
+  The loop lives in the separate `agent-runner` daemon/crate, not inside the Overlay server process.
 - **No LLM in provisioning.** Declaration → watcher/unit is deterministic templating, reproducible and
   idempotent. If a model is generating system-level services, the path has stopped being mechanism.
 

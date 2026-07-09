@@ -686,8 +686,8 @@ Agent-Overlay/
 - Preserve state-dir formats, `runtime.json`, liveness JSON, `sync --json`, generated cron/systemd/
   launchd bytes, process-slot locks, OpenAPI generation, and all existing golden fixtures.
 - Move unit templates and runner docs under Overlay while leaving compatibility links from
-  Agent-Architecture. If the old Agent-Runner repo remains, turn it into a pointer/archive rather than
-  a second source of truth.
+  Agent-Architecture. The old Agent-Runner repo is a pointer/archive rather than a second source of
+  truth.
 - Update Overlay CI/release packaging so the Overlay product ships both `overlay` and `agent-runner`.
   The daemon remains deployable on a remote/headless machine; it simply comes from the Overlay release.
 - Update the Overlay console Automations setup to prefer the bundled Runner binary once available,
@@ -721,6 +721,15 @@ source (`env` | `bundled` | `default`) reported by `GET /api/automations/runner`
 `docs/runner.md`. Packaged-app smoke verified bundled resolution and override behavior. Still no
 signed/notarized distribution or auto-updater. Still open in 8.2: turning the old Agent-Runner repo
 (untouched so far, kept as a read-only reference) into a pointer/archive.
+
+**Progress (2026-07-09) — third slice shipped.** The old Agent-Runner repo was turned into an
+archived historical pointer: its README and AGENTS.md now state the archived status and
+redirect to `Agent-Overlay/crates/agent-runner`, `docs/runner.md`, and this plan. No code was
+deleted; the source tree is retained read-only for history (last pre-archive implementation commit
+`920e4e1`). Architecture and Overlay docs now match
+the new repo home, and the acceptance harness default runner binary now comes from the Agent-Overlay
+build. The 8.2 runner-side done-when is satisfied. Still no signed/notarized distribution or
+auto-updater; those are tracked separately. Phase 8 remains in progress on 8.1.
 
 **Done when:** Vault can answer and work over a vault without Overlay for basic knowledge-agent tasks;
 Engaged mode clearly adds Overlay doctrine/governance rather than being the baseline; and the Runner

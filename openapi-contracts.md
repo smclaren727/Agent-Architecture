@@ -10,8 +10,8 @@
 
 ## Why this exists
 
-The three product repos are Rust end-to-end (see [rust-migration.md](rust-migration.md)),
-and the next body of work is **integrations against their HTTP APIs** — many independent,
+The system's HTTP surfaces are Rust end-to-end (see [rust-migration.md](rust-migration.md)),
+and the next body of work is **integrations against those APIs** — many independent,
 cross-device, likely polyglot clients. That is exactly the condition where a
 machine-readable API contract stops being over-engineering and starts preventing real
 integration bugs. So each REST surface has a canonical **OpenAPI 3.1** spec, co-located

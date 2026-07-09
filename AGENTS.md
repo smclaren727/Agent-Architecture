@@ -1,13 +1,14 @@
 # AGENTS.md — Agent-Architecture
 
-This repository is the **system-level documentation home** for the three-repo system
-(**Agent-Overlay** · **Agent-Vault** · **Agent-Runner**). It holds the architecture and the build
-plan, and it contains **no code**.
+This repository is the **system-level documentation home** for the three-plane system
+(**Agent-Overlay** · **Agent-Vault** · the Overlay-shipped **Agent-Runner** daemon; the old
+Agent-Runner repo is archived since Phase 8.2). It holds the architecture and the build plan, and it
+contains **no code**.
 
 ## Contents
 
 - `README.md` — the whole-system architecture (three planes over one corpus; the dependency arrow).
-- `agent-overlay.md`, `agent-vault.md`, `agent-runner.md` — per-repo role definitions.
+- `agent-overlay.md`, `agent-vault.md`, `agent-runner.md` — per-plane role definitions.
 - `build-plan.md` — the phased, multi-repo build plan.
 - `rust-migration.md` — the Node/TypeScript → Rust re-platform campaign (crate layout, cutover gates, risks).
 - `openapi-contracts.md` — the OpenAPI 3.1 API-contract seam across the three HTTP surfaces.

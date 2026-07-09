@@ -1,16 +1,17 @@
 # System Architecture — Overlay · Vault · Runner
 
-> **Audience:** anyone working on any of the three repositories.
-> **Status:** authoritative architecture overview. Per-repo detail lives in the sibling docs linked
+> **Audience:** anyone working on any of the three planes.
+> **Status:** authoritative architecture overview. Per-plane detail lives in the sibling docs linked
 > at the bottom; product detail for Overlay lives in [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md).
 
 ## Thesis
 
-We are building one system out of three repositories. The durable value of an agent setup is not the
-model or the runtime — those churn — it is **the memory, policies, skills, workflows, and standards
-you accumulate**, plus a pleasant way to *edit* them and a reliable way to *act* on them. We split
-that into three repositories, each doing one job well, over a single shared corpus of plain
-markdown/YAML files.
+We are building one system out of three planes. The durable value of an agent setup is not the model
+or the runtime — those churn — it is **the memory, policies, skills, workflows, and standards you
+accumulate**, plus a pleasant way to *edit* them and a reliable way to *act* on them. Historically
+those planes lived in three product repos; since Phase 8.2 the Runner remains a separate daemon
+process but ships from Agent-Overlay, and the old Agent-Runner repo is an archived historical pointer.
+The planes still do one job each over a single shared corpus of plain markdown/YAML files.
 
 **Three planes over one corpus:**
 
@@ -18,27 +19,27 @@ markdown/YAML files.
 | --- | --- | --- |
 | **Edit** | **Agent-Vault** | A markdown editor/wiki where humans *and* LLMs are first-class editors of the corpus. |
 | **Doctrine / serve** | **Agent-Overlay** | Holds the canonical corpus, validates it, and serves it live to agents over MCP. The library the others call. |
-| **Trigger / execution** | **Agent-Runner** | The standalone loop that decides *when* work runs and dispatches a trigger binding to an executor. Since Phase 8.2 slice 1 the daemon builds from Agent-Overlay (`crates/agent-runner`); the process boundary is unchanged and the old repo remains a read-only reference while the migration completes. |
+| **Trigger / execution** | **Agent-Runner** (daemon; ships from Agent-Overlay — old repo archived) | The standalone loop that decides *when* work runs and dispatches a trigger binding to an executor. Since Phase 8.2 the daemon ships from Agent-Overlay (`crates/agent-runner`), bundled with the desktop app and released standalone for remote/headless nodes; the process boundary is unchanged. |
 
 The corpus — a workspace conventionally at `~/overlay/` — is the single source of truth. Everything
 else (indexes, served MCP resources, compiled views, trajectories) is *derived from* it and never
 authoritative. This mirrors Overlay's design principle: **plain text wins; databases and indexes are
 derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) §16).
 
-## The three repositories
+## The planes and repo homes
 
 | Repo | Owns | Must never |
 | --- | --- | --- |
-| **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals. | Be an editor; be a loop; depend on Vault or Runner. |
+| **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals, and distribution of the `agent-runner` daemon binary. | Be an editor; merge the Runner loop into the Overlay server/console process; make Overlay libraries depend on Vault or the Runner daemon. |
 | **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, local feature-hash chunk search, bounded related-chunk chat context, the memory proposal review queue UI, the overlay-gated agent-run/capture views, and the right-dock embedded Chat surface for governed read-only/suggest/allow-edits turns. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
-| **Agent-Runner** | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
+| **Agent-Runner** (daemon shipped from Agent-Overlay; old repo archived) | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
 
-`overlay-core` is a **library**. Both siblings depend on it; **Overlay depends on neither.** This is
-the same rule the trigger system was designed around
+`overlay-core` is a **library**. Vault and the `agent-runner` daemon depend on it; Overlay's
+doctrine/server libraries depend on neither. This is the same rule the trigger system was designed around
 ([`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md),
-Decision 1), generalized to all three repos. Keep the arrow straight and the system stays a set of
+Decision 1), generalized to all three planes. Keep the arrow straight and the system stays a set of
 composable tools; reverse it — put an editor or a watcher daemon *inside* Overlay — and you have
 reinvented a framework that runs you instead of a library you call.
 
@@ -61,7 +62,7 @@ overlay-    │   │file r/w          overlay-core│        │corpus events
 
 ## The four seams
 
-Everything the three repos do to each other happens across exactly four contracts. Keep them narrow.
+Everything the three planes do to each other happens across exactly four contracts. Keep them narrow.
 
 ### 1. Corpus seam — Vault ⇄ Overlay (shared files)
 Both operate on the same files. Overlay **reads and serves**; Vault **reads and writes**. The overlay
@@ -146,8 +147,8 @@ they mark the hardening work that keeps the implementation honest against the sy
   both requirements and the effect hash. Network `default: deny` still hard-denies non-allowlisted
   targets rather than minting an approval. HTTP custom tools do not follow redirects, and shell custom tools drain
   stdout/stderr before returning bounded tails.
-- **The Rust migration window is closed (2026-07-02).** All three repos are Rust end-to-end behind the
-  unchanged seams; Vault and Runner now depend on the `overlay-core` crate as a Cargo path dependency.
+- **The Rust migration window is closed (2026-07-02).** All three planes are Rust end-to-end behind
+  the unchanged seams; Vault and the Runner daemon now depend on the `overlay-core` crate as a Cargo path dependency.
   Through the window they consumed the frozen TS `@overlay/core` dist (Agent-Overlay tag
   `ts-core-final`) under the frozen-core skew rule — now historical; the record and its emergency-patch
   procedure live in [rust-migration.md](rust-migration.md) → "Frozen-TS-core policy".
@@ -193,7 +194,7 @@ trust.
 
 - **[agent-overlay.md](agent-overlay.md)** — Overlay's role, the two surfaces, and the core library contract.
 - **[agent-vault.md](agent-vault.md)** — the Vault repo definition (net-new).
-- **[agent-runner.md](agent-runner.md)** — the Runner repo definition.
+- **[agent-runner.md](agent-runner.md)** — the Runner daemon role definition.
 - **[build-plan.md](build-plan.md)** — the phased, full-horizon multi-repo build plan.
 - **[openapi-contracts.md](openapi-contracts.md)** — the API-contract seam: the OpenAPI 3.1 specs for the Vault, console, and Runner HTTP surfaces, and how to generate a typed client in any language.
 
