@@ -3,13 +3,12 @@
 // Black-box: spawns the Agent-Vault server and an Agent-Runner `run` loop over one
 // shared overlay workspace, drops a capture note through Vault's HTTP API, and asserts
 // the Runner-dispatched triage harness files a memory proposal and a completed
-// trajectory that Vault then surfaces. Treats both product repos as black boxes (no
+// trajectory that Vault then surfaces. Treats the spawned products as black boxes (no
 // imports), so it depends on neither — it only spawns their built entry points and the
 // built Overlay CLI.
 //
-// Prerequisites (build the siblings first):
-//   - Agent-Overlay: cargo build  (target/debug/overlay — the Rust CLI, the R1 default)
-//   - Agent-Runner:  cargo build  (target/debug/agent-runner — the Rust runner, the R2 default)
+// Prerequisites (build the active siblings first):
+//   - Agent-Overlay: cargo build  (target/debug/overlay and target/debug/agent-runner — the Rust defaults)
 //   - Agent-Vault:   cargo build --release -p vault-server  (target/release/agent-vault-server — the Rust server, the R3 default)
 //
 // Run: node acceptance/capture-triage-loop.mjs
@@ -32,7 +31,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const developer = path.resolve(here, "../..");
 const overlayRepo = path.join(developer, "Agent-Overlay");
 const vaultRepo = path.join(developer, "Agent-Vault");
-const runnerRepo = path.join(developer, "Agent-Runner");
+const runnerRepo = overlayRepo;
 const overlayBin = path.join(overlayRepo, "target", "debug", "overlay");
 const runnerBin = path.join(runnerRepo, "target", "debug", "agent-runner");
 const vaultBin = path.join(vaultRepo, "target", "release", "agent-vault-server");
@@ -51,7 +50,8 @@ if (!process.env.ACCEPTANCE_OVERLAY_CMD && !existsSync(overlayBin)) {
 }
 if (!process.env.ACCEPTANCE_RUNNER_CMD && !existsSync(runnerBin)) {
   throw new Error(
-    `The Rust agent-runner binary is missing at ${runnerBin} — run \`cargo build\` in Agent-Runner, ` +
+    `The Rust agent-runner binary is missing at ${runnerBin} — run \`cargo build\` in Agent-Overlay ` +
+    `(or \`cargo build -p agent-runner\`), ` +
     `or set ACCEPTANCE_RUNNER_CMD to an explicit JSON argv array.`
   );
 }

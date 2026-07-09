@@ -5,17 +5,16 @@ up by an Agent-Runner trigger, dispatched to a triage executor that files a memo
 MCP, and surfaced back in Vault alongside the run's trajectory — all explainable from the corpus.
 
 This harness is a **black box**: it spawns the Agent-Vault server and an Agent-Runner `run` loop over
-one shared overlay workspace and asserts the loop through their HTTP APIs. It imports neither product
+one shared overlay workspace and asserts the loop through their HTTP APIs. It imports no product
 repo, so the dependency arrows stay intact (Runner and Vault each depend only on Agent-Overlay;
 nothing depends on the other).
 
 ## Automated run
 
-Build the siblings first, then run the harness from `~/Developer`:
+Build the active siblings first, then run the harness from `~/Developer`:
 
 ```sh
-(cd Agent-Overlay && cargo build)    # target/debug/overlay — the Rust CLI (the default)
-(cd Agent-Runner && cargo build)     # target/debug/agent-runner — the Rust runner (the default)
+(cd Agent-Overlay && cargo build)    # target/debug/overlay and target/debug/agent-runner (the defaults)
 (cd Agent-Vault && cargo build --release -p vault-server)  # target/release/agent-vault-server (the default)
 node Agent-Architecture/acceptance/capture-triage-loop.mjs
 ```
@@ -40,11 +39,11 @@ implementation — see
    `/tmp/ws/triggers/capture-triage.yaml`.
 2. Start Vault over that workspace (from the Agent-Vault repo):
    `AGENT_VAULT_WORKSPACE=/tmp/ws AGENT_VAULT_DB=/tmp/agent-vault.sqlite target/release/agent-vault-server`
-3. Start the Runner loop over the same workspace (from the Agent-Runner repo), with `overlay` on
+3. Start the Runner loop over the same workspace (from the Agent-Overlay repo), with `overlay` on
    `PATH` so the triage harness can reach `overlay serve` (a native install puts it there):
    ```sh
    target/debug/agent-runner run --workspace /tmp/ws \
-     --overlay-command $PWD/../Agent-Overlay/target/debug/overlay
+     --overlay-command target/debug/overlay
    ```
 4. Drop a capture through Vault (UI "new capture", or curl):
    ```sh
@@ -121,7 +120,7 @@ codes, the corpus), so the *implementation* behind each plane is selectable. Thr
 | Knob | Selects | Default |
 |---|---|---|
 | `ACCEPTANCE_OVERLAY_CMD` | the Overlay CLI (`… run` / `… serve` / `… search`) | `["<Agent-Overlay>/target/debug/overlay"]` — the Rust binary (since the R1 cutover); the harness fails fast with a `cargo build` pointer if it is missing |
-| `ACCEPTANCE_RUNNER_CMD` | the Agent-Runner daemon (`… run`); capture-triage loop only | `["<Agent-Runner>/target/debug/agent-runner"]` — the Rust binary (since the R2 cutover); same fail-fast if missing |
+| `ACCEPTANCE_RUNNER_CMD` | the Agent-Runner daemon (`… run`); capture-triage loop only | `["<Agent-Overlay>/target/debug/agent-runner"]` — the Rust binary (since the Phase 8.2 import; the pre-8.2 default was the old Agent-Runner repo's binary); same fail-fast if missing |
 | `ACCEPTANCE_VAULT_CMD` | the Agent-Vault server | `["<Agent-Vault>/target/release/agent-vault-server"]` — the Rust binary (since the R3.9 cutover); same fail-fast if missing |
 
 Arrays because the TS forms need a Node interpreter prefix (`<node>` above is the Node running the
@@ -144,7 +143,7 @@ The historical TS forms remain documented for the record. The TS Overlay CLI no 
 `main` (deleted at the R1 cutover); it lives at Agent-Overlay's annotated tag **`ts-core-final`** —
 build at that tag and point the knob at it. The TS Runner (`ACCEPTANCE_RUNNER_CMD='[<node>,
 "<Agent-Runner>/dist/main.js"]'`) was deleted at the R2 cutover and lives only in Agent-Runner's
-pre-cutover history — check out the last pre-cutover commit, `npm install` (its `file:` dep is the
+pre-cutover history (now archived) — check out the last pre-cutover commit, `npm install` (its `file:` dep is the
 frozen `@overlay/core` dist), and `npm run build` to resurrect it. The TS Vault
 (`ACCEPTANCE_VAULT_CMD='[<node>, "<Agent-Vault>/server/main.js"]'`) was deleted at the R3.9 cutover
 and lives only in Agent-Vault's pre-R3.9 history (its `file:` dep was the frozen `@overlay/core`
