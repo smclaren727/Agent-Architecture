@@ -18,7 +18,7 @@ markdown/YAML files.
 | --- | --- | --- |
 | **Edit** | **Agent-Vault** | A markdown editor/wiki where humans *and* LLMs are first-class editors of the corpus. |
 | **Doctrine / serve** | **Agent-Overlay** | Holds the canonical corpus, validates it, and serves it live to agents over MCP. The library the others call. |
-| **Trigger / execution** | **Agent-Runner** | The standalone loop that decides *when* work runs and dispatches a trigger binding to an executor. |
+| **Trigger / execution** | **Agent-Runner** | The standalone loop that decides *when* work runs and dispatches a trigger binding to an executor. Since Phase 8.2 slice 1 the daemon builds from Agent-Overlay (`crates/agent-runner`); the process boundary is unchanged and the old repo remains a read-only reference while the migration completes. |
 
 The corpus — a workspace conventionally at `~/overlay/` — is the single source of truth. Everything
 else (indexes, served MCP resources, compiled views, trajectories) is *derived from* it and never
@@ -44,7 +44,8 @@ reinvented a framework that runs you instead of a library you call.
 
 ```
         Agent-Vault                          Agent-Runner
-   (edit plane, own repo)              (trigger plane, own repo)
+   (edit plane, own repo)              (trigger plane, own daemon;
+                                        built from Agent-Overlay since 8.2)
         │   │   │                              │        │
  imports│   │   │direct                 imports│        │watches
 overlay-    │   │file r/w          overlay-core│        │corpus events

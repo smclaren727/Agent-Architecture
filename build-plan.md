@@ -576,7 +576,8 @@ ledger):
 2. **Overlay console** `:4180` — [`console.yaml`](../Agent-Overlay/openapi/console.yaml),
    conformance-tested against the recorded transcript; **ts-rs removed** in favor of the generated
    client; serves `/openapi.yaml` · `/openapi.json` · `/docs`.
-3. **Runner** `:8787` — [`runner-webhooks.yaml`](../Agent-Runner/openapi/runner-webhooks.yaml)
+3. **Runner** `:8787` — [`runner-webhooks.yaml`](../Agent-Overlay/openapi/runner-webhooks.yaml)
+   (Overlay-owned since the Phase 8.2 slice-1 import)
    template + an `agent-runner openapi` subcommand that emits a concrete spec from the configured
    active `http` triggers.
 4. **System docs** — this repo's [openapi-contracts.md](openapi-contracts.md) indexes the three
@@ -593,7 +594,7 @@ server.
 
 ---
 
-## Phase 8 — Product boundary realignment (planned)
+## Phase 8 — Product boundary realignment (in progress)
 
 **Goal:** make the product split match the way the system is now being used: Vault should stand alone
 as a knowledge app with native intelligence; Overlay should remain the doctrine/governance layer; and
@@ -697,6 +698,19 @@ Agent-Overlay/
 **Guardrail:** do not merge Runner into the Overlay server/console process. Runner remains the
 always-on loop with machine-local state; Overlay remains the doctrine/runtime surface. The repo moves,
 not the responsibility boundary.
+
+**Progress (2026-07-08) — first slice shipped.** The crate import is done: `agent-runner` builds,
+tests, and lints from `Agent-Overlay/crates/agent-runner` (same binary name, hand-rolled CLI, and
+lib+bin shape), consuming `overlay-core` as an in-workspace sibling instead of a cross-repo path
+dependency. Golden fixtures moved to `crates/agent-runner/tests/fixtures/`, unit templates to
+`units/runner/`, and the webhook OpenAPI template to `openapi/runner-webhooks.yaml` — all
+byte-identical to the old repo. Overlay CI (`cargo build/test/clippy --workspace`, redocly lint)
+now covers the crate; Overlay's `docs/runner.md` is the runner manual's new home. Parity was pinned
+against the old repo's binary: `--help`, error exits, `status --json`, `sync --json` across all
+unit targets, generated cron/systemd/launchd bytes, `openapi` JSON/YAML, and full state-dir trees
+are identical modulo the runner binary's own embedded path. Still open in 8.2: release/desktop
+packaging of `agent-runner`, console Automations preferring the bundled binary, and turning the old
+Agent-Runner repo (untouched so far, kept as a read-only reference) into a pointer/archive.
 
 **Done when:** Vault can answer and work over a vault without Overlay for basic knowledge-agent tasks;
 Engaged mode clearly adds Overlay doctrine/governance rather than being the baseline; and the Runner

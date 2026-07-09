@@ -1,7 +1,11 @@
-# Agent-Runner — repo definition
+# Agent-Runner — role definition
 
-> The trigger/execution plane. Standalone repository. This consolidates the existing trigger
-> architecture into the three-repo frame; it does not duplicate it. Read alongside
+> The trigger/execution plane. **Repo home in transition (Phase 8.2, first slice shipped):** the
+> crate now builds from [`Agent-Overlay/crates/agent-runner`](../Agent-Overlay/docs/runner.md) as an
+> Overlay-shipped daemon binary; the standalone Agent-Runner repo remains a read-only reference
+> until the migration completes. Everything below about the Runner's *role* — a separate daemon
+> process, machine-local state, no doctrine — is unchanged by the move. This consolidates the
+> existing trigger architecture into the three-plane frame; it does not duplicate it. Read alongside
 > [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) and
 > [`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md).
 
@@ -27,11 +31,13 @@ corpus (a workflow + an executor choice), never as a built-in capability of the 
 
 Illustrative — its internals are not overlay doctrine (module roles from
 [`docs/trigger-system-build-plan.md`](../Agent-Overlay/docs/trigger-system-build-plan.md) Phase 3;
-Rust crate layout since the Phase 6 / [R2](rust-migration.md) re-platform):
+Rust crate layout since the Phase 6 / [R2](rust-migration.md) re-platform; hosted in the
+Agent-Overlay workspace since the Phase 8.2 slice-1 import, with fixtures under
+`crates/agent-runner/tests/fixtures/` and unit templates under `units/runner/` there):
 
 ```
-agent-runner/                   # its own git repo; depends on Agent-Overlay's overlay-core
-  crates/agent-runner/          #   crate as a library (Cargo path dependency)
+Agent-Overlay/                  # the crate's home since Phase 8.2 slice 1; overlay-core is
+  crates/agent-runner/          #   an in-workspace sibling (the arrow still points at Overlay)
     src/
       main.rs                   # thin argv/exit shim; cli.rs wires the loop / entry point
       triggers/load.rs          # read declarations via Overlay (rmcp client on overlay://triggers)
@@ -41,8 +47,8 @@ agent-runner/                   # its own git repo; depends on Agent-Overlay's o
       dispatch.rs               # single path: resolve binding → invoke executor against workflow
       reconcile.rs              # sync: state-dir manifest + cron/systemd/launchd unit projection
       crontab.rs                # explicit live-crontab flow (cron preview/status/install/remove)
-  test/fixtures/                # golden tables captured from the pre-port TS implementation
-  units/
+    tests/fixtures/             # golden tables captured from the pre-port TS implementation
+  units/runner/
     overlay-runner.service      # systemd unit (Linux / NixOS node; proven path)
     com.overlay.runner.plist    # launchd template (macOS; plist-lint-proven, bootstrap operator-run;
                                 #   not yet proven as a second node)
@@ -82,7 +88,7 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
    `--reload-interval`, SIGHUP forces an attempt) and replaces watchers per event class — unchanged
    classes keep their state, a failed reload keeps the last-good set and surfaces the error, and
    in-flight dispatches are never aborted. `sync` remains the explicit step for the manifest and the
-   cron projection. (Semantics in the [Runner README](../Agent-Runner/README.md) → "Live trigger
+   cron projection. (Semantics in the [Runner manual](../Agent-Overlay/docs/runner.md) → "Live trigger
    reload".)
 
 **Two materializations:**
@@ -110,7 +116,7 @@ it is **pure deterministic mechanism — no LLM in the provisioning path.** The 
   an installed schedule projection are mutually exclusive per state directory** — an installed
   unit plus the in-process schedule watcher would double-dispatch the same trigger, so
   `agent-runner run` warns when the state dir's manifest records any `unit_target` other than
-  `none` (see the [Runner README](../Agent-Runner/README.md)).
+  `none` (see the [Runner manual](../Agent-Overlay/docs/runner.md)).
 
 **Lifecycle.** The reconciler owns both *add* and *remove*, so deleting a declaration cleanly tears
 down its watcher/unit — no orphans. Desired-state lives in doctrine; actual-state is reconciled to
@@ -162,7 +168,7 @@ These Runner-specific review items are now part of the implementation contract:
   (`dispatch-locks/<trigger-id>/<n>.lock`) and the sync lock (`.sync.lock`) are directory locks with
   `owner.json` pid records; staleness is judged by a dead-pid probe plus mtime grace windows, and
   stale locks are reclaimed with a single retry. The verbatim on-disk contract lives in the
-  [Runner README](../Agent-Runner/README.md) ("State-directory lock protocol").
+  [Runner manual](../Agent-Overlay/docs/runner.md) ("State-directory lock protocol").
 - **Run-mode and an installed schedule projection are mutually exclusive per state directory.**
   An installed unit (cron, systemd, or launchd) plus the in-process schedule watcher would
   double-dispatch the same trigger; `agent-runner run` warns when the manifest records any

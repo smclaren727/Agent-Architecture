@@ -24,7 +24,7 @@ generates a typed client. The phased build is [build-plan.md](build-plan.md) →
 | --- | --- | --- | --- | --- |
 | **Vault** (the PKM API — the primary integration target) | [`vault.yaml`](../Agent-Vault/openapi/vault.yaml) | `:4173` | `/openapi.yaml` · `/openapi.json` · `/docs` | [README](../Agent-Vault/openapi/README.md) · [ledger](../Agent-Vault/Docs/openapi-notes.md) |
 | **Overlay console** (the operator API) | [`console.yaml`](../Agent-Overlay/openapi/console.yaml) | `:4180` | `/openapi.yaml` · `/openapi.json` · `/docs` | [README](../Agent-Overlay/openapi/README.md) · [ledger](../Agent-Overlay/docs/openapi-notes.md) |
-| **Runner** (inbound webhooks) | [`runner-webhooks.yaml`](../Agent-Runner/openapi/runner-webhooks.yaml) | `:8787` | not served — Runner *receives* webhooks; `agent-runner openapi` emits a concrete spec from active configured HTTP triggers | [README](../Agent-Runner/openapi/README.md) · [ledger](../Agent-Runner/docs/openapi-notes.md) |
+| **Runner** (inbound webhooks) | [`runner-webhooks.yaml`](../Agent-Overlay/openapi/runner-webhooks.yaml) | `:8787` | not served — Runner *receives* webhooks; `agent-runner openapi` emits a concrete spec from active configured HTTP triggers. An Overlay-owned artifact since the Phase 8.2 slice-1 import (the `agent-runner` binary ships from Agent-Overlay) | [README](../Agent-Overlay/openapi/README.md) · [ledger](../Agent-Overlay/docs/openapi-notes.md) |
 
 Vault and the console **serve their own spec**: `GET /openapi.yaml` and `/openapi.json`
 return the embedded contract, and `GET /docs` is a self-contained Redoc explorer — build
@@ -79,7 +79,7 @@ code:
 - **Console** — [`tests/contract/console-openapi-conformance.test.ts`](../Agent-Overlay/tests/contract/console-openapi-conformance.test.ts)
   validates the recorded response transcript (`console-http/routes.json`) against
   `console.yaml`.
-- **Runner** — [`crates/agent-runner/tests/openapi_cli.rs`](../Agent-Runner/crates/agent-runner/tests/openapi_cli.rs)
+- **Runner** — [`crates/agent-runner/tests/openapi_cli.rs`](../Agent-Overlay/crates/agent-runner/tests/openapi_cli.rs)
   asserts `agent-runner openapi` emits a valid, correct spec from a fixture trigger set;
   the webhook wire it documents is pinned by `tests/http_watcher.rs`.
 
