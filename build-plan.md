@@ -708,9 +708,19 @@ byte-identical to the old repo. Overlay CI (`cargo build/test/clippy --workspace
 now covers the crate; Overlay's `docs/runner.md` is the runner manual's new home. Parity was pinned
 against the old repo's binary: `--help`, error exits, `status --json`, `sync --json` across all
 unit targets, generated cron/systemd/launchd bytes, `openapi` JSON/YAML, and full state-dir trees
-are identical modulo the runner binary's own embedded path. Still open in 8.2: release/desktop
-packaging of `agent-runner`, console Automations preferring the bundled binary, and turning the old
-Agent-Runner repo (untouched so far, kept as a read-only reference) into a pointer/archive.
+are identical modulo the runner binary's own embedded path.
+
+**Progress (2026-07-09) — second slice shipped.** The Overlay desktop app now bundles `agent-runner`
+as a third Tauri sidecar (staged and sha256/size-preflighted by the same script as `overlay` and
+`agent-overlay-server`), and the console Automations surface prefers it by default: the resolution
+precedence is `AGENT_RUNNER_COMMAND` operator override (never silently replaced, no fallback when it
+doesn't resolve) → bundled sibling next to the console executable → PATH default, with the active
+source (`env` | `bundled` | `default`) reported by `GET /api/automations/runner`. The standalone
+`cargo build --release -p agent-runner` artifact remains the remote/headless deployment path
+(operator-managed; the console controls only the local runner), documented in Overlay's
+`docs/runner.md`. Packaged-app smoke verified bundled resolution and override behavior. Still no
+signed/notarized distribution or auto-updater. Still open in 8.2: turning the old Agent-Runner repo
+(untouched so far, kept as a read-only reference) into a pointer/archive.
 
 **Done when:** Vault can answer and work over a vault without Overlay for basic knowledge-agent tasks;
 Engaged mode clearly adds Overlay doctrine/governance rather than being the baseline; and the Runner

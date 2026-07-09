@@ -1,8 +1,10 @@
 # Agent-Runner — role definition
 
-> The trigger/execution plane. **Repo home in transition (Phase 8.2, first slice shipped):** the
-> crate now builds from [`Agent-Overlay/crates/agent-runner`](../Agent-Overlay/docs/runner.md) as an
-> Overlay-shipped daemon binary; the standalone Agent-Runner repo remains a read-only reference
+> The trigger/execution plane. **Repo home in transition (Phase 8.2, slices 1–2 shipped):** the
+> crate builds from [`Agent-Overlay/crates/agent-runner`](../Agent-Overlay/docs/runner.md) as an
+> Overlay-shipped daemon binary — the Overlay desktop app bundles it as a sidecar and its console
+> prefers the bundled binary (operator override preserved), while the standalone release build
+> remains the remote/headless artifact. The old Agent-Runner repo remains a read-only reference
 > until the migration completes. Everything below about the Runner's *role* — a separate daemon
 > process, machine-local state, no doctrine — is unchanged by the move. This consolidates the
 > existing trigger architecture into the three-plane frame; it does not duplicate it. Read alongside
