@@ -31,7 +31,7 @@ derived, never authoritative** (see [`docs/agent-overlay-prd.md`](../Agent-Overl
 | Repo | Owns | Must never |
 | --- | --- | --- |
 | **Agent-Overlay** | The corpus schema + loaders, the `overlay-core` library, the MCP server (`overlay serve`), the execution wrapper + trajectory store (`overlay run`), validation, search, secrets resolution, evals, and distribution of the `agent-runner` daemon binary. | Be an editor; merge the Runner loop into the Overlay server/console process; make Overlay libraries depend on Vault or the Runner daemon. |
-| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, local feature-hash chunk search, bounded related-chunk chat context, the memory proposal review queue UI, the overlay-gated agent-run/capture views, and the right-dock embedded Chat surface for governed read-only/suggest/allow-edits turns. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
+| **Agent-Vault** | The human+LLM editing experience: raw markdown/canonical editing with schema-aware validation, wiki navigation/backlinks, local feature-hash chunk search, bounded related-chunk chat context, the Phase 8.1-designed Vault-native basic-intelligence path, the memory proposal review queue UI, the overlay-gated agent-run/capture views, and the right-dock embedded Chat surface for governed read-only/suggest/allow-edits turns. | Be the doctrine store (the corpus is); be a scheduler (Runner is); write canonical memory silently. |
 | **Agent-Runner** (daemon shipped from Agent-Overlay; old repo archived) | The event loop: cron, file-watch, HTTP, manual. A single dispatch path: resolve a trigger binding → invoke a named executor against a named workflow. | Hold doctrine; accumulate built-in actions; reverse the dependency arrow. |
 
 ## The load-bearing rule: the dependency arrow never reverses
@@ -87,6 +87,11 @@ still executes under Overlay policy/workflow doctrine and records ordinary traje
 distinct content classes — **doctrine** (governs behavior) and **world-knowledge** (facts about the
 operator's world, never instructions). (See [agent-overlay.md](agent-overlay.md) → "The single agent
 lens"; [`docs/mcp-client-setup.md`](../Agent-Overlay/docs/mcp-client-setup.md).)
+
+Phase 8.1 splits that user experience: basic "ask my vault" intelligence is Vault-native by design,
+while Overlay remains the Engaged/governed path for workflows, policies, tools, approvals,
+trajectories, shared memory, and automation. The Vault-owned contract lives in
+[`Docs/native-intelligence.md`](../Agent-Vault/Docs/native-intelligence.md).
 
 ### 3. Trigger read seam — Runner ⇄ Overlay (read-only)
 Runner asks Overlay "what triggers are declared?" exactly the way a session asks "what skills exist?"

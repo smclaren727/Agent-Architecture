@@ -159,6 +159,19 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
   slice record:
   [`Docs/convention-checker.md`](../Agent-Vault/Docs/convention-checker.md).
 
+### Native intelligence (Phase 8.1 — design contract)
+
+Vault owns the basic knowledge-agent experience: provider/local-runtime connection, current-note or
+whole-vault chat, traversal over notes/backlinks/related chunks/structured properties, summaries,
+explanations, relationship finding, and simple proposed edits or draft notes through Vault's own
+validated markdown/frontmatter paths. The user-facing ladder is **Open Vault → Managed Vault →
+Engaged Vault**: Open and Managed are per-vault registry modes, while Engaged is the app-level
+Overlay connection state. The canonical contract lives in
+[`Docs/native-intelligence.md`](../Agent-Vault/Docs/native-intelligence.md); this doc links there
+rather than restating the feature matrix, routing table, setup shape, or permission vocabulary.
+Today's shipped embedded Chat is Overlay-gated end to end, so it is the Engaged path; the
+Vault-native path is designed, not yet implemented.
+
 ## Conventions — the agent-collaboration spec
 
 What makes an agent a *safe co-editor* (not merely a writer) is a small set of conventions the corpus

@@ -641,12 +641,23 @@ The user-facing mode ladder becomes:
 3. **Engaged Vault** — Overlay connected; agent actions can use workflows, policies, tools,
    approvals, proposals, trajectories, shared memory, and Runner automation.
 
+Open and Managed are per-vault registry modes. Engaged is the app-level Overlay connection state,
+orthogonal to both.
+
+**Progress (2026-07-09) — Slice 0 shipped.** The doc/design preflight is done. The canonical
+contract lives in [`Docs/native-intelligence.md`](../Agent-Vault/Docs/native-intelligence.md) and
+owns the Open / Managed / Engaged feature matrix, the native-vs-Engaged chat routing table,
+provider/local-runtime setup shape, and the **Read Only** / **Allow Edits** / **Full Access**
+permission vocabulary. The pinned first implementation target is Vault-native read-only
+current-note Q&A plus whole-vault Q&A over existing Vault search/indexing, working with Overlay
+disconnected — no proposal queue, no trajectory dependency, no write/apply path, no Runner.
+
 **Work:**
 
-- Start with a doc/design preflight before implementation: Vault docs must spell out the
-  **Open / Managed / Engaged** feature matrix, the native-vs-Engaged chat split, provider/local-runtime
-  setup, and the permission vocabulary. The first implementation slice should be read-only
-  current-note/vault Q&A; write/apply behavior follows only after the native permission model is pinned.
+- **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
+  in the Vault doc linked there rather than restated here. Sequencing rule unchanged: the first
+  implementation slice is read-only current-note/vault Q&A; write/apply behavior follows only after
+  the native permission model is pinned.
 - Split Vault's current Overlay-gated chat into a Vault-native path and an Overlay-engaged path.
   The UI may stay one Chat surface, but status, permissions, and run labels must make the active
   mode obvious.
@@ -654,12 +665,13 @@ The user-facing mode ladder becomes:
   user-owned secret files; provider/runtime choices belong in persisted app settings, not in
   Overlay doctrine unless the user chooses the Engaged path.
 - Preserve the Cogito-style permission simplicity for the native path: **Read Only**, **Allow
-  Edits**, and possibly **Full Access** as a future local-tools mode. These are product guardrails,
-  not Overlay policy. Engaged mode can map the same labels onto Overlay profiles/policies.
+  Edits**, and **Full Access** as a future local-tools mode whose containment, scope,
+  confirmation, and audit rules are not pinned yet. These are product guardrails, not Overlay
+  policy. Engaged mode can map the same labels onto Overlay profiles/policies.
 - Keep write discipline boring: the model may propose or request a note change, but Vault performs
   the write through the same validated note APIs the UI uses.
-- Record in Vault docs which features work in Open, Managed, and Engaged modes so "standalone" does
-  not accidentally mean "no agent help."
+- Keep Vault docs explicit about which features work in Open, Managed, and Engaged modes so
+  "standalone" does not accidentally mean "no agent help."
 
 **Guardrail:** Vault-native intelligence must not reimplement Overlay's workflow/policy/proposal
 engine. If the user asks for a named workflow, tool policy, approval gate, trajectory, shared memory,

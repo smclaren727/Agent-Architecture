@@ -15,6 +15,12 @@ Overlay depends on **neither** Vault nor Runner. The dependency arrow points *in
 siblings and never back out — this is the load-bearing rule of the whole system
 ([README.md](README.md) → "the dependency arrow never reverses").
 
+Phase 8.1 sharpens the Vault boundary: Overlay owns **Engaged/governed** agent behavior — doctrine,
+workflows, policies, tools, approvals, proposal queues, trajectories, shared memory, MCP surfaces,
+and Runner automation. Basic "ask my vault" chat is Vault-native by design and does not route
+through Overlay; the contract lives in
+[`Docs/native-intelligence.md`](../Agent-Vault/Docs/native-intelligence.md).
+
 ## The two surfaces Overlay already exposes
 
 Overlay exposes the corpus through two surfaces, both already built in this repo. The siblings
@@ -167,6 +173,8 @@ These Overlay-specific review items are now part of the implementation contract:
 
 - **Not an editor.** Overlay provides schemas, validation, and file APIs; the *editing experience*
   lives in Vault.
+- **Not Vault's baseline chat provider.** Overlay is in the path when Vault is Engaged/governed;
+  basic "ask my vault" chat belongs to Vault's native Phase 8.1 path.
 - **Not a loop.** No `overlay watch` subcommand, ever — a long-lived watcher daemon inside Overlay
   would reverse the dependency arrow and turn the library into a framework
   ([`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md),
