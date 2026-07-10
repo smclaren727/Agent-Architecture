@@ -798,6 +798,27 @@ methods, bodyless DELETE included — test/smoke HTTP helpers must send it like 
 does. Remaining 8.1 work: whole-vault/multi-note edits (undecided — may stay Engaged-only),
 claude-code stream-json.
 
+**Progress (2026-07-09) — Slice 8 shipped.** Real Claude Code `stream-json` streaming replaces the
+single-delta degradation. Probed first against the real CLI: `stream-json` in print mode requires
+`--verbose`, and genuine incremental deltas require `--include-partial-messages`; the streaming
+argv adds exactly those flags to the Slice 6 tools-off safety shape (fixed argv pinned by test —
+no shell, prompt on stdin, env-cleared allowlist, empty temp cwd, bounded timeout, kill-on-drop,
+capped output, stderr never surfaced; the non-streaming route keeps `json` mode). **Closed-allowlist
+event parsing:** only `stream_event → content_block_delta → text_delta` surfaces, fed through the
+same anti-flash gate as the OpenAI streaming path (allow-edits fences cannot flash); thinking and
+system/rate-limit/lifecycle events are silently ignored; **tool blocks are closed 502 failures**
+(tools are off — one appearing means the contract broke); malformed NDJSON, `is_error`, a missing
+`result` event, or reply/stdout-cap overruns fail closed and kill the child; timeout → 504 and
+receiver-drop kills the child (both pid-proven). The final `result` event is authoritative and
+feeds the unchanged finalizer/suggestion parser, so Read Only / Allow Edits semantics are
+byte-identical to non-streaming. No SSE-frame, OpenAPI, or UI changes. No version sniffing: older
+CLIs without `stream-json` support fail streaming closed while the non-streaming route still works
+(documented version floor). Matrix green (one cold-run flake, 4 subsequent full-suite greens); live
+disconnected smoke with the **real** CLI: Read Only streamed 5 incremental deltas, Allow Edits
+flashed nothing and wrote nothing before explicit Apply (then applied through the validated path),
+OpenAI-compatible streaming unchanged, zero Overlay artifacts. Remaining 8.1 work:
+whole-vault/multi-note edits (undecided — may stay Engaged-only), Full Access design.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
