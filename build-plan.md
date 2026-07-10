@@ -383,9 +383,9 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      the context value identity) and DashboardView joined the lazy views; entry 350.20 →
      341.69 kB (109.68 → 107.95 kB gzip). Full validation green in both repos (cargo
      fmt/build/clippy/test, contract suites, OpenAPI lint + gen-check, web unit tests, Playwright
-     smokes). Known follow-up: Overlay's route error boundary is still keyed on the pathname,
-     which remounts its Suspense per navigation and can blank-flash the first visit to a lazy
-     view; Vault's reset-on-navigation boundary is the model for removing that key.
+     smokes). Follow-up resolved locally after the pass: Overlay's route error boundary now
+     matches Vault's reset-on-navigation shape instead of keying the whole boundary on the
+     pathname, so lazy route transitions can keep the old view while the next chunk loads.
 
   **Developer ID distribution work** — requires Apple Developer Program credentials and release
   secrets:
