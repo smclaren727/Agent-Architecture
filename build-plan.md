@@ -773,6 +773,31 @@ mapping) and a disconnected live smoke where the **real** Claude Code answered f
 Remaining 8.1 work: whole-vault/multi-note edits (undecided — may stay Engaged-only),
 Keychain-backed secrets, claude-code stream-json.
 
+**Progress (2026-07-09) — Slice 7 shipped.** Keychain-backed native provider secrets. The
+OpenAI-compatible native chat key can now live in the OS secure store instead of only a process
+env var: `nativeChat.apiKeySource: env | keychain` (absent = `env`, old settings files unchanged;
+`keychain` persists no `apiKeyEnv`), a new Vault `secret_store` module (`keyring` 3 with
+`apple-native` + `windows-native` only; one slot `agent-vault` / `native-chat-provider-api-key`),
+and `PUT|DELETE /api/native-chat/secret` (store without echo, 4096-char cap, idempotent clear;
+closed errors `unsupported` 501 / `permission-denied` / `storage-failed` 500 — Keychain failures
+never collapse into vague provider errors). Settings responses report `secret { backend, hasKey }`
+and status reports `apiKeySource` without ever returning a value. **Honest platform support:**
+macOS Keychain shipped and live-smoked; Windows Credential Manager compiled but untested; Linux
+reports `unsupported` with the env-var reference as the safe fallback;
+`AGENT_VAULT_SECRET_STORE=memory` is the tests/debug backend so no suite touches a real Keychain.
+The env override (`AGENT_VAULT_NATIVE_CHAT_*`) still wins wholesale, stays env-var-only, and never
+consults the store; the claude-code backend rejects `apiKeySource` and keeps auth in the user's
+own CLI login. The Settings panel gained the key-source selector, a never-prefilled password
+field, Store/Update, confirm-gated Clear, and stored/missing/unsupported status copy. Proven by
+contract tests (sentinel key never in `data/settings.json`, responses, server output, or the temp
+tree; mock provider receives it as the bearer token; env-override-wins with the store forced
+unsupported; zero Overlay artifacts) and a disconnected live smoke against the **real** macOS
+Keychain (store → status → test → read-only turn → clear, Keychain slot verified empty after).
+Review catch: the origin guard requires the JSON content-type on *all* state-changing `/api`
+methods, bodyless DELETE included — test/smoke HTTP helpers must send it like the real web client
+does. Remaining 8.1 work: whole-vault/multi-note edits (undecided — may stay Engaged-only),
+claude-code stream-json.
+
 **Work:**
 
 - **Doc/design preflight — ✅ done (Slice 0, 2026-07-09; see Progress above).** The contract lives
