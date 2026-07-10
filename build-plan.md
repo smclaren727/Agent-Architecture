@@ -303,12 +303,20 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      packaged CLI/runner binary status via a read-only `GET /api/settings`; Vault persists the
      connected Overlay workspace and CLI path in its app settings file (pinned to app-data by the
      packaged shell). Env vars are documented override/debug escape hatches that win when set and
-     are surfaced as active overrides. Remaining under item 3: Runner command/state-dir persistence
-     for service control.
-  3. **Runner service installation and control.** Overlay's Automations surface can install/update the
-     macOS launchd agent (and systemd user unit on Linux), start/stop/restart it, enable run-at-login,
-     and keep the daemon command pinned to the selected workspace, state dir, Runner binary, and Overlay
-     CLI. Runner still owns the loop and writes only machine-local derived state.
+     are surfaced as active overrides. The item-3 remainder landed with Slice 2: the installed
+     launchd service pins the runner command and state dir as derived machine state (platform
+     defaults + env overrides; no new doctrine or app-settings surface was needed).
+  3. **Done — Runner service installation and control** (Slice 2, 2026-07-10, Overlay `6ec8e85`).
+     Overlay's Automations surface installs/updates the macOS launchd agent from a server-derived,
+     preview-first plan pinning the selected workspace, state dir, bundled/resolved Runner binary,
+     and Overlay CLI; lifecycle actions cover start/stop/restart plus run-at-login enable/disable,
+     all through fixed-argv `launchctl` (no shell strings, bounded output/timeouts). Install status
+     distinguishes not-installed/current/drifted — drift gets an explicit update, never a silent
+     overwrite — and uninstall removes only marker-carrying generated plists. Service-manager env
+     vars became advanced overrides over platform defaults. Daemon heartbeat liveness remains
+     authoritative over service state. systemd stays preview + operator-run install (templates
+     preserved); proven by an isolated packaged-app launchd smoke (real bootstrap/bootout under a
+     test label). Runner still owns the loop and writes only machine-local derived state.
   4. **Done — Vault-to-Overlay connection setup** (Slice 1, 2026-07-10, Vault `a13f4f2`). The
      Overlay connection is live runtime state managed from Settings → Overlay connection:
      `GET/PUT /api/overlay/settings` validates the workspace, swaps the connection, and starts/stops
