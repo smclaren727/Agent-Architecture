@@ -324,10 +324,18 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      Overlay CLI resolves env > settings > `PATH` > the CLI installer's well-known location, with
      unavailable as a first-class status. Vault remains fully usable standalone; settings hold only
      path pointers, never doctrine or secrets.
-  5. **Secrets and local-agent runtime onboarding.** API keys, local Claude Code/Codex availability,
-     and supported agent runtime setup are guided in UI. Runtime setup writes canonical YAML doctrine
-     through Overlay's validated writer where appropriate; secret values live in Keychain or
-     user-owned secret/env files, never in the corpus or app-private doctrine.
+  5. **Done — Secrets and local-agent runtime onboarding** (Slice 3, 2026-07-10, Overlay `253a421`).
+     `GET /api/agents/readiness` plus a reworked Agent Runtimes view make governed-runtime and
+     secret setup guided in UI: bounded version probes of discovered Claude Code/Codex/Gemini CLIs,
+     a per-runtime governance verdict (installed-but-unconfigured is never shown usable), per-runtime
+     availability under the Runner service's pinned `PATH`, required API-key env **names** with
+     set/missing flags, policy-declared secret readiness by name across sources, hook-snippet
+     install detection, and a read-only launchd gui-domain diagnostic that flags stale/conflicting
+     Overlay/Runner env entries with copyable cleanup commands. Existing `/api/agents/setup` remains
+     the validated-YAML writer for runtime doctrine. Deliberately guided **status, not storage**:
+     secret values stay in the shell env, user-owned `secrets/.env`, OS keyring, or secret-manager
+     CLIs (Vault's native-chat Keychain entry stays Vault-owned) and never appear in responses,
+     snippets, logs, or fixtures — the contract suite scans for sentinel leakage.
   6. **Unsigned/ad-hoc package rehearsal.** Build local `.app`/`.dmg` artifacts, hash-check bundled
      Rust sidecars, and run clean-ish install smokes that prove the first-run flows work without a repo
      checkout or manually exported env vars. Gate out any step that would require real signing,
