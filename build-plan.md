@@ -354,8 +354,22 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      packaged-Overlay-created workspace, and quit reaps every sidecar and releases 4173/4180/4183.
      Evidence: `qa/2026-07-10-package-rehearsal/`. Explicitly not covered (Developer ID track):
      signing (bundles are ad-hoc/linker-signed, resources unsealed), notarization, stapling,
-     updater/release manifest, clean-machine proof. Overlay's own >500 kB entry chunk remains a
-     backlog item.
+     updater/release manifest, clean-machine proof. Overlay's own >500 kB entry chunk was cleared
+     in the follow-up cleanup (item 7).
+  7. **Done — Pre-Developer-ID cleanup** (2026-07-10). Overlay's web entry chunk was code-split at
+     the view registry (React.lazy views behind one Suspense fallback plus a pathname-keyed route
+     error boundary that shows a reload card instead of a blank renderer): 500.57 kB → 350.20 kB
+     minified (138.54 → 109.68 kB gzip), warning gone, Dashboard/Workspace kept eager as the two
+     landing views; every view — including the failed-chunk path — is covered by the browser
+     smoke. The two environment-induced Vault contract-test failures from the rehearsal are fixed
+     in the test layer only: missing-overlay-CLI expectations now spawn with an opt-in isolation
+     that redirects `HOME`/`USERPROFILE`/`LOCALAPPDATA` and strips overlay-bearing PATH entries,
+     and the live-connection test (added the night before, born broken) is repaired against the
+     documented contract (mandatory `approval`/`business_risk` policy-fixture sections;
+     `relativePath`, not the absolute `path`, names a listing entry) — product CLI discovery is
+     untouched. The `native_runtime` Claude-probe flake was a 1 s wall-clock budget on the
+     non-timeout probes under load; those budgets are now 30 s caps with assertions unchanged
+     (30 idle reruns green before, 35 after).
 
   **Developer ID distribution work** — requires Apple Developer Program credentials and release
   secrets:
