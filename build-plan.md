@@ -485,12 +485,20 @@ hardening and should stay visible as the system moves toward production packagin
   Code/Code block/Link · Unordered/Ordered/Task list · Quote/Horizontal rule/Table. Standalone blocks
   insert with blank-line boundaries (an HR after a paragraph no longer parses as a setext heading).
   Image/attachment was deliberately deferred — Vault has no attachment story yet.
-- **Remaining Vault dogfood follow-ups (2026-07-08 slice).** Recorded during the slice-1 adversarial
-  reviews: (a) live-watching vaults registered at runtime (today they index on add and on every API
-  write; external file edits there need a restart); (b) the cross-vault daily-note 409 is an error-only
-  dead-end — offer "open the existing daily (switches vault)" instead; (c) list-kind conversion in the
-  toolbar (UL ↔ OL ↔ task on already-listed lines currently no-ops); (d) NotesView blocks vault-targeted
-  creates with an error when `/api/vaults` cannot be fetched rather than retrying automatically.
+- **Done — Vault dogfood follow-ups closed (2026-07-09).** All four items recorded by the 2026-07-08
+  slice-1 adversarial reviews shipped: (a) vaults registered at runtime are live-watched — registry
+  mutation routes sync the running notify watcher through a shared handle (idempotent root-diff;
+  removal unwatches; notify calls never run under the event-callback's lock; sync is best-effort so a
+  stale root can't wedge registry mutations); (b) the cross-vault daily-note conflict returns a
+  structured 409 (`error` + `conflict: {vault, noteId, date}`, dedicated `DailyNoteConflict` schema)
+  and the daily bar offers "Open existing daily", switching to the owning vault instead of
+  dead-ending; (c) toolbar list buttons convert already-listed lines between unordered/ordered/task
+  (indentation preserved, checkboxes dropped on conversion away from task, same-kind click stays a
+  no-op); (d) a failed `/api/vaults` fetch no longer dead-ends creation — the create form and daily
+  bar surface Retry affordances, typed input survives, and unresolved managed targets still never
+  guess a vault. The web error client gained `ApiError` (status + parsed body) with unchanged
+  messages. Known cosmetic edge: converting a mixed selection to an ordered list keeps an
+  already-ordered line's number, so source numbering can be non-sequential (renderers renumber).
 
 **Guardrail:** enforcement and transport are added at the edges (executors, server transport) without
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
