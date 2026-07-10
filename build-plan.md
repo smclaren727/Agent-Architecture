@@ -343,17 +343,23 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   Hook config remains a derived artifact over plain YAML doctrine, never app-private state; hook trust,
   local-process permissions, and secret material stay in the Codex/Claude/daemon environment rather
   than the corpus.
-- **Remaining Overlay native titlebar integration.** Bring the same macOS-only titlebar-overlay polish
-  now proven in Vault to the Agent-Overlay desktop console. The slice should blend the packaged `.app`
-  window chrome into the Overlay header/sidebar shell, place a sidebar or navigation control in the
-  titlebar-safe area near the traffic-light controls where the design supports it, and preserve the
-  existing `data-native-vibrancy` opaque/browser/non-macOS fallback. Verify the locked Tauri schema
-  support for `titleBarStyle`, `trafficLightPosition`, and `hiddenTitle`; grant only the window IPC
-  capabilities required for drag behavior; define draggable and non-draggable regions so command
-  buttons, menus, and status controls remain clickable; and keep Windows/Linux untouched unless a later
-  platform-specific pass intentionally designs those variants. Validation must include a real packaged
-  Overlay `.app` smoke for light/dark, reduce-transparency, startup flash, traffic-light alignment,
-  header drag, double-click zoom, and fullscreen behavior.
+- **Done — Overlay native titlebar integration (2026-07-09).** The Vault-proven macOS titlebar overlay
+  shipped in the Agent-Overlay desktop console: `titleBarStyle: Overlay` + `hiddenTitle` +
+  `trafficLightPosition x16/y26` (keys verified against the locked Tauri 2.11.5 / tauri-utils 2.9.3
+  source; Windows/Linux overrides stay complete opaque window entries without the overlay keys). The
+  4rem app header doubles as the titlebar behind the same packaged-mac gate as vibrancy
+  (`data-mac-titlebar` beside `data-native-vibrancy`): an 80px traffic-light safe area on the inner
+  header bar and a `data-tauri-drag-region="deep"` header whose interactive children stay clickable;
+  the main-window capability gained only `core:window:allow-start-dragging`. Browser/dev and non-mac
+  renders get no attributes or offsets — Playwright covers both directions with a simulated
+  `__TAURI_INTERNALS__` context. Real packaged-`.app` QA ran with full automation this time
+  (Screen Recording + Accessibility TCC available): current-bundle proof, dark/light blend, theme
+  toggle + hamburger/drawer clicks through the drag region, header drag (+120/+120), double-click
+  zoom, 760/1024/1440/1920 widths with zero overlap, fullscreen enter/exit, and clean sidecar reap
+  on quit — evidence in `qa/2026-07-09-overlay-titlebar/`. Same accepted limitation as Vault: the
+  safe-area reservation persists in native fullscreen while the traffic lights auto-hide;
+  system-level Reduce Transparency was not toggled (the titlebar rule extends the proven
+  `prefers-reduced-transparency` fallback block).
 
 **Current implementation-risk status:** the following review findings were captured during Phase 5
 hardening and should stay visible as the system moves toward production packaging.
