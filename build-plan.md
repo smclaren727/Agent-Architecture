@@ -336,13 +336,26 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      secret values stay in the shell env, user-owned `secrets/.env`, OS keyring, or secret-manager
      CLIs (Vault's native-chat Keychain entry stays Vault-owned) and never appear in responses,
      snippets, logs, or fixtures — the contract suite scans for sentinel leakage.
-  6. **Unsigned/ad-hoc package rehearsal.** Build local `.app`/`.dmg` artifacts, hash-check bundled
-     Rust sidecars, and run clean-ish install smokes that prove the first-run flows work without a repo
-     checkout or manually exported env vars. Gate out any step that would require real signing,
-     notarization, or hosted update secrets. Known warning cleanup before this is called polished:
-     rename Vault's bundle identifier away from the `.app` suffix (`com.agentvault.app` currently
-     triggers a macOS bundle-extension warning), and either code-split the larger Vault web chunks or
-     consciously raise the Vite/Rolldown warning threshold with evidence that startup size is acceptable.
+  6. **Done — Unsigned/ad-hoc package rehearsal** (Slice 4, 2026-07-10). Both apps build local
+     `.app` + `.dmg` artifacts whose bundled Rust sidecars and packaged web dists are hash-verified
+     against the release build outputs: `package:verify` scripts in both repos check the built
+     bundle (sidecar sha256 + web-dist tree digest + `.dmg` hash report), and the staged-sidecar
+     `--check` guards the stale nested `src-tauri/target/release/bundle` in both repos. The known
+     warnings are cleaned up: Vault's bundle identifier is `com.agentvault.desktop` (was
+     `com.agentvault.app`), with a one-time packaged-launch migration that renames the old app-data
+     dir and rewrites old-prefix paths in `vaults.json`/`settings.json` (unit-tested; proven live
+     with seeded legacy data); the Vault entry chunk was code-split (lazy RightDock + Open File,
+     Notes, Graph, Workspace routes: 1,613 kB → 414 kB minified, warning gone, build
+     byte-deterministic) rather than raising the threshold. A clean-ish install smoke drove the
+     packaged apps from a non-repo install location under isolated `HOME`s with no exported product
+     env vars: Overlay first-run → create-from-template → relaunch persistence → readiness →
+     launchd service preview (preview-only, bundled binaries pinned), Vault migration →
+     standalone editing → native-chat status → connect/disconnect/reconnect to the
+     packaged-Overlay-created workspace, and quit reaps every sidecar and releases 4173/4180/4183.
+     Evidence: `qa/2026-07-10-package-rehearsal/`. Explicitly not covered (Developer ID track):
+     signing (bundles are ad-hoc/linker-signed, resources unsealed), notarization, stapling,
+     updater/release manifest, clean-machine proof. Overlay's own >500 kB entry chunk remains a
+     backlog item.
 
   **Developer ID distribution work** — requires Apple Developer Program credentials and release
   secrets:
