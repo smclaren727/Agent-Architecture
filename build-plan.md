@@ -370,6 +370,22 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      untouched. The `native_runtime` Claude-probe flake was a 1 s wall-clock budget on the
      non-timeout probes under load; those budgets are now 30 s caps with assertions unchanged
      (30 idle reruns green before, 35 after).
+  8. **Done — React/Vite frontend performance pass** (2026-07-10). A Vercel
+     react-best-practices-guided pass over both web frontends. Vault: all 14 registry views are
+     now `React.lazy` (was 4) and InfoDock's LocalGraph (xyflow + dagre) loads on demand, behind
+     a new route error boundary that stays mounted across navigations and resets on route change
+     (so React Router transitions hold the old view while a chunk loads — no blank flash);
+     workspace SSE state moved off the shared context value onto a `useSyncExternalStore`
+     snapshot so events re-render only subscribers; chat transcript rows and the markdown
+     preview are memoized so settled rows skip per-token reconciliation and unchanged previews
+     skip react-markdown's re-parse. Entry chunk 414.07 → 295.85 kB (121.44 → 93.19 kB gzip).
+     Overlay: the event bus's unused `lastEvent` state was dropped (SSE messages no longer churn
+     the context value identity) and DashboardView joined the lazy views; entry 350.20 →
+     341.69 kB (109.68 → 107.95 kB gzip). Full validation green in both repos (cargo
+     fmt/build/clippy/test, contract suites, OpenAPI lint + gen-check, web unit tests, Playwright
+     smokes). Known follow-up: Overlay's route error boundary is still keyed on the pathname,
+     which remounts its Suspense per navigation and can blank-flash the first visit to a lazy
+     view; Vault's reset-on-navigation boundary is the model for removing that key.
 
   **Developer ID distribution work** — requires Apple Developer Program credentials and release
   secrets:
