@@ -292,20 +292,30 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   **Pre-Developer-account distribution groundwork** — can be built and tested with unsigned/ad-hoc
   local artifacts:
 
-  1. **First-run Overlay workspace setup.** If no workspace is configured, the app offers create from
-     the shipped template, choose existing, validate, and persist the selected path. No terminal
-     `overlay init` should be required for the happy path.
-  2. **Persisted app settings instead of env-only wiring.** Workspace paths, Runner command/state dir,
-     Vault's connected Overlay workspace, and Vault's Overlay CLI path are discovered or stored in
-     app configuration; environment variables remain an override/debug escape hatch, not the primary
-     setup flow.
+  1. **Done — First-run Overlay workspace setup** (Slice 1, 2026-07-10, Overlay `ef9e858`). The
+     Workspace view is the first-run setup surface: create the default workspace from the embedded
+     template, open an existing folder, or repair a persisted workspace path that failed to restore.
+     Create returns structured conflicts (an existing workspace offers open; a non-empty directory
+     proposes an `overlay/` child requiring explicit confirmation) — no silent redirect, no
+     force/overwrite path, no terminal `overlay init` on the happy path.
+  2. **Mostly done — Persisted app settings instead of env-only wiring** (Slice 1, 2026-07-10).
+     Overlay persists the workspace path in the desktop JSON store and reports provenance plus
+     packaged CLI/runner binary status via a read-only `GET /api/settings`; Vault persists the
+     connected Overlay workspace and CLI path in its app settings file (pinned to app-data by the
+     packaged shell). Env vars are documented override/debug escape hatches that win when set and
+     are surfaced as active overrides. Remaining under item 3: Runner command/state-dir persistence
+     for service control.
   3. **Runner service installation and control.** Overlay's Automations surface can install/update the
      macOS launchd agent (and systemd user unit on Linux), start/stop/restart it, enable run-at-login,
      and keep the daemon command pinned to the selected workspace, state dir, Runner binary, and Overlay
      CLI. Runner still owns the loop and writes only machine-local derived state.
-  4. **Vault-to-Overlay connection setup.** Vault can connect to an existing Overlay workspace and
-     resolve a usable Overlay CLI/bundled binary path automatically, while remaining fully usable as a
-     standalone markdown/vault editor when no Overlay workspace is connected.
+  4. **Done — Vault-to-Overlay connection setup** (Slice 1, 2026-07-10, Vault `a13f4f2`). The
+     Overlay connection is live runtime state managed from Settings → Overlay connection:
+     `GET/PUT /api/overlay/settings` validates the workspace, swaps the connection, and starts/stops
+     the workspace watcher without a restart; `workspaceDir: null` is explicit standalone. The
+     Overlay CLI resolves env > settings > `PATH` > the CLI installer's well-known location, with
+     unavailable as a first-class status. Vault remains fully usable standalone; settings hold only
+     path pointers, never doctrine or secrets.
   5. **Secrets and local-agent runtime onboarding.** API keys, local Claude Code/Codex availability,
      and supported agent runtime setup are guided in UI. Runtime setup writes canonical YAML doctrine
      through Overlay's validated writer where appropriate; secret values live in Keychain or
