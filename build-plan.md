@@ -602,7 +602,7 @@ server.
 
 ---
 
-## Phase 8 — Product boundary realignment (in progress)
+## Phase 8 — Product boundary realignment (safe native arc shipped; parked decisions recorded)
 
 **Goal:** make the product split match the way the system is now being used: Vault should stand alone
 as a knowledge app with native intelligence; Overlay should remain the doctrine/governance layer; and
@@ -816,8 +816,17 @@ CLIs without `stream-json` support fail streaming closed while the non-streaming
 (documented version floor). Matrix green (one cold-run flake, 4 subsequent full-suite greens); live
 disconnected smoke with the **real** CLI: Read Only streamed 5 incremental deltas, Allow Edits
 flashed nothing and wrote nothing before explicit Apply (then applied through the validated path),
-OpenAI-compatible streaming unchanged, zero Overlay artifacts. Remaining 8.1 work:
-whole-vault/multi-note edits (undecided — may stay Engaged-only), Full Access design.
+OpenAI-compatible streaming unchanged, zero Overlay artifacts.
+
+**Close-out (2026-07-09) — safe native arc shipped.** The bounded Vault-native intelligence arc is
+complete for the current product boundary: read-only current-note/vault Q&A, persisted native provider
+setup, current-note Allow Edits, explicit draft/placeholder note creation, streaming replies, Claude
+Code local-runtime support, and Keychain-backed OpenAI-compatible provider secrets all work without
+Overlay. The remaining ideas — whole-vault/multi-note edits and **Full Access** — are **parked
+decision work**, not queued implementation slices. They should be revisited only at a later build-plan
+point with an explicit Engaged/Overlay boundary decision covering review bundles, diff UI, rollback,
+path/tool containment, approvals, and audit trail. Until then, they should not be slipped into the
+Vault-native path.
 
 **Work:**
 
@@ -831,10 +840,10 @@ whole-vault/multi-note edits (undecided — may stay Engaged-only), Full Access 
 - Add or reuse provider/local-runtime setup in Vault for native chat. Secrets belong in Keychain or
   user-owned secret files; provider/runtime choices belong in persisted app settings, not in
   Overlay doctrine unless the user chooses the Engaged path.
-- Preserve the Cogito-style permission simplicity for the native path: **Read Only**, **Allow
-  Edits**, and **Full Access** as a future local-tools mode whose containment, scope,
-  confirmation, and audit rules are not pinned yet. These are product guardrails, not Overlay
-  policy. Engaged mode can map the same labels onto Overlay profiles/policies.
+- Preserve the Cogito-style permission simplicity for the native path: **Read Only** and **Allow
+  Edits** are shipped product guardrails; **Full Access** is explicitly parked until a future
+  Engaged/Overlay decision pins containment, scope, confirmation, approvals, and audit rules.
+  Engaged mode can map the shipped labels onto Overlay profiles/policies.
 - Keep write discipline boring: the model may propose or request a note change, but Vault performs
   the write through the same validated note APIs the UI uses.
 - Keep Vault docs explicit about which features work in Open, Managed, and Engaged modes so
@@ -920,7 +929,7 @@ deleted; the source tree is retained read-only for history (last pre-archive imp
 `920e4e1`). Architecture and Overlay docs now match
 the new repo home, and the acceptance harness default runner binary now comes from the Agent-Overlay
 build. The 8.2 runner-side done-when is satisfied. Still no signed/notarized distribution or
-auto-updater; those are tracked separately. Phase 8 remains in progress on 8.1.
+auto-updater; those are tracked separately.
 
 **Done when:** Vault can answer and work over a vault without Overlay for basic knowledge-agent tasks;
 Engaged mode clearly adds Overlay doctrine/governance rather than being the baseline; and the Runner
