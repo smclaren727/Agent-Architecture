@@ -271,7 +271,8 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   own desktop surface to Tauri V2 as well. **✅ done (2026-06-30)** — both apps shipped **model-B
   Tauri v2 wraps**: the window loads the loopback origin of bundled cargo-built Rust sidecars
   (Vault `src-tauri/` bundles `agent-vault-server`; Overlay `apps/desktop/src-tauri` bundles
-  `agent-overlay-server` plus the runnable `overlay` CLI). The old Node SEA sidecar/toolchain was retired
+  `agent-overlay-server` plus the runnable `overlay` CLI, and since Phase 8.2 also bundles
+  `agent-runner`). The old Node SEA sidecar/toolchain was retired
   during the Rust migration. Plans:
   [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md) (Vault),
   [`docs/desktop-app-build-plan.md`](../Agent-Overlay/docs/desktop-app-build-plan.md) (Overlay).
@@ -386,6 +387,25 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      smokes). Follow-up resolved locally after the pass: Overlay's route error boundary now
      matches Vault's reset-on-navigation shape instead of keying the whole boundary on the
      pathname, so lazy route transitions can keep the old view while the next chunk loads.
+
+  **Current near-term lane before Developer ID.** The two user-facing products are built and usable,
+  and Developer ID distribution is intentionally gated until Apple Developer Program credentials are
+  available. Until then, future sessions should prefer:
+
+  - real-world dogfooding fixes in Vault and Overlay, especially UI/UX polish discovered while using
+    the packaged apps;
+  - feature slices that preserve the current product split: Vault owns baseline markdown/knowledge
+    editing and native intelligence, Overlay owns doctrine/governance/automation, and Runner remains
+    an Overlay-shipped daemon;
+  - dependency additions only when they reduce real complexity or unlock a specific requested product
+    capability, with the source-of-truth rule unchanged (Markdown/YAML first, app state only for
+    paths/preferences/secrets metadata where already established);
+  - small hardening/test follow-ups when they are evidence-backed and bounded, such as bundle-size
+    guards or shared test fixtures.
+
+  Keep the preferred workflow lightweight but rigorous: read repo-local `AGENTS.md`, scope the slice
+  narrowly, use Fable/Codex or subagents when the work benefits from adversarial review, validate the
+  touched surfaces, then commit/push only when explicitly requested.
 
   **Developer ID distribution work** — requires Apple Developer Program credentials and release
   secrets:
@@ -579,8 +599,9 @@ hardening and should stay visible as the system moves toward production packagin
 moving doctrine out of plain files or giving the Runner/Vault privileged built-ins.
 
 **Done when:** policies are enforced (not merely advised) on `overlay run`; an MCP client can connect
-over HTTP/SSE; Vault and Overlay have signed/packaged, self-updating distributions, and Overlay's
-distribution includes the Runner daemon binary.
+over HTTP/SSE; Vault and Overlay have local packaged-app rehearsal coverage; Overlay's distribution
+includes the Runner daemon binary. Signed/notarized, self-updating consumer distribution is now
+tracked separately in the final Developer ID lane because it is credential-gated.
 
 ---
 
@@ -592,7 +613,9 @@ implementations swap. React frontends and the Tauri v2 wraps are untouched. Camp
 architecture, pinned stack, frozen-TS-core policy, cutover gates, risk register):
 [rust-migration.md](rust-migration.md).
 
-**Prerequisite:** Phase 5 (the parked packaging work is *finished by* this phase, not before it).
+**Prerequisite:** Phase 5's runtime and contract work. The original parked packaging tail is no
+longer a Rust-migration prerequisite; unsigned/ad-hoc package rehearsal is complete, while
+Developer ID signing/notarization/updater work is final distribution work.
 
 **Dependency arrows:** Cargo path deps replaced the former TS `file:` deps —
 `vault-server ──path──▶ overlay-core ◀──path── agent-runner`; Overlay's own crates point only
@@ -630,9 +653,10 @@ implementation.
    `Docs/rust-migration-notes.md`.
 5. **6.4 Demolition + packaging-once (R4)** — **demolition ✅ done; packaging open.** Residual TS
    infra is removed (no Node runtime outside the two `web/` build chains) and the packaged apps
-   boot from the bundled, hash-verified Rust sidecars (local smoke 2026-07-07). The parked
-   signing/updater/cross-webview packaging (Phase 5's F1/F2) remains the **open distribution
-   work**, to be done **once**, in Rust. Of the unblocked post-migration roadmap, the Vault
+   boot from the bundled, hash-verified Rust sidecars (local smoke 2026-07-07; package rehearsal
+   refreshed 2026-07-10). The parked signing/updater/cross-webview packaging remains the **final
+   Developer ID distribution work**, gated on Apple Developer Program credentials. Of the unblocked
+   post-migration roadmap, the Vault
    embedded agent (2026-07-03/04) and the privileged-origin split (2026-07-07) have since
    shipped; Runner notify-based watching remains an open decision.
 
@@ -1001,9 +1025,9 @@ doesn't resolve) → bundled sibling next to the console executable → PATH def
 source (`env` | `bundled` | `default`) reported by `GET /api/automations/runner`. The standalone
 `cargo build --release -p agent-runner` artifact remains the remote/headless deployment path
 (operator-managed; the console controls only the local runner), documented in Overlay's
-`docs/runner.md`. Packaged-app smoke verified bundled resolution and override behavior. Still no
-signed/notarized distribution or auto-updater. Still open in 8.2: turning the old Agent-Runner repo
-(untouched so far, kept as a read-only reference) into a pointer/archive.
+`docs/runner.md`. Packaged-app smoke verified bundled resolution and override behavior. At this point,
+the old Agent-Runner repo still needed its pointer/archive conversion; the next slice completed it.
+Signed/notarized distribution and auto-updater remain tracked separately.
 
 **Progress (2026-07-09) — third slice shipped.** The old Agent-Runner repo was turned into an
 archived historical pointer: its README and AGENTS.md now state the archived status and

@@ -179,8 +179,10 @@ These Overlay-specific review items are now part of the implementation contract:
   would reverse the dependency arrow and turn the library into a framework
   ([`agent-overlay-trigger-system-decisions.md`](../Agent-Overlay/agent-overlay-trigger-system-decisions.md),
   Decision 1).
-- **No dependency on the siblings.** Overlay must build, test, and ship with neither Vault nor Runner
-  present.
+- **No sibling product dependency.** Overlay libraries and the console/server must not depend on
+  Vault or on a running Runner daemon. The `agent-runner` crate now ships from this repo, but it
+  remains a separate binary/process; it must not become an in-process requirement of `overlay-core`,
+  `overlay serve`, or the console server.
 
 See the 13 design principles in [`docs/agent-overlay-prd.md`](../Agent-Overlay/docs/agent-overlay-prd.md) §16 — they all
 apply unchanged here.

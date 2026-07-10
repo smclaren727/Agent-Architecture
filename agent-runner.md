@@ -207,9 +207,11 @@ general pattern — Runner watching a data-plane folder and firing overlay workf
 
 ## Multi-runner, one doctrine
 
-Because bindings are doctrine in the corpus, **two runners can read the same declarations** — systemd
-on a Linux/NixOS box, launchd on a Mac — without divergence. One doctrine, many runners, the same way
-the system supports one doctrine across many executors.
+Because bindings are doctrine in the corpus, **multiple runners can read the same declarations** —
+for example systemd on a Linux/NixOS box and launchd on a Mac — without doctrine divergence. The
+proven everyday topology is still one active runner/state directory per responsibility, to avoid
+double-firing the same trigger; additional machines should split responsibility deliberately or remain
+operator-managed until a future multi-node coordination design exists.
 
 ## Guardrails (drift detectors)
 
@@ -217,7 +219,7 @@ Verbatim intent from the [decisions doc](../Agent-Overlay/agent-overlay-trigger-
 these is violated, the model has drifted back toward a framework:
 
 - **No built-in actions.** The Runner accumulates no capabilities of its own. The cheap, no-LLM path
-  is an **executor choice** (`executor: direct`/`shell`), never a daemon feature.
+  is an **executor choice** (`executor: direct` or a test harness), never a daemon feature.
 - **No doctrine in the Runner.** "What happens when a file lands?" must be answerable entirely by
   reading the corpus — not by reading the Runner's source.
 - **Never add `overlay watch`.** A watcher subcommand inside Overlay reverses the dependency arrow.
