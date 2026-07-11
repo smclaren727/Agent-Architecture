@@ -400,8 +400,64 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   - dependency additions only when they reduce real complexity or unlock a specific requested product
     capability, with the source-of-truth rule unchanged (Markdown/YAML first, app state only for
     paths/preferences/secrets metadata where already established);
+  - adopt [shadcn/typeset](https://ui.shadcn.com/docs/typeset) as the preferred starting point when a
+    Vault or Overlay slice introduces or revisits genuine rendered-prose surfaces — Markdown readers,
+    streaming assistant output, reports, documentation, or artifact previews. Keep the rollout
+    incremental and surface-led: each repo owns its local `typeset.css` and theme-aligned presets
+    (for example reading, chat, and compact report rhythms), while existing renderer safety,
+    interactive element overrides, syntax highlighting, and layout-owned measure remain authoritative.
+    Typeset is not a blanket style for navigation, forms, labels, metadata rows, cards, or ordinary
+    data tables, and it must not become a shared cross-repo package or second design-token source;
   - small hardening/test follow-ups when they are evidence-backed and bounded, such as bundle-size
     guards or shared test fixtures.
+
+  **Planned — terminal ownership correction.** Move the packaged app's raw local terminal from Vault
+  to Overlay's operator console, then remove it from Vault. This is a product-boundary migration, not
+  a terminal-engine rewrite: land the existing Tauri-only `xterm.js` + `portable-pty` implementation
+  in Overlay first, preferably opening in the active Overlay workspace with the user's home as the
+  fallback, then remove Vault's toggle/panel, xterm dependencies, PTY module, terminal IPC commands,
+  and capability grants. Label the Overlay surface as an **ungoverned local shell**: commands do not
+  pass through Overlay policy or approvals, are not trajectories, and receive no injected secrets.
+  Governed work continues through Overlay's Run/approval surfaces. Vault's Native and Engaged Chat,
+  plus its `export-context` / `rebuild-index` maintenance commands, are unaffected. `libghostty-vt`
+  remains a possible future evaluation, not an adopted dependency or part of this migration.
+
+  **Planned — Vault search experience and scale proof.** Redesign Search around retrieval rather than
+  exposing the indexed frontmatter schema as a form. Keep one search box as the primary surface;
+  present the most useful refinements (initially vault, type, tag, and date) as compact controls;
+  show active refinements as removable chips; and move the remaining properties into a searchable
+  **More filters** drawer where a user adds only the fields needed for the current search. Refinement
+  choices should come from actual indexed values where practical, and the results surface should add
+  a result count, useful sort options, clear match context, and stable empty/loading/error states.
+  Do not preserve the current Text/Semantic switch merely for parity: keyword search remains the
+  dependable default, while related or semantic retrieval should be named honestly for the active
+  embedding backend and may be blended into one result experience only after relevance and latency
+  are measured. Improve the existing SQLite FTS5 path first, including search-as-you-type behavior
+  such as last-token prefix matching and evidence-backed typo assistance, without changing the
+  plain-file source-of-truth rule.
+
+  Treat scale as a measured gate, not an assumed engine migration. Add a reproducible representative
+  corpus benchmark before changing the backend: approximately 40,000 documents, realistic document
+  sizes and metadata distributions, and enough deterministic chunks to exercise both keyword and
+  related/semantic retrieval. Record indexing/rebuild time, index size, memory use, and warm/cold p50
+  and p95 query latency. The current exhaustive per-chunk similarity scan is the first expected
+  semantic bottleneck; if the benchmark confirms it, evaluate a bounded embedded ANN/vector index
+  independently of the proven FTS5 text path. Support for PDFs, office documents, mail, images/OCR,
+  or other raw file types is a separate future ingestion slice: discover files, extract normalized
+  searchable text and metadata with provenance, and keep every extraction/index disposable and
+  rebuildable from the original files. It does not require replacing the text engine up front, and
+  Overlay's generalized agent-retrieval index remains a separate consumer-facing boundary from
+  Vault's human search experience.
+
+  [Meilisearch](https://github.com/meilisearch/meilisearch) is a researched but deferred option, not
+  an adopted dependency. Its typo tolerance, prefix search, facets, synonyms, and hybrid keyword/vector
+  ranking could become valuable, but today it would add a separately supervised REST server, desktop
+  packaging and security lifecycle, asynchronous index synchronization, version migration work, and
+  another derived database; it also accepts normalized documents rather than extracting arbitrary raw
+  file formats for Vault. Reconsider it only if representative benchmarks show the embedded approach
+  missing agreed latency/relevance targets, the product needs its combined search/facet/hybrid feature
+  set, or search becomes a shared network service or materially larger corpus. Until one of those
+  triggers occurs, further Meilisearch investigation is intentionally not near-term work.
 
   Keep the preferred workflow lightweight but rigorous: read repo-local `AGENTS.md`, scope the slice
   narrowly, use Fable/Codex or subagents when the work benefits from adversarial review, validate the

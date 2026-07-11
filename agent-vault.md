@@ -224,9 +224,11 @@ than a second ruleset) and **never reimplements** it, so the schema is single-so
 These Vault-specific review items are now part of the implementation contract:
 
 - **User-controlled vault assets live on a separate unprivileged origin (privileged-origin split,
-  shipped 2026-07-07).** The Tauri shell grants IPC (including `terminal_open` → `$SHELL`) to the app
-  origin, so user bytes must never execute there. `/assets/*` is now served **only** from a second,
-  unprivileged loopback listener (`AGENT_VAULT_ASSET_PORT`, default main port + 10 = `4183` in
+  shipped 2026-07-07).** The current Tauri shell grants IPC (including `terminal_open` → `$SHELL`) to
+  the app origin, so user bytes must never execute there. The terminal is planned to move to Overlay
+  and leave Vault; until that migration lands, this remains part of Vault's active threat boundary.
+  `/assets/*` is now served **only** from a second, unprivileged loopback listener
+  (`AGENT_VAULT_ASSET_PORT`, default main port + 10 = `4183` in
   release) whose router exposes no `/api`, no app document, no `/docs`, and no SPA fallback, and which
   is **never granted a Tauri capability** (`remote.urls` names only the app origin). The app/API origin
   now returns `404` for `/assets/*`. The asset origin keeps the existing defenses — `nosniff`, the
@@ -287,11 +289,13 @@ is therefore:
 
 - **Authoring leaves Overlay; operations stay.** As file authoring/editing moves to Vault, Overlay's
   own console **narrows to an operational surface** — server status, validation reports, trajectories,
-  eval reports, run launch, diagnostics, and the **Automations surface** (trigger lifecycle over the
+  eval reports, run launch, diagnostics, the raw local terminal planned to move out of Vault, and the
+  **Automations surface** (trigger lifecycle over the
   canonical write path, plus whitelisted `agent-runner` sync/status, service controls, and cron
   projection — the console invokes the runner as a configured subprocess; the dependency arrow does
-  not move). Observability and operations, not authoring. The two apps then divide cleanly:
-  **Vault authors the files; the Overlay console operates the system.**
+  not move). The terminal is an explicitly ungoverned operator escape hatch, not an approval-gated or
+  trajectory-recorded execution path. Observability and operations, not authoring. The two apps then
+  divide cleanly: **Vault authors the files; the Overlay console operates the system.**
 
 This document records the direction; the sequencing lives in [build-plan.md](build-plan.md)
 (Phases 1–2 and 5).

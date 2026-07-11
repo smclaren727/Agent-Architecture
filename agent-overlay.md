@@ -169,6 +169,14 @@ These Overlay-specific review items are now part of the implementation contract:
   layer root; canonical writes lock per target, realpath-check the parent directory, and refuse to
   follow or replace a symlinked final target.
 
+**Planned terminal ownership (not yet shipped in Overlay).** The native-only raw terminal currently
+implemented in Vault will move to Overlay's operator console using the existing `xterm.js` +
+`portable-pty` stack before it is removed from Vault. It should open in the active Overlay workspace
+when available, fall back to the user's home, and state plainly that shell commands are ungoverned:
+they do not pass policy/approval gates, produce trajectories, or receive injected secrets. This is an
+operator escape hatch beside — not a replacement for — governed Run surfaces. A possible future
+`libghostty-vt` evaluation is deferred and is not part of the ownership migration.
+
 ## Non-goals (Overlay)
 
 - **Not an editor.** Overlay provides schemas, validation, and file APIs; the *editing experience*
