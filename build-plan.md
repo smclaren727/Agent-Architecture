@@ -437,9 +437,14 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   Do not preserve the current Text/Semantic switch merely for parity: keyword search remains the
   dependable default, while related or semantic retrieval should be named honestly for the active
   embedding backend and may be blended into one result experience only after relevance and latency
-  are measured. Improve the existing SQLite FTS5 path first, including search-as-you-type behavior
-  such as last-token prefix matching and evidence-backed typo assistance, without changing the
-  plain-file source-of-truth rule.
+  are measured. Improve the existing SQLite FTS5 path first, without changing the plain-file
+  source-of-truth rule. **Last-token prefix matching shipped 2026-07-11** (Vault `c0d5d37`): while
+  the query ends mid-token the final term is the quoted FTS5 prefix form, trailing whitespace or
+  punctuation completes it exactly, a duplicate in-progress token never widens the match set, and
+  `/api/search` forwards the raw decoded query so a trailing space actually reaches the builder
+  (whitespace-only queries still 400). Ranking goldens pin prefix/exact/duplicate/Unicode cases in
+  both the Rust and Node suites; ordering and the 50-row limit are unchanged. Typo assistance
+  remains deferred — the 40k benchmark produced no typo evidence.
 
   Treat scale as a measured gate, not an assumed engine migration. **The 40,000-document benchmark
   shipped and ran 2026-07-11** (Vault `1c1d724`: a deterministic release-mode `search_benchmark`
