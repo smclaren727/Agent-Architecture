@@ -176,8 +176,9 @@ frontend-supplied working directory is untrusted and must canonicalize to an exi
 active Overlay workspace), falling back to the user's home. The dock states plainly that shell
 commands are ungoverned: they do not pass policy/approval gates, produce trajectories, or receive
 injected secrets. This is an operator escape hatch beside — not a replacement for — governed Run
-surfaces. Vault still carries its terminal; removing it is the next migration slice. A possible
-future `libghostty-vt` evaluation is deferred and is not part of the ownership migration.
+surfaces. Vault's terminal was removed once this replacement was proven (2026-07-11), completing
+the ownership migration. A possible future `libghostty-vt` evaluation is deferred and was not part
+of it.
 
 ## Non-goals (Overlay)
 

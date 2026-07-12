@@ -411,22 +411,21 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   - small hardening/test follow-ups when they are evidence-backed and bounded, such as bundle-size
     guards or shared test fixtures.
 
-  **In progress — terminal ownership correction (Overlay side shipped 2026-07-11).** Move the
-  packaged app's raw local terminal from Vault to Overlay's operator console, then remove it from
-  Vault. This is a product-boundary migration, not a terminal-engine rewrite. The Overlay half has
-  landed (Agent-Overlay `5b6e66b`): the existing Tauri-only `xterm.js` + `portable-pty` design now
-  runs in the console as a lazy-loaded, native-only bottom dock labeled an **ungoverned local
+  **Done — terminal ownership correction (completed 2026-07-11).** The packaged app's raw local
+  terminal moved from Vault to Overlay's operator console — a product-boundary migration, not a
+  terminal-engine rewrite. Overlay (`5b6e66b`) carries the existing Tauri-only `xterm.js` +
+  `portable-pty` design as a lazy-loaded, native-only bottom dock labeled an **ungoverned local
   shell** — commands do not pass through Overlay policy or approvals, are not trajectories, and
   receive no injected secrets. The Rust backend alone selects the user's shell; the
   frontend-supplied working directory is validated (canonicalized, must be an existing directory)
   and opens in the active Overlay workspace with the user's home as the fallback. Proven natively:
   workspace cwd, PTY resize, kill-on-close/fresh reopen, live light/dark palette sync, and an
-  unchanged browser bundle (xterm sits in a lazy chunk; the browser shell renders no terminal).
-  Remaining slice: remove Vault's toggle/panel, xterm dependencies, PTY module, terminal IPC
-  commands, and capability grants. Governed work continues through Overlay's Run/approval surfaces.
-  Vault's Native and Engaged Chat, plus its `export-context` / `rebuild-index` maintenance commands,
-  are unaffected. `libghostty-vt` remains a possible future evaluation, not an adopted dependency or
-  part of this migration.
+  unchanged browser bundle. Vault (`dcddbe7`) then removed its toggle/panel, keyboard shortcut,
+  xterm dependencies, PTY module, terminal IPC commands, and capability grants, shrinking the app
+  origin's IPC surface to dialog/shortcut/dragging while Native and Engaged Chat, `export-context`,
+  `rebuild-index`, and the asset-origin split stayed untouched (full suites green). Governed work
+  continues through Overlay's Run/approval surfaces. `libghostty-vt` remains a possible future
+  evaluation, not an adopted dependency or part of this migration.
 
   **Planned — Vault search experience and scale proof.** Redesign Search around retrieval rather than
   exposing the indexed frontmatter schema as a form. Keep one search box as the primary surface;
