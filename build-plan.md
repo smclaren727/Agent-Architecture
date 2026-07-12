@@ -505,14 +505,23 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   availability gating, and permissions are unchanged; a repo-wide grep pins zero remaining
   "Engaged (Overlay)" occurrences.
 
-  **Planned — hanging indents for wrapped Markdown list items.** In Vault's source editor, make soft-
-  wrapped continuation lines in unordered, ordered, and task-list items begin beneath the first
-  line's content rather than beneath the list marker. Derive the hanging indent from the rendered
-  marker/content offset so multi-digit ordered markers, checkboxes, nesting, proportional UI metrics,
-  zoom, and compact editor widths remain aligned without inserting spaces or otherwise changing the
-  Markdown source. Preserve cursor movement, selection, editing, undo/redo, and list-continuation
-  behavior, and add focused editor tests plus visual checks for long single- and multi-paragraph
-  items across marker types and nesting depths.
+  **Done — hanging indents for wrapped Markdown list items (2026-07-12, Vault `2fe61f0`, two
+  review rounds).** In Vault's CodeMirror source editor, soft-wrapped continuation lines of
+  unordered, ordered, task-list, and nested items now begin beneath the first line's content. A
+  dedicated extension measures each visible list line's actual rendered prefix (indent + marker +
+  whitespace + task checkbox) via `coordsAtPos` and applies matching `padding-left`/negative
+  `text-indent` line decorations, so multi-digit ordered markers, proportional fonts, zoom, and
+  compact widths stay aligned from real DOM geometry; the syntax tree excludes list-shaped lines
+  inside code, and the Markdown source is never modified. Cursor, selection, undo/redo, and
+  list-continuation semantics remain CodeMirror-owned (decoration-only change). Review round 1
+  caught the feature entirely inert in a real browser — the decoration effect was dispatched
+  synchronously inside the measure cycle and CodeMirror rejected it ("update in progress"), which
+  the coordinate-mocked unit tests could not see; the dispatch is now scheduled after the cycle
+  with a keyed no-op guard and destroy cancellation. Round 2 fixed the smoke assertion's anchor
+  (the text node's leading space, one mono-space left of the visible glyph). Verified natively:
+  unit 313/313 including a mounted live-decoration regression, Playwright 15/15 including
+  wrapped-fragment alignment at 320 px, and visual checks across marker types and nesting at
+  420 px.
 
   **Planned — project selection populates the Vault Properties dock.** In the Projects view, make a
   selected project card establish the right-dock note context immediately so its YAML-frontmatter
