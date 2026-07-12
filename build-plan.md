@@ -634,15 +634,29 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   production exhaustive path itself. No production vector integration landed; Meilisearch stays
   deferred.
 
-  **Planned — measured search follow-ups.** First, optimize production semantic vector storage and
-  decoding toward the benchmark's 68–70 ms in-memory exhaustive-scan potential before considering
-  ANN: preserve exact/tie behavior, deterministic ordering, filters, provider-model separation, and
-  disposable rebuild semantics while measuring cold/warm latency, resident memory, and index size.
-  Second, remove the approximately six-second no-op reload floor by using persisted file state/hash
+  **Done — semantic exhaustive-path optimization (2026-07-12, Vault `9a38fd0`).** The production
+  related/semantic path no longer re-reads and re-decodes per-chunk embedding blobs from SQLite on
+  every query: each embedding model lazily decodes once into contiguous `f32` matrices grouped by
+  vector dimension, with compact interned note/chunk metadata for filtering and deterministic tie
+  ordering; filters still resolve eligibility through the existing parameterized SQL and only the
+  ordered top 50 hydrate from SQLite. Canonical 40k/558k benchmark (M3 Pro, release, committed as
+  `2026-07-12-40k-semantic-cache.json`): warm p50 10.1 s → **91.1 ms** unfiltered (~111×) and
+  1.40 s → **33.2 ms** filtered (~42×), first cold query ~4.2 s including the one-time cache build,
+  cache 576 MiB owned allocations (+591 MiB RSS; process peak still set by the rebuild), index size
+  byte-identical. The orchestrator independently reproduced the warm numbers (93.7/34.2 ms under
+  concurrent test load). Correctness: a retained dual-path test pins exact result/score/tie-rank
+  equality against the uncached decode path across filters, provider/model separation, no-op
+  invalidation, and reconciliation; the cache generation advances while the SQLite connection lock
+  is held so a query can never pair a stale cache with fresh hydration. Full native suite 366/366.
+  No API drift, no ANN, no new dependencies. Known trade-off: every successful rebuild — including
+  no-op watcher rebuilds — retires the cache, so the next semantic query repays the ~4 s build;
+  the no-op-rebuild slice below is the natural place to revisit that conservatism.
+
+  **Remaining planned search follow-ups.** First, remove the approximately six-second no-op reload floor by using persisted file state/hash
   information (and watcher knowledge where safe) to avoid rereading and reparsing unchanged files;
   prove correctness for external edits, atomic replacement, deletion/rename, multi-vault roots, and
   unreliable timestamp/size metadata rather than allowing a fast path to miss content changes. Keep
-  chunk/row preparation streaming as a separate measured option for peak RSS. Third, rerun the
+  chunk/row preparation streaming as a separate measured option for peak RSS. Second, rerun the
   committed vector-index evaluation only when a real embedding backend becomes the default and the
   optimized in-memory/decoded-cache exhaustive scan misses its interactive latency target at real
   corpus scale. Until both gates fire, the vector verdict remains **Hold** and ANN/Meilisearch remain
