@@ -421,7 +421,7 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
     guards or shared test fixtures.
 
   **Done — terminal ownership correction (completed 2026-07-11).** The packaged app's raw local
-  terminal moved from Vault to Overlay's operator console — a product-boundary migration, not a
+  terminal moved from Vault to the Agent Overlay desktop app — a product-boundary migration, not a
   terminal-engine rewrite. Overlay (`5b6e66b`) carries the existing Tauri-only `xterm.js` +
   `portable-pty` design as a lazy-loaded, native-only bottom dock labeled an **ungoverned local
   shell** — commands do not pass through Overlay policy or approvals, are not trajectories, and
@@ -436,37 +436,41 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   continues through Overlay's Run/approval surfaces. `libghostty-vt` remains a possible future
   evaluation, not an adopted dependency or part of this migration.
 
-  **Planned — one canonical Overlay product name.** **Agent Overlay** is the only human-facing name
-  for the product and packaged application; remove **Agent-Overlay**, **Agent Overlay Console**,
-  **Overlay Console**, and **operator console** as alternate product names. The legacy hyphenated
-  form remains only when literally identifying the `Agent-Overlay` repository or a path that contains
-  its name. Apply **Agent Overlay** consistently to in-app branding and prose, the Tauri `productName`,
-  main-window title, macOS `.app`/DMG and other installer artifact names, Finder/Dock/menu labels,
-  package-verification expectations, release metadata, screenshots, QA fixtures, and current
-  documentation across all three repos. Rename the pre-distribution bundle
-  identifier from `com.agentoverlay.console` to `com.agentoverlay.desktop` now, before signing and
-  updater continuity make that identity expensive to change; verify the one-time effect on WebView
-  state and macOS permissions while preserving the HOME-based Overlay workspace and desktop JSON
-  store. Internal names such as the `overlay-console` crate and `agent-overlay-server` binary remain
-  only when referring to those specific implementation components — never as names for the app or
-  product.
+  **Done — one canonical Overlay product name (2026-07-12, Overlay `3a6fca1`).** **Agent Overlay**
+  is now the only human-facing name for the product and packaged application; **Agent-Overlay**,
+  **Agent Overlay Console**, **Overlay Console**, and **operator console** were removed as alternate
+  product names from in-app branding, the Tauri `productName`/window titles across all three platform
+  configs, the OpenAPI contract (`info.title` is now **Agent Overlay API**), package-verification
+  expectations (`CFBundleName=Agent Overlay`), QA fixtures, and current documentation in all three
+  repos. The hyphenated form survives only where it literally identifies the `Agent-Overlay`
+  repository or a path containing its name; the `overlay-console` crate and `agent-overlay-server`
+  binary remain as component identifiers only. The approval header moved with the sweep to
+  `X-Overlay-Approval-Token` (server, web client, OpenAPI, generated types, and tests together; no
+  cross-repo consumer existed). The pre-distribution bundle identifier is now
+  `com.agentoverlay.desktop`; no app-data migration was needed — the desktop JSON store lives at the
+  identifier-independent `~/.config/agent-overlay/desktop.json` (verified against `store.rs` and the
+  live host) and the Overlay workspace is HOME-based, so only Tauri-owned WebView caches/logs re-key.
+  The single-instance socket renamed to match. Verified: `pnpm package:verify` against the rebuilt
+  `Agent Overlay.app` (bundle name + identifier + sidecar/web-dist hashes), vitest contract 167/167,
+  Playwright ui-smoke 4/4, `overlay-console` lib tests 123/123.
 
-  **Planned — distinct Agent Overlay application and tray icons.** Make the layered teal-and-gold
-  mark already used in Agent Overlay's header the canonical full-color product icon, clearly
-  distinguishing Overlay from Agent Vault's compass mark. Keep one high-resolution or vector source
-  of truth and regenerate the complete Tauri/platform icon set from it, including macOS `.icns`,
-  Windows `.ico`, required PNG/mobile sizes, packaged application and installer artwork, and the web
-  header/favicon where applicable. Verify it in Finder, the Dock, application switcher, About/menu
-  surfaces, DMG/installers, and release artifacts at both small and large sizes.
+  **Done — distinct Agent Overlay application and tray icons (2026-07-12, Overlay `3a6fca1`).** The
+  layered teal-and-gold header mark (`apps/desktop/web/public/icon.svg`, the single source of truth)
+  now generates the complete Tauri icon set via `tauri icon` — macOS `.icns`, Windows `.ico`, all
+  PNG/Square/mobile sizes — with `package:verify` pinning the bundled `.icns` hash against the
+  source; the packaged app's Dock/Finder artwork was visually confirmed as the teal rounded-square
+  layered mark, clearly distinct from Vault's compass.
 
-  The system tray/menu-bar icon is a separate asset, not a reuse of the default application icon.
-  Create a simplified, well-padded monochrome rendering of the layered mark without the colored
-  rounded-square background. On macOS, register it as a Tauri template icon so the system renders it
-  appropriately in black or white for light, dark, highlighted, and Retina menu-bar states; this
-  monochrome behavior is intentional. Provide and verify suitable small-icon behavior on Windows and
-  Linux as well. Replace the current `default_window_icon()` tray reuse, package the dedicated tray
-  resource, and add checks that catch a missing resource or accidental fallback to the Vault/app
-  icon.
+  The tray is a dedicated, well-padded monochrome asset (`icons/tray/tray-template.svg` rendered to
+  `trayTemplate.png`/`@2x` plus a decoder-free 44×44 `@2x.rgba`), not an app-icon reuse: macOS embeds
+  the RGBA via `include_bytes!` (compile-time length assertion) and registers it with
+  `icon_as_template(true)`, while Windows/Linux deliberately keep the full-color product icon since
+  those trays do not recolor artwork. `package:verify` checks the bundled tray PNG hashes and that
+  the template RGBA payload is embedded in the packaged executable, catching a missing resource or a
+  fallback to the app icon. Live menu-bar QA on the packaged app confirmed the pure-black template
+  source renders system-recolored white/gray beside neighboring template items in both light and
+  dark appearances (inactive-display dimming applies identically to neighbors), and quit leaves no
+  orphaned sidecar.
 
   **Planned — Overlay long-value containment.** Keep machine-generated values inside their owning
   cards and rows at every supported window width. The immediate regression is Dashboard → Server

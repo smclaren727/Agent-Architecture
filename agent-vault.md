@@ -61,7 +61,7 @@ Vault ships in two stages:
    are **retired**. In release, the shell binds the sidecar to `127.0.0.1:4173`, passes a per-launch
    `AGENT_VAULT_INSTANCE_TOKEN`, and accepts `/api/health` only when the response echoes that token, so
    a stale fixed-port process cannot satisfy a fresh launch gate. In dev, the Tauri window uses
-   `http://localhost:5173` and does not spawn the bundled sidecar. **Agent-Overlay's operator console
+   `http://localhost:5173` and does not spawn the bundled sidecar. **The Agent Overlay desktop app
    shipped the same model-B Tauri v2 wrap** (its
    sidecars likewise now the cargo binaries), so both repos converge on one desktop delivery story.
    Signed packaging, notarization, auto-updater, and final clean-machine/cross-webview release QA
@@ -261,7 +261,7 @@ These Vault-specific review items are now part of the implementation contract:
 - **No silent canonical memory writes.** Neither the human's edits nor the embedded agent's bypass the
   proposal queue for memory facts.
 
-## Relationship to `apps/desktop` (Overlay's operator console)
+## Relationship to `apps/desktop` (the Agent Overlay desktop app)
 
 This repo also ships Overlay's own desktop UI under `apps/desktop`, which overlaps Vault's surface
 heavily: workspace open/create, a canonical file browser/editor with validation rollback, the memory
@@ -271,8 +271,8 @@ began as an **Electron** app and has since been **re-platformed off Electron to 
 place** — a Rust axum server (`crates/overlay-console`, bin `agent-overlay-server`) over `/api/*` + SSE
 plus a Vite + React + TS + Tailwind + shadcn view-seam (the same pattern Vault uses; see
 [overlay-ui-replatform.md](overlay-ui-replatform.md)).
-Electron was removed without retiring the directory: `apps/desktop` **lives on as Overlay's operator
-console**.
+Electron was removed without retiring the directory: `apps/desktop` **lives on as the Agent Overlay
+desktop app**.
 
 Vault is still a **separate front-end codebase**, not a continuation of that console. The relationship
 is therefore:
@@ -282,7 +282,7 @@ is therefore:
   (`workspace_files`), the proposal queue and conflict-similarity (`memory/`), search, trajectory
   reads. Vault links those directly. The old Electron-specific main/preload/IPC layer is **not**
   carried forward — and is now gone from Overlay itself.
-- **`apps/desktop` continues as the operator console.** It was not retired in favor of Vault; the
+- **`apps/desktop` continues as the Agent Overlay desktop app.** It was not retired in favor of Vault; the
   Electron shell was swapped for a local web app **in place**, and both repos have since shipped
   their **Tauri v2 wraps (2026-06-30)** — model-B shells over the cargo-built sidecar binaries;
   final signed/notarized distribution, updater, and clean-machine release QA are tracked in the
