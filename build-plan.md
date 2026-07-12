@@ -436,6 +436,112 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   continues through Overlay's Run/approval surfaces. `libghostty-vt` remains a possible future
   evaluation, not an adopted dependency or part of this migration.
 
+  **Planned — one canonical Overlay product name.** **Agent Overlay** is the only human-facing name
+  for the product and packaged application; remove **Agent-Overlay**, **Agent Overlay Console**,
+  **Overlay Console**, and **operator console** as alternate product names. The legacy hyphenated
+  form remains only when literally identifying the `Agent-Overlay` repository or a path that contains
+  its name. Apply **Agent Overlay** consistently to in-app branding and prose, the Tauri `productName`,
+  main-window title, macOS `.app`/DMG and other installer artifact names, Finder/Dock/menu labels,
+  package-verification expectations, release metadata, screenshots, QA fixtures, and current
+  documentation across all three repos. Rename the pre-distribution bundle
+  identifier from `com.agentoverlay.console` to `com.agentoverlay.desktop` now, before signing and
+  updater continuity make that identity expensive to change; verify the one-time effect on WebView
+  state and macOS permissions while preserving the HOME-based Overlay workspace and desktop JSON
+  store. Internal names such as the `overlay-console` crate and `agent-overlay-server` binary remain
+  only when referring to those specific implementation components — never as names for the app or
+  product.
+
+  **Planned — distinct Agent Overlay application and tray icons.** Make the layered teal-and-gold
+  mark already used in Agent Overlay's header the canonical full-color product icon, clearly
+  distinguishing Overlay from Agent Vault's compass mark. Keep one high-resolution or vector source
+  of truth and regenerate the complete Tauri/platform icon set from it, including macOS `.icns`,
+  Windows `.ico`, required PNG/mobile sizes, packaged application and installer artwork, and the web
+  header/favicon where applicable. Verify it in Finder, the Dock, application switcher, About/menu
+  surfaces, DMG/installers, and release artifacts at both small and large sizes.
+
+  The system tray/menu-bar icon is a separate asset, not a reuse of the default application icon.
+  Create a simplified, well-padded monochrome rendering of the layered mark without the colored
+  rounded-square background. On macOS, register it as a Tauri template icon so the system renders it
+  appropriately in black or white for light, dark, highlighted, and Retina menu-bar states; this
+  monochrome behavior is intentional. Provide and verify suitable small-icon behavior on Windows and
+  Linux as well. Replace the current `default_window_icon()` tray reuse, package the dedicated tray
+  resource, and add checks that catch a missing resource or accidental fallback to the Vault/app
+  icon.
+
+  **Planned — Overlay long-value containment.** Keep machine-generated values inside their owning
+  cards and rows at every supported window width. The immediate regression is Dashboard → Server
+  status → Log, where the absolute log path escapes the card because the truncating value has no
+  shrinkable `min-width: 0` chain. Fix that root layout constraint and audit the shared/status fact
+  patterns for the same failure with workspace paths, command lines, resource URIs, and other long
+  unbroken values. Use context-appropriate wrapping or ellipsis (paths and identifiers may use
+  `overflow-wrap: anywhere`), retain access to the complete value through a title, copy action, or
+  equivalent accessible affordance, and never solve it with page-level horizontal scrolling. Add a
+  narrow-window regression using realistically long values and visually verify the Dashboard and
+  affected shared consumers at desktop and compact widths.
+
+  **Planned — Vault note-tree hierarchy.** Give note rows a modest, consistent inset beneath their
+  parent folder rows, following the macOS Finder pattern: the full-width row retains its hover,
+  selection background, and click target while the disclosure/icon/text content communicates depth.
+  Give expandable group headings a restrained typographic distinction as well — approximately a
+  2 px size increase and/or a modest weight increase, tuned against the existing sidebar tokens — so
+  they provide a clear visual reference without becoming prominent section banners or competing with
+  note titles. Apply one restrained indent increment per real nested folder level (including
+  multi-vault roots), keep disclosure controls and labels aligned, and preserve truncation in the
+  narrow sidebar rather than allowing indentation to squeeze titles away. Maintain the existing
+  expand/collapse and keyboard/menu semantics, and add structural tests plus desktop/compact visual
+  checks covering root notes, first-level children, deeper nesting, selected children, and collapsed
+  parents.
+
+  **Planned — concise Vault chat route label.** In the Chat dock's route selector, rename the
+  user-facing **Engaged (Overlay)** option to **Engaged**. The route behavior, availability state,
+  permissions, and native-versus-Engaged boundary remain unchanged; the surrounding product context
+  already explains Overlay's role, so the parenthetical adds noise rather than useful distinction.
+
+  **Planned — hanging indents for wrapped Markdown list items.** In Vault's source editor, make soft-
+  wrapped continuation lines in unordered, ordered, and task-list items begin beneath the first
+  line's content rather than beneath the list marker. Derive the hanging indent from the rendered
+  marker/content offset so multi-digit ordered markers, checkboxes, nesting, proportional UI metrics,
+  zoom, and compact editor widths remain aligned without inserting spaces or otherwise changing the
+  Markdown source. Preserve cursor movement, selection, editing, undo/redo, and list-continuation
+  behavior, and add focused editor tests plus visual checks for long single- and multi-paragraph
+  items across marker types and nesting depths.
+
+  **Planned — project selection populates the Vault Properties dock.** In the Projects view, make a
+  selected project card establish the right-dock note context immediately so its YAML-frontmatter
+  properties are visible without first navigating to the note editor. Keep **Open note** as the
+  explicit navigation action; selection alone must not change views, mutate the file, or conflate a
+  project with a linked task. Give pointer and keyboard selection a clear persistent state, update the
+  dock when selection changes, and handle missing, externally changed, or no-longer-managed notes
+  with the same truthful loading/error/empty behavior used by normal note context. Preserve the
+  existing property schema and edit permissions, and test selection, reselection, deep-linked/project
+  refresh, Open-note navigation, and narrow layouts where the dock may collapse.
+
+  **Planned — make task-to-project references canonical and visible from both sides.** Replace the
+  task Properties dock's free-text `project` field with a relationship-aware project picker that
+  displays human-readable project titles but writes the selected project's stable note `id` to YAML.
+  The Projects list/detail APIs should continue joining on that canonical ID, so saving or changing
+  the relationship and rebuilding/reindexing makes the task appear in the project's counts and
+  linked-task list as well as on the task itself. Represent an unassigned project explicitly, scope
+  choices correctly across the active/all-vault context, and distinguish duplicate titles by vault
+  or path without treating a title as identity.
+
+  Detect existing title-valued or otherwise unresolved `project` properties instead of silently
+  presenting them as valid links. Offer an explicit repair when one unique indexed project matches;
+  never guess when matches are absent or ambiguous, and preserve the source value until the user
+  confirms a change. Add index/contract and UI regressions covering create/edit/remove, unique-title
+  repair, duplicate titles, missing targets, multi-vault projects, project task counts/detail, and
+  immediate refresh after save.
+
+  Add an **Add task** action to the selected project detail so a user can create a task without
+  leaving the project workflow. Reuse the canonical managed-note/task creation path rather than
+  introducing a project-local store or alternate schema; prepopulate the new task's `project` with
+  the selected project's stable `id`, choose the owning vault and task destination deterministically,
+  and let the user provide the normal task fields before creation. On success, refresh the project's
+  open/total counts and linked-task list immediately and make the new task available to open; on
+  cancellation or failure, create no partial file or stale relationship. Cover keyboard access,
+  duplicate-title projects, multi-vault selection, validation failures, and create-then-open behavior
+  in the UI and contract tests.
+
   **Planned — Vault search experience and scale proof.** Redesign Search around retrieval rather than
   exposing the indexed frontmatter schema as a form. Keep one search box as the primary surface;
   present the most useful refinements (initially vault, type, tag, and date) as compact controls;
@@ -510,10 +616,25 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   re-measured via the committed harness) and an in-memory/decoded-cache exhaustive scan misses
   the latency target at real corpus scale; until then the nearer optimization candidate is the
   production exhaustive path itself. No production vector integration landed; Meilisearch stays
-  deferred. Consequences: the FTS5 keyword path needs no engine change at this scale (Slice-4-style
-  query tuning can proceed on SQLite unchanged); any related/semantic surface at this scale needs a
-  bounded embedded ANN/vector-index evaluation — a later, separate decision, still independent of
-  the proven FTS5 text path. Support for PDFs, office documents, mail, images/OCR,
+  deferred.
+
+  **Planned — measured search follow-ups.** First, optimize production semantic vector storage and
+  decoding toward the benchmark's 68–70 ms in-memory exhaustive-scan potential before considering
+  ANN: preserve exact/tie behavior, deterministic ordering, filters, provider-model separation, and
+  disposable rebuild semantics while measuring cold/warm latency, resident memory, and index size.
+  Second, remove the approximately six-second no-op reload floor by using persisted file state/hash
+  information (and watcher knowledge where safe) to avoid rereading and reparsing unchanged files;
+  prove correctness for external edits, atomic replacement, deletion/rename, multi-vault roots, and
+  unreliable timestamp/size metadata rather than allowing a fast path to miss content changes. Keep
+  chunk/row preparation streaming as a separate measured option for peak RSS. Third, rerun the
+  committed vector-index evaluation only when a real embedding backend becomes the default and the
+  optimized in-memory/decoded-cache exhaustive scan misses its interactive latency target at real
+  corpus scale. Until both gates fire, the vector verdict remains **Hold** and ANN/Meilisearch remain
+  out of scope.
+
+  Consequences: the FTS5 keyword path needs no engine change at this scale, and related/semantic work
+  should improve the exact exhaustive path before reopening the engine decision. Support for PDFs,
+  office documents, mail, images/OCR,
   or other raw file types is a separate future ingestion slice: discover files, extract normalized
   searchable text and metadata with provenance, and keep every extraction/index disposable and
   rebuildable from the original files. It does not require replacing the text engine up front, and
