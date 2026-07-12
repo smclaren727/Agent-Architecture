@@ -523,15 +523,19 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   wrapped-fragment alignment at 320 px, and visual checks across marker types and nesting at
   420 px.
 
-  **Planned — project selection populates the Vault Properties dock.** In the Projects view, make a
-  selected project card establish the right-dock note context immediately so its YAML-frontmatter
-  properties are visible without first navigating to the note editor. Keep **Open note** as the
-  explicit navigation action; selection alone must not change views, mutate the file, or conflate a
-  project with a linked task. Give pointer and keyboard selection a clear persistent state, update the
-  dock when selection changes, and handle missing, externally changed, or no-longer-managed notes
-  with the same truthful loading/error/empty behavior used by normal note context. Preserve the
-  existing property schema and edit permissions, and test selection, reselection, deep-linked/project
-  refresh, Open-note navigation, and narrow layouts where the dock may collapse.
+  **Done — project selection populates the Vault Properties dock (2026-07-12, Vault `36d7277`).**
+  Selecting a project card (pointer or keyboard; persistent `aria-pressed` state) now publishes the
+  project's note through the same ActiveDocument seam the note editor uses, so the Properties dock
+  shows its YAML frontmatter immediately — existing schema, edit permissions, validated metadata
+  PATCH flow, and truthful loading/error/empty states — without changing views or touching the
+  file. Selection rides `?project=<id>` for refresh and deep links; reselection swaps context with
+  stale responses aborted; non-project notes are rejected rather than conflated with linked tasks;
+  a list refresh reloads the note so external deletion or type changes cannot leave stale
+  properties; **Open note** remains the explicit navigation action; and the responsive dock is
+  never forced open at compact widths. Verified natively: unit 321/321 (including a mounted
+  ProjectsView + PropertiesDock integration for loading/missing states), Playwright 15/15 (select →
+  dock frontmatter → Open note), and 1440/390 px screenshots of select, reselect, and the compact
+  drawer.
 
   **Planned — make task-to-project references canonical and visible from both sides.** Replace the
   task Properties dock's free-text `project` field with a relationship-aware project picker that
