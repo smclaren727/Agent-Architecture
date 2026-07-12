@@ -441,13 +441,19 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   such as last-token prefix matching and evidence-backed typo assistance, without changing the
   plain-file source-of-truth rule.
 
-  Treat scale as a measured gate, not an assumed engine migration. Add a reproducible representative
-  corpus benchmark before changing the backend: approximately 40,000 documents, realistic document
-  sizes and metadata distributions, and enough deterministic chunks to exercise both keyword and
-  related/semantic retrieval. Record indexing/rebuild time, index size, memory use, and warm/cold p50
-  and p95 query latency. The current exhaustive per-chunk similarity scan is the first expected
-  semantic bottleneck; if the benchmark confirms it, evaluate a bounded embedded ANN/vector index
-  independently of the proven FTS5 text path. Support for PDFs, office documents, mail, images/OCR,
+  Treat scale as a measured gate, not an assumed engine migration. **The 40,000-document benchmark
+  shipped and ran 2026-07-11** (Vault `1c1d724`: a deterministic release-mode `search_benchmark`
+  binary over the production `rebuild_index`/query APIs; methodology and canonical results in
+  Vault's `Docs/search-benchmark.md`). Measured on an Apple M3 Pro at 40,000 documents / 558,050
+  chunks: FTS5 keyword search stays at tens of milliseconds (warm p50 13–35 ms; worst filtered p95
+  under 100 ms), filtered list queries ~1 ms, full rebuild 26.7 s cold with a ~12 s full-reload
+  floor for any watcher-triggered change, index file ~2.5 GB (dominated by 256-dim per-chunk
+  embedding blobs), peak rebuild RSS 2.39 GB. The exhaustive per-chunk LocalHash similarity scan is
+  **confirmed** as the first semantic bottleneck: ~10 s per unfiltered related query, 1–3.5 s
+  filtered. Consequences: the FTS5 keyword path needs no engine change at this scale (Slice-4-style
+  query tuning can proceed on SQLite unchanged); any related/semantic surface at this scale needs a
+  bounded embedded ANN/vector-index evaluation — a later, separate decision, still independent of
+  the proven FTS5 text path. Support for PDFs, office documents, mail, images/OCR,
   or other raw file types is a separate future ingestion slice: discover files, extract normalized
   searchable text and metadata with provenance, and keep every extraction/index disposable and
   rebuildable from the original files. It does not require replacing the text engine up front, and
