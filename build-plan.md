@@ -472,16 +472,17 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   dark appearances (inactive-display dimming applies identically to neighbors), and quit leaves no
   orphaned sidecar.
 
-  **Planned — Overlay long-value containment.** Keep machine-generated values inside their owning
-  cards and rows at every supported window width. The immediate regression is Dashboard → Server
-  status → Log, where the absolute log path escapes the card because the truncating value has no
-  shrinkable `min-width: 0` chain. Fix that root layout constraint and audit the shared/status fact
-  patterns for the same failure with workspace paths, command lines, resource URIs, and other long
-  unbroken values. Use context-appropriate wrapping or ellipsis (paths and identifiers may use
-  `overflow-wrap: anywhere`), retain access to the complete value through a title, copy action, or
-  equivalent accessible affordance, and never solve it with page-level horizontal scrolling. Add a
-  narrow-window regression using realistically long values and visually verify the Dashboard and
-  affected shared consumers at desktop and compact widths.
+  **Done — Overlay long-value containment (2026-07-12, Overlay `52398f0`).** Machine-generated
+  values now stay inside their owning cards and rows at every supported width. The Dashboard log
+  path escaped its card because nothing in the Card grid chain could shrink below the value's
+  min-content width; the shared card primitives (Card, the header grid track via `minmax(0,1fr)`,
+  title/description/content/footer) and `StateCard` now carry `min-w-0`, and the audited
+  fact/definition-list patterns across Dashboard, Diagnostics, Agent Runtimes, Workspace, and
+  Memory either ellipsize with the full value in `title` or wrap visibly via
+  `overflow-wrap: anywhere` — no page-level horizontal scrolling anywhere. ui-smoke gained a 390 px
+  regression pinning a realistically long log path inside the Server-status card bounds with
+  `document.scrollingElement.scrollWidth <= clientWidth`; verified by the full Playwright suite
+  (4/4) plus fresh 1440 px and 390 px screenshots of the live Dashboard.
 
   **Planned — Vault note-tree hierarchy.** Give note rows a modest, consistent inset beneath their
   parent folder rows, following the macOS Finder pattern: the full-width row retains its hover,
