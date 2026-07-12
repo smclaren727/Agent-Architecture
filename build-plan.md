@@ -444,7 +444,16 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   `/api/search` forwards the raw decoded query so a trailing space actually reaches the builder
   (whitespace-only queries still 400). Ranking goldens pin prefix/exact/duplicate/Unicode cases in
   both the Rust and Node suites; ordering and the 50-row limit are unchanged. Typo assistance
-  remains deferred — the 40k benchmark produced no typo evidence.
+  remains deferred — the 40k benchmark produced no typo evidence. **Refinement metadata shipped
+  2026-07-11** (Vault `91595eb`): an additive `GET /api/search/refinements` endpoint returns
+  truthful full-match totals, vault/type/tag facet counts (tags bounded to the top 50 with an
+  unbounded `distinctTagCount`), and created/updated date bounds — conjunctive over the fully
+  filtered match set, sharing the FTS pipeline (optional `q`; blank facets the filtered corpus);
+  `/api/search` gained a fixed sort vocabulary (`relevance`/`updated`/`created`/`title`, id
+  tiebreak) and the shared filter vocabulary gained inclusive `createdFrom`/`createdTo`/
+  `updatedFrom`/`updatedTo` ranges. OpenAPI, generated TS, docs, and conformance moved together;
+  existing responses are byte-compatible and semantic search's allowlist is unchanged. The Search
+  UI redesign can now build on real indexed values.
 
   Treat scale as a measured gate, not an assumed engine migration. **The 40,000-document benchmark
   shipped and ran 2026-07-11** (Vault `1c1d724`: a deterministic release-mode `search_benchmark`
