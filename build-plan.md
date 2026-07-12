@@ -537,31 +537,26 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   dock frontmatter → Open note), and 1440/390 px screenshots of select, reselect, and the compact
   drawer.
 
-  **Planned — make task-to-project references canonical and visible from both sides.** Replace the
-  task Properties dock's free-text `project` field with a relationship-aware project picker that
-  displays human-readable project titles but writes the selected project's stable note `id` to YAML.
-  The Projects list/detail APIs should continue joining on that canonical ID, so saving or changing
-  the relationship and rebuilding/reindexing makes the task appear in the project's counts and
-  linked-task list as well as on the task itself. Represent an unassigned project explicitly, scope
-  choices correctly across the active/all-vault context, and distinguish duplicate titles by vault
-  or path without treating a title as identity.
-
-  Detect existing title-valued or otherwise unresolved `project` properties instead of silently
-  presenting them as valid links. Offer an explicit repair when one unique indexed project matches;
-  never guess when matches are absent or ambiguous, and preserve the source value until the user
-  confirms a change. Add index/contract and UI regressions covering create/edit/remove, unique-title
-  repair, duplicate titles, missing targets, multi-vault projects, project task counts/detail, and
-  immediate refresh after save.
-
-  Add an **Add task** action to the selected project detail so a user can create a task without
-  leaving the project workflow. Reuse the canonical managed-note/task creation path rather than
-  introducing a project-local store or alternate schema; prepopulate the new task's `project` with
-  the selected project's stable `id`, choose the owning vault and task destination deterministically,
-  and let the user provide the normal task fields before creation. On success, refresh the project's
-  open/total counts and linked-task list immediately and make the new task available to open; on
-  cancellation or failure, create no partial file or stale relationship. Cover keyboard access,
-  duplicate-title projects, multi-vault selection, validation failures, and create-then-open behavior
-  in the UI and contract tests.
+  **Done — canonical task-to-project references (2026-07-12, Vault `7f02b51`).** The task
+  Properties dock's free-text `project` field is now a same-vault relationship picker: it displays
+  project titles with their paths (duplicate titles disambiguated by path — a title is never
+  identity), writes the selected project's stable note `id` to YAML, and represents "Unassigned"
+  explicitly. Project joins are exact-id and same-vault on both list counts and detail linked
+  tasks (cross-vault source values stay untouched in YAML but never join); the `/api/projects`
+  picker source dropped its 100-row cap and `ProjectDetail` gained `vault`, with OpenAPI and
+  generated TypeScript synchronized. Unresolved references — legacy title values or dangling ids —
+  render honestly as unresolved (source value preserved): exactly one indexed title match offers a
+  confirm-gated "Repair as …" that rewrites the id through the validated metadata path; zero or
+  multiple matches never guess. Project detail adds a keyboard-accessible **Add task** action
+  reusing the canonical managed-note creation form with the project id and owning vault
+  preassigned; success refreshes open/total counts and the linked-task list immediately and opens
+  the created task, while cancel or validation failure creates no partial file. Verified natively:
+  cargo 365/365 (exact-id joins, title/dangling non-joins, same-vault scoping, >100 picker rows),
+  node contract 124/124, web unit 330/330, Playwright 15/15 (picker assignment via selectOption
+  plus Add-task-from-project), and live screenshots of assigned/title-valued/dangling picker
+  states, the unique-match repair offer, and the failure-safe create form. The earlier "0 linked
+  tasks" QA observation is explained: the join requires only a valid indexed same-vault task with
+  a supported status and exact id — the QA fixture's project had no valid task seeded.
 
   **Planned — Vault search experience and scale proof.** Redesign Search around retrieval rather than
   exposing the indexed frontmatter schema as a form. Keep one search box as the primary surface;
