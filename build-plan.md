@@ -492,7 +492,25 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   included) in memory ahead of the single reconcile transaction. Cold builds are embedding
   (~7 s) plus initial-insert (~10–12 s) dominated. No production behavior changed; obvious future
   optimization directions (persisting file hashes to skip unchanged loads, streaming row
-  preparation) remain unimplemented pending a decision. Consequences: the FTS5 keyword path needs no engine change at this scale (Slice-4-style
+  preparation) remain unimplemented pending a decision.
+
+  **Embedded vector index: evaluated 2026-07-12, verdict Hold** (Vault `102e562`: a feature-gated
+  `vector-eval` harness — zero new dependencies in default builds — measuring usearch 2.26.0
+  (Apache-2.0) and hannoy 0.1.3 (MIT) against a disk-first exhaustive-cosine oracle with
+  tie-tolerant recall on the production 40k/557,950-chunk corpus; methodology, screening table,
+  and canonical results in Vault's `Docs/vector-index-evaluation.md`). Both engines beat the
+  ≤250 ms latency target by orders of magnitude (0.5–1.5 ms warm p95) with defensible storage
+  (654–837 MB) and no selective-filter recall collapse, but **both fail the tolerant recall@20
+  ≥ 0.95 viability target at full scale** (hannoy 0.670, usearch 0.439; a search-effort sweep to
+  ef 512 recovers little), attributed to the shipping LocalHash backend's tie-plateau cosine
+  geometry degrading HNSW navigation — the reduced-scale pass did not survive scaling. The same
+  harness measured the in-memory exhaustive scan at 68–70 ms p50 over all 558k chunks,
+  implicating the production semantic path's storage/decode layout rather than the similarity
+  arithmetic. Revisit as a Trial only when a real embedding backend becomes the default (recall
+  re-measured via the committed harness) and an in-memory/decoded-cache exhaustive scan misses
+  the latency target at real corpus scale; until then the nearer optimization candidate is the
+  production exhaustive path itself. No production vector integration landed; Meilisearch stays
+  deferred. Consequences: the FTS5 keyword path needs no engine change at this scale (Slice-4-style
   query tuning can proceed on SQLite unchanged); any related/semantic surface at this scale needs a
   bounded embedded ANN/vector-index evaluation — a later, separate decision, still independent of
   the proven FTS5 text path. Support for PDFs, office documents, mail, images/OCR,
