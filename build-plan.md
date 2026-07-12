@@ -480,7 +480,19 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   floor for any watcher-triggered change, index file ~2.5 GB (dominated by 256-dim per-chunk
   embedding blobs), peak rebuild RSS 2.39 GB. The exhaustive per-chunk LocalHash similarity scan is
   **confirmed** as the first semantic bottleneck: ~10 s per unfiltered related query, 1–3.5 s
-  filtered. Consequences: the FTS5 keyword path needs no engine change at this scale (Slice-4-style
+  filtered. **The profiled follow-up (2026-07-11, Vault `1c8ffc7`) attributes all three numbers**
+  via an additive `rebuild_index_instrumented` seam and schema-v2 benchmark diagnostics: the no-op/
+  touched floor is ~6 s of file discovery/read/hash/parse over 40k documents plus 2.5–5.5 s
+  regenerating all ~558k chunk descriptors for the embedding-reuse check — embedding itself is 0 ms
+  on unchanged corpora and the reconcile transaction ~14 ms, so SQLite writes are not the floor;
+  the 2.50 GB index is **live data, not rebuild growth** (freelist ~0.8 MB, a fresh build over the
+  same corpus is the same size, five no-op rebuilds add zero pages, diagnostic `VACUUM INTO`
+  recovers 0.4%), correcting the earlier free-page-growth reading; and peak RSS 2.4–2.5 GB comes
+  from holding the loaded corpus plus all ~1.07 M prepared replacement rows (embedding blobs
+  included) in memory ahead of the single reconcile transaction. Cold builds are embedding
+  (~7 s) plus initial-insert (~10–12 s) dominated. No production behavior changed; obvious future
+  optimization directions (persisting file hashes to skip unchanged loads, streaming row
+  preparation) remain unimplemented pending a decision. Consequences: the FTS5 keyword path needs no engine change at this scale (Slice-4-style
   query tuning can proceed on SQLite unchanged); any related/semantic surface at this scale needs a
   bounded embedded ANN/vector-index evaluation — a later, separate decision, still independent of
   the proven FTS5 text path. Support for PDFs, office documents, mail, images/OCR,
