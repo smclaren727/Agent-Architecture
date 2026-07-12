@@ -652,11 +652,27 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   no-op watcher rebuilds — retires the cache, so the next semantic query repays the ~4 s build;
   the no-op-rebuild slice below is the natural place to revisit that conservatism.
 
-  **Remaining planned search follow-ups.** First, remove the approximately six-second no-op reload floor by using persisted file state/hash
-  information (and watcher knowledge where safe) to avoid rereading and reparsing unchanged files;
-  prove correctness for external edits, atomic replacement, deletion/rename, multi-vault roots, and
-  unreliable timestamp/size metadata rather than allowing a fast path to miss content changes. Keep
-  chunk/row preparation streaming as a separate measured option for peak RSS. Second, rerun the
+  **Done — no-op rebuild floor removed (2026-07-12, Vault `060e953`).** Rebuilds no longer reread,
+  rehash, and reparse every file: a disposable `file_state` table (vault+path → content hash, size,
+  ns-mtime, ctime, device, inode, versioned parsed facts, chunk count) lets the rebuild skip
+  reading a file only when the full identity tuple matches exactly AND the filesystem is trusted
+  for stable identity (APFS; ext/XFS/Btrfs/tmpfs on Linux — network/overlay/unknown filesystems
+  always hash); any tuple mismatch or untrusted filesystem falls back to a stable stat-read-stat
+  SHA-256 pass where an equal hash reuses parsed facts. Same-size external edits, mtime-preserving
+  writes, atomic replacement, deletion, rename, and added/removed multi-vault roots are covered by
+  ctime/inode or the hash fallback and pinned by a correctness test matrix; watcher events remain
+  vault-scoping hints only, so full rebuilds never trust watcher completeness. Skipped files still
+  reconcile as present, and a proven zero-row-change reconcile now preserves the slice-7 semantic
+  cache generation (closing that slice's noted no-op trade-off) while any real row change still
+  invalidates it. Canonical 40k benchmark (committed `2026-07-12-40k-no-op-floor.json`): steady
+  no-op rebuilds 8.4–11.5 s → **1.16–2.62 s (median 1.42 s)** with zero reads/parses/embeddings/
+  row writes; first unchanged rebuild after a cold build 10.9 s → 5.5 s; a 100-file touch now
+  costs 100 reads and 1,380 embedded chunks (556,670 reused) instead of a full reload. The
+  orchestrator independently reproduced steady-state no-ops at 1.3–1.8 s under concurrent test
+  load, with cargo 373/373 and node contract 124/124 native. Chunk/row-preparation streaming
+  stays a separate measured option for peak RSS.
+
+  **Remaining planned search follow-up.** Rerun the
   committed vector-index evaluation only when a real embedding backend becomes the default and the
   optimized in-memory/decoded-cache exhaustive scan misses its interactive latency target at real
   corpus scale. Until both gates fire, the vector verdict remains **Hold** and ANN/Meilisearch remain
