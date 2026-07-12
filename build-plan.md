@@ -452,8 +452,15 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   `/api/search` gained a fixed sort vocabulary (`relevance`/`updated`/`created`/`title`, id
   tiebreak) and the shared filter vocabulary gained inclusive `createdFrom`/`createdTo`/
   `updatedFrom`/`updatedTo` ranges. OpenAPI, generated TS, docs, and conformance moved together;
-  existing responses are byte-compatible and semantic search's allowlist is unchanged. The Search
-  UI redesign can now build on real indexed values.
+  existing responses are byte-compatible and semantic search's allowlist is unchanged. **The Search
+  UI redesign shipped the same day** (Vault `9c906da`): one dominant search box; counted
+  vault/type/tag/updated quick refinements populated from the refinements endpoint; removable
+  chips with clear-all; a searchable explicit-add More-filters drawer replacing the 30-field
+  form; truthful counts per mode (keyword shows the full-match total including "first 50 of N";
+  Related shows only the returned-match count); honest mode labels — Keyword (default, sortable)
+  and Related (generic label, no provider claim, no blended ranking, range filters visibly not
+  applied); deep-link note opening preserved; keyboard-only flow and 390 px layout verified with
+  screenshots.
 
   Treat scale as a measured gate, not an assumed engine migration. **The 40,000-document benchmark
   shipped and ran 2026-07-11** (Vault `1c1d724`: a deterministic release-mode `search_benchmark`
