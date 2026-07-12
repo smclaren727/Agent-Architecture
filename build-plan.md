@@ -484,23 +484,26 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   `document.scrollingElement.scrollWidth <= clientWidth`; verified by the full Playwright suite
   (4/4) plus fresh 1440 px and 390 px screenshots of the live Dashboard.
 
-  **Planned — Vault note-tree hierarchy.** Give note rows a modest, consistent inset beneath their
-  parent folder rows, following the macOS Finder pattern: the full-width row retains its hover,
-  selection background, and click target while the disclosure/icon/text content communicates depth.
-  Give expandable group headings a restrained typographic distinction as well — approximately a
-  2 px size increase and/or a modest weight increase, tuned against the existing sidebar tokens — so
-  they provide a clear visual reference without becoming prominent section banners or competing with
-  note titles. Apply one restrained indent increment per real nested folder level (including
-  multi-vault roots), keep disclosure controls and labels aligned, and preserve truncation in the
-  narrow sidebar rather than allowing indentation to squeeze titles away. Maintain the existing
-  expand/collapse and keyboard/menu semantics, and add structural tests plus desktop/compact visual
-  checks covering root notes, first-level children, deeper nesting, selected children, and collapsed
-  parents.
+  **Done — Vault note-tree hierarchy (2026-07-12, Vault `fc275b7`).** Note-tree rows now follow the
+  macOS Finder pattern: the row button stays full-width for hover, selection background, and click
+  target while only its inner content insets — 8 px base plus one 12 px increment per real nested
+  folder level (vault groups in All-vaults mode count as a level), capped at six increments so deep
+  nesting preserves useful title width and truncation in the narrow sidebar. Folder and vault-group
+  headings stepped up to `text-base font-semibold` against `text-sm font-medium` note titles — the
+  requested ~2 px + weight distinction on existing tokens, no new banner styling. Expand/collapse,
+  keyboard, and disclosure semantics are unchanged. Structural unit tests cover root notes,
+  first-level children, deeper nesting, selected children, collapsed parents, and multi-vault
+  depth; ui-smoke pins the per-level content padding (8/20/32 px) and equal full-row widths;
+  desktop and 390 px drawer screenshots verified the live tree including a deep
+  Projects/Archive/2025 chain (unit 292/292, Playwright 15/15).
 
-  **Planned — concise Vault chat route label.** In the Chat dock's route selector, rename the
-  user-facing **Engaged (Overlay)** option to **Engaged**. The route behavior, availability state,
-  permissions, and native-versus-Engaged boundary remain unchanged; the surrounding product context
-  already explains Overlay's role, so the parenthetical adds noise rather than useful distinction.
+  **Done — concise Vault chat route label (2026-07-12, Vault `fc275b7`, one review round).** The
+  route is named **Engaged** across every user-facing surface — the selector option, the dock's
+  route-availability line, the per-turn route badge, Settings copy, and `Docs/native-intelligence.md`
+  — after review caught the first pass renaming only the selector option. Overlay remains as prose
+  context ("the Engaged path via Overlay"), never the parenthesized route name. Behavior,
+  availability gating, and permissions are unchanged; a repo-wide grep pins zero remaining
+  "Engaged (Overlay)" occurrences.
 
   **Planned — hanging indents for wrapped Markdown list items.** In Vault's source editor, make soft-
   wrapped continuation lines in unordered, ordered, and task-list items begin beneath the first
