@@ -407,7 +407,16 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
     (for example reading, chat, and compact report rhythms), while existing renderer safety,
     interactive element overrides, syntax highlighting, and layout-owned measure remain authoritative.
     Typeset is not a blanket style for navigation, forms, labels, metadata rows, cards, or ordinary
-    data tables, and it must not become a shared cross-repo package or second design-token source;
+    data tables, and it must not become a shared cross-repo package or second design-token source.
+    **Pilot shipped 2026-07-11** (Vault `0aa8278`) on exactly one surface: the note reader's
+    `MarkdownPreview` (its only consumer). Vault now owns `web/src/typeset.css` — a `.typeset` base
+    plus a `.typeset-reading` preset whose fonts and colors map solely to the existing theme tokens
+    (dark mode follows automatically), honoring `.not-typeset` opt-outs and imposing no measure.
+    Renderer safety, URL allowlists, wikilink buttons, task lists, and rehype-highlight behavior
+    were unchanged, and the reader-scoped hljs token mapping moved into the typeset file. Verified
+    light/dark and desktop/390 px across headings, long prose, lists, blockquotes, inline/fenced
+    code, links, images, tables, and task lists. This records the convention only — no repo-wide
+    migration is claimed or planned; each future prose surface opts in with its own preset;
   - small hardening/test follow-ups when they are evidence-backed and bounded, such as bundle-size
     guards or shared test fixtures.
 
