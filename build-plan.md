@@ -472,6 +472,15 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   dark appearances (inactive-display dimming applies identically to neighbors), and quit leaves no
   orphaned sidecar.
 
+  **Done — Agent Overlay tray-icon optical size (2026-07-12, Overlay `2793806`).** The standard 22×22
+  and 44×44 macOS template canvases remain unchanged, while the layered glyph now occupies a 36×36
+  meaningful-alpha box at 2× and reads at the same optical scale as neighboring menu-bar items. The
+  dedicated monochrome source, 1×/2× PNGs, and compiled RGBA payload move together through an
+  explicit generation command and a checked provenance manifest. Package verification is
+  host-independent and checks the recorded hashes, dimensions, geometry, bundled resources, and
+  compiled payload without pretending to rerender the SVG. A packaged-app launch confirmed the
+  system-recolored icon at native menu-bar scale and a clean app/sidecar quit.
+
   **Done — Overlay long-value containment (2026-07-12, Overlay `52398f0`).** Machine-generated
   values now stay inside their owning cards and rows at every supported width. The Dashboard log
   path escaped its card because nothing in the Card grid chain could shrink below the value's
@@ -484,18 +493,19 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
   `document.scrollingElement.scrollWidth <= clientWidth`; verified by the full Playwright suite
   (4/4) plus fresh 1440 px and 390 px screenshots of the live Dashboard.
 
-  **Done — Vault note-tree hierarchy (2026-07-12, Vault `fc275b7`).** Note-tree rows now follow the
-  macOS Finder pattern: the row button stays full-width for hover, selection background, and click
-  target while only its inner content insets — 8 px base plus one 12 px increment per real nested
-  folder level (vault groups in All-vaults mode count as a level), capped at six increments so deep
-  nesting preserves useful title width and truncation in the narrow sidebar. Folder and vault-group
-  headings stepped up to `text-base font-semibold` against `text-sm font-medium` note titles — the
-  requested ~2 px + weight distinction on existing tokens, no new banner styling. Expand/collapse,
-  keyboard, and disclosure semantics are unchanged. Structural unit tests cover root notes,
-  first-level children, deeper nesting, selected children, collapsed parents, and multi-vault
-  depth; ui-smoke pins the per-level content padding (8/20/32 px) and equal full-row widths;
-  desktop and 390 px drawer screenshots verified the live tree including a deep
-  Projects/Archive/2025 chain (unit 292/292, Playwright 15/15).
+  **Done — Vault note-tree hierarchy and concise rows (2026-07-12, Vault `fc275b7`, follow-up
+  `3b30637`).** Note-tree rows follow the macOS Finder pattern: the button remains full-width
+  for hover, selection, and click behavior while only its content insets — 8 px base plus one 12 px
+  increment per real nested folder level, capped at six increments. Folder and leaf rows now share
+  an 18 px disclosure column, with a spacer for leaves, so every child title begins visibly to the
+  right of its parent label. Folder and vault-group headings retain the restrained
+  `text-base font-semibold` distinction from `text-sm font-medium` note titles. Redundant monospace
+  type subtitles are gone from tree rows; canonical type remains available through Properties,
+  search/filter surfaces, and source frontmatter. Expand/collapse, keyboard semantics, truncation,
+  selection, and the full-width hit target remain intact. Focused component tests cover structure
+  and accessible names, while the real browser regression measures parent/child label coordinates
+  and proves every row spans the tree content box at desktop and 390 px across managed, open,
+  selected, collapsed, deep, and multi-vault cases.
 
   **Done — concise Vault chat route label (2026-07-12, Vault `fc275b7`, one review round).** The
   route is named **Engaged** across every user-facing surface — the selector option, the dock's
@@ -708,13 +718,34 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      Overlay and Vault, with the bundled Rust sidecars hash-verified before packaging and notarization
      stapled before publishing.
   2. **Updater and release CI.** A release workflow builds, signs, notarizes, publishes, and smoke-tests
-     the app artifacts; the apps check a signed update manifest from the chosen release host.
-  3. **Clean-machine install proof.** Verify the published artifacts on a fresh account/VM with no repo
+     the app artifacts; the apps check a signed update manifest from the chosen release host. Treat
+     shutdown and relaunch synchronization as part of the updater contract, not an implementation
+     detail: installation must not relaunch the new app until the old app and its bundled sidecars
+     have exited and released their loopback listeners.
+  3. **Overlay shutdown/relaunch and port-collision proof.** Preserve the intentional tray behavior
+     (closing the window hides it; explicit Quit exits), but make actual quit wait for and reap the
+     bundled `agent-overlay-server` and release the single-instance socket and port `4180` before an
+     updater relaunch proceeds. Retain the parent-death watchdog for abnormal termination and add a
+     bounded retry for the narrow case where the prior owned listener is still closing. If an
+     unrelated or standalone process owns `4180`, never kill or attach to it: fail with a visible,
+     actionable native startup error instead of leaving the main window hidden behind the health
+     timeout. Release validation must cover window-close-to-tray, explicit Quit, parent crash,
+     immediate updater-style relaunch, a deliberately occupied `4180`, and cleanup of QA-spawned
+     standalone servers. A dynamically selected loopback port remains a fallback design only if the
+     fixed-port lifecycle cannot be made deterministic without weakening the origin/token boundary.
+
+     The ordinary-Quit and collision baseline is implemented in Overlay `5bf8407`: release startup
+     waits a bounded two seconds for a prior listener to release `4180`, refuses to adopt or kill an
+     unrelated owner, shows a native actionable error, and explicit Quit kills and reaps only the
+     owned sidecar before waiting for the listener to close. Packaged-app QA proved the occupied-port
+     and normal-Quit paths. Immediate updater-driven restart, parent-crash recovery, and signed-update
+     installation remain pre-release acceptance work rather than claims of the current unsigned app.
+  4. **Clean-machine install proof.** Verify the published artifacts on a fresh account/VM with no repo
      checkout, no developer env, no prebuilt binaries on PATH, and no manual env setup. This is the
      proof that the DMG experience is truly consumer-grade rather than merely clean-ish local.
-  4. **Optional package channels.** Homebrew/Scoop/native package channels are follow-ons after the
+  5. **Optional package channels.** Homebrew/Scoop/native package channels are follow-ons after the
      signed DMG and updater path are stable.
-  5. **Distribution-doc cleanup.** During the release pass, sweep product docs, CI comments, and
+  6. **Distribution-doc cleanup.** During the release pass, sweep product docs, CI comments, and
      release checklists for old "three repo/product" language. The release shape is two user-facing
      apps, Vault and Overlay; Runner is documented, packaged, and optionally installed from Overlay,
      not released as a third standalone product.
