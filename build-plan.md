@@ -1399,6 +1399,12 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
    an *unrelated* process still triggers the same fail-closed native error. Lands ahead of the
    transport split, needs no auth or capability work, and is superseded by it once the GUI no longer
    binds the port.
+
+   Implemented in Overlay `919f0a8`: `/api/health` now reports the server `pid`; startup classifies
+   the port owner as an own orphan only when health shows `ok:true` plus a non-empty instance token,
+   and the reported pid's executable basename is re-verified as `agent-overlay-server` immediately
+   before each signal (TERM, then a single KILL escalation). Dev servers (no instance token) and
+   unrelated owners keep the exact fail-closed native error.
 2. **Transport split + auth spine.** Serve the desktop UI over an in-process transport (a Tauri custom
    scheme dispatching into the same Axum `tower::Service` router) so it no longer binds the loopback
    port; keep the TCP listener for the CLI, daemon, and integrations on the fixed, env-overridable
