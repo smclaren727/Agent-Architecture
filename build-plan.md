@@ -1413,6 +1413,15 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
    control-plane routes reject non-operator identities and anonymous gets liveness only. This removes
    the port-collision startup modal structurally — the desktop no longer binds the port at all — and
    closes the current unauthenticated-local-caller gap.
+
+   Implemented in Overlay `96a2abe` (transport) + `db778d0` (auth spine). The packaged app embeds
+   the console router: an `overlay://` custom scheme dispatches UI/API requests in-process (named
+   SSE events cross a Tauri event bridge — custom-scheme responses cannot stream), and the loopback
+   listener binds in a background task that reaps identity-verified own orphans and otherwise
+   retries without blocking launch. Requests are classified operator / integration / anonymous in
+   one tower layer after the origin guard; the packaged listener runs restricted (anonymous gets
+   liveness only, Bearer refused until tokens exist), while the standalone binary stays open for
+   the dev loop with `OVERLAY_WIRE_ACCESS=restricted` as the tested opt-in.
 3. **Read-only integration tokens.** User-created, labeled, scoped, hashed-at-rest, revocable tokens
    over the existing secret store, minted/revoked from a Settings surface, with `localApi.enabled` off
    by default. First scopes are read + subscribe (`*:read`, `events:subscribe`); every mint and denial
