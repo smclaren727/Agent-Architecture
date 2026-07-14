@@ -1370,11 +1370,60 @@ separate Agent-Runner repo required for normal use.
 
 ---
 
+## Phase 9 — Local integration API (planned)
+
+**Goal:** let other programs integrate with a running Agent Overlay over its local HTTP API — read
+state, subscribe to events, and request governed work — without giving any caller the operator's
+control-plane privileges, and without the shared listener's fixed port blocking desktop startup. The
+design decisions are recorded in
+[`agent-overlay-local-api-decisions.md`](../Agent-Overlay/agent-overlay-local-api-decisions.md).
+
+**Prerequisite:** Phase 8. Overlay owns the console `/api/*` + SSE server and the policy/approval
+machinery, so this is an access-and-transport change on a stable surface, not a runtime rewrite.
+
+**Dependency arrows:** an integration is just another *caller* of Overlay's existing seam — the same
+shape as Claude Code, Emacs, the CLI, and the Runner. `integration ──HTTP──▶ overlay console API`;
+authorization derives from `overlay-core` `Policy`. Overlay still depends on neither sibling, and no
+caller gains the ability to make Overlay *act* outside doctrine and approval.
+
+**Work (smallest useful first):**
+1. **Transport split + auth spine.** Serve the desktop UI over an in-process transport (a Tauri custom
+   scheme dispatching into the same Axum `tower::Service` router) so it no longer binds the loopback
+   port; keep the TCP listener for the CLI, daemon, and integrations on the fixed, env-overridable
+   port. Add an auth layer after the existing origin guard that classifies each request as **operator**
+   (today's token, now in-process), **integration** (`Authorization: Bearer`), or **anonymous**;
+   control-plane routes reject non-operator identities and anonymous gets liveness only. This removes
+   the port-collision startup modal and closes the current unauthenticated-local-caller gap.
+2. **Read-only integration tokens.** User-created, labeled, scoped, hashed-at-rest, revocable tokens
+   over the existing secret store, minted/revoked from a Settings surface, with `localApi.enabled` off
+   by default. First scopes are read + subscribe (`*:read`, `events:subscribe`); every mint and denial
+   is audited. Low blast radius — external dashboards, notifiers, status bars.
+3. **Scoped write + approvals.** Add write scopes (`runs:launch`, `chat:ask`, …), every sensitive
+   action still funneling through the policy `approval.required_for` gates to the operator. No caller
+   self-authorizes.
+4. **Publish + version the contract.** Promote `openapi/console.yaml` to the public integration
+   contract with a stability/versioning commitment; document discovery (the fixed port) and the
+   token/auth scheme.
+
+**Guardrail:** an integration token must never reach the control plane, and authorization must be
+expressed as `Policy` scopes, not per-route special cases. If a caller can approve its own work, switch
+workspaces, read secrets, or drive the ungoverned shell, the two planes have merged back into
+"on this machine = authorized" and the design has drifted. The integration plane stays off until
+explicitly enabled.
+
+**Done when:** the desktop app starts and renders without binding the shared TCP port (a busy port no
+longer blocks launch); a read-only token can read state and subscribe to events but cannot launch work
+or reach any control-plane route; a write-scoped token's sensitive action lands as an operator approval
+rather than executing unattended; and the integration plane is off by default with tokens minted,
+scoped, revoked, and audited from the UI.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
-                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment)
+                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment) ─▶ Phase 9 (local integration API)
 
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
@@ -1387,4 +1436,6 @@ frozen TS core bridged the window until Vault, its last consumer, ported (R3, 20
 point the frozen core was deleted and the window closed.
 Phase 8 is a product-boundary correction on top of the stable Rust/OpenAPI base: Vault gets a
 standalone native-intelligence path, while Runner becomes an Overlay-shipped daemon binary instead of
-a separate product repo.
+a separate product repo. Phase 9 opens Overlay's console API to third-party callers behind a
+scoped-token auth plane — integrations join the CLI, daemon, and desktop as callers of the same seam,
+none able to reach the operator's control plane.
