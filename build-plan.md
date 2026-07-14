@@ -740,6 +740,9 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      owned sidecar before waiting for the listener to close. Packaged-app QA proved the occupied-port
      and normal-Quit paths. Immediate updater-driven restart, parent-crash recovery, and signed-update
      installation remain pre-release acceptance work rather than claims of the current unsigned app.
+     Phase 9 revisits this baseline: its near-term adopt-own-sidecar slice relaxes the refuse-to-adopt
+     rule for an identity-verified *own* orphan — the common cause of that startup modal — and the
+     transport split then removes the port from the desktop startup path entirely.
   4. **Clean-machine install proof.** Verify the published artifacts on a fresh account/VM with no repo
      checkout, no developer env, no prebuilt binaries on PATH, and no manual env setup. This is the
      proof that the DMG experience is truly consumer-grade rather than merely clean-ish local.
@@ -1387,21 +1390,31 @@ authorization derives from `overlay-core` `Policy`. Overlay still depends on nei
 caller gains the ability to make Overlay *act* outside doctrine and approval.
 
 **Work (smallest useful first):**
-1. **Transport split + auth spine.** Serve the desktop UI over an in-process transport (a Tauri custom
+1. **Adopt an orphaned own sidecar (near-term, standalone).** The immediate friction — the "sidecar
+   port `4180` is already in use" startup modal — is usually an *own* sidecar orphaned by a crash or
+   force-quit: the single-instance lock misses it (the app is gone) and the current bind-probe fails
+   rather than adopts. Evolve the Phase 5 fixed-port baseline (Overlay `5bf8407`, which deliberately
+   refuses to adopt or kill any owner): when `4180` is held, identity-probe the owner over
+   `/api/health` and, only if it is our own orphaned server, adopt it (navigate) or reap and rebind —
+   an *unrelated* process still triggers the same fail-closed native error. Lands ahead of the
+   transport split, needs no auth or capability work, and is superseded by it once the GUI no longer
+   binds the port.
+2. **Transport split + auth spine.** Serve the desktop UI over an in-process transport (a Tauri custom
    scheme dispatching into the same Axum `tower::Service` router) so it no longer binds the loopback
    port; keep the TCP listener for the CLI, daemon, and integrations on the fixed, env-overridable
    port. Add an auth layer after the existing origin guard that classifies each request as **operator**
    (today's token, now in-process), **integration** (`Authorization: Bearer`), or **anonymous**;
    control-plane routes reject non-operator identities and anonymous gets liveness only. This removes
-   the port-collision startup modal and closes the current unauthenticated-local-caller gap.
-2. **Read-only integration tokens.** User-created, labeled, scoped, hashed-at-rest, revocable tokens
+   the port-collision startup modal structurally — the desktop no longer binds the port at all — and
+   closes the current unauthenticated-local-caller gap.
+3. **Read-only integration tokens.** User-created, labeled, scoped, hashed-at-rest, revocable tokens
    over the existing secret store, minted/revoked from a Settings surface, with `localApi.enabled` off
    by default. First scopes are read + subscribe (`*:read`, `events:subscribe`); every mint and denial
    is audited. Low blast radius — external dashboards, notifiers, status bars.
-3. **Scoped write + approvals.** Add write scopes (`runs:launch`, `chat:ask`, …), every sensitive
+4. **Scoped write + approvals.** Add write scopes (`runs:launch`, `chat:ask`, …), every sensitive
    action still funneling through the policy `approval.required_for` gates to the operator. No caller
    self-authorizes.
-4. **Publish + version the contract.** Promote `openapi/console.yaml` to the public integration
+5. **Publish + version the contract.** Promote `openapi/console.yaml` to the public integration
    contract with a stability/versioning commitment; document discovery (the fixed port) and the
    token/auth scheme.
 
