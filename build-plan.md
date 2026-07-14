@@ -1447,6 +1447,14 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
    requests, decided only via the operator-token route). Tests pin that the scope table never maps
    a control-plane route and that a token holding every scope cannot decide approvals. `chat:ask`
    has no console route yet and is deliberately absent.
+
+   Revisited post-GA-review in Overlay `140e7ea` + `d1a3879` (decided deliberately, not by
+   omission): integration launches now queue as informed operator approvals by default — the
+   validated request is hash-bound into a `console:run-launch` approval, its params persist beside
+   the desktop store, and the operator's approve consumes the one-use approval and executes the
+   existing launch path, with the Approvals view showing kind, params, and the requesting token. A
+   mint-time `allowUnattendedRuns` flag (default false) is the explicit per-token opt-out. The
+   decisions doc carries a dated addendum; the contract is `1.0.0-beta.2`.
 5. **Publish + version the contract.** Promote `openapi/console.yaml` to the public integration
    contract with a stability/versioning commitment; document discovery (the fixed port) and the
    token/auth scheme.
