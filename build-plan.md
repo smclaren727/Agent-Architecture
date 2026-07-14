@@ -1373,7 +1373,7 @@ separate Agent-Runner repo required for normal use.
 
 ---
 
-## Phase 9 — Local integration API (planned)
+## Phase 9 — Local integration API (complete, 2026-07-14)
 
 **Goal:** let other programs integrate with a running Agent Overlay over its local HTTP API — read
 state, subscribe to events, and request governed work — without giving any caller the operator's
@@ -1451,6 +1451,12 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
    contract with a stability/versioning commitment; document discovery (the fixed port) and the
    token/auth scheme.
 
+   Implemented in Overlay `0c477d7`: the contract is versioned `1.0.0-beta.1` with declared
+   security schemes (integration bearer + operator header), per-route security, anonymous
+   `/api/health` discovery, restricted-mode denial semantics, and a semver stability commitment
+   over the integration-reachable paths and scope vocabulary. `docs/local-integration-api.md` is
+   the integrator's guide.
+
 **Guardrail:** an integration token must never reach the control plane, and authorization must be
 expressed as `Policy` scopes, not per-route special cases. If a caller can approve its own work, switch
 workspaces, read secrets, or drive the ungoverned shell, the two planes have merged back into
@@ -1462,6 +1468,13 @@ longer blocks launch); a read-only token can read state and subscribe to events 
 or reach any control-plane route; a write-scoped token's sensitive action lands as an operator approval
 rather than executing unattended; and the integration plane is off by default with tokens minted,
 scoped, revoked, and audited from the UI.
+
+All four conditions hold as of Overlay `0c477d7` (packaged-app QA 2026-07-14): the window renders
+over the in-process `overlay://` scheme with the port busy; read-only tokens read/subscribe and are
+403-denied everywhere else; launch routes are governed identically for every caller and sensitive
+tool actions queue `approval.required_for` approvals that only the operator token can decide (an
+all-scope integration token is test-pinned to 403 on decisions); and the plane is off by default
+with mint/revoke/audit exercised from the Settings card in the packaged app.
 
 ---
 
