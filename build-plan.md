@@ -1426,6 +1426,16 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
    over the existing secret store, minted/revoked from a Settings surface, with `localApi.enabled` off
    by default. First scopes are read + subscribe (`*:read`, `events:subscribe`); every mint and denial
    is audited. Low blast radius — external dashboards, notifiers, status bars.
+
+   Implemented in Overlay `ea58168` (backend) + `2197719` (Settings UI + OpenAPI). Tokens are
+   SHA-256-hashed in a 0600 `integrations.json` beside the desktop store (the `overlay-core`
+   secrets module is a read-only resolver, so the hashed-at-rest property lives there), shown raw
+   exactly once, revocable, resolved in constant time, and optionally workspace-bound. First
+   scopes: `dashboard:read`, `trajectories:read`, `memory:read`, `events:subscribe`, enforced from
+   one central route table in the auth layer; unmapped routes stay operator-only. The plane is off
+   by default; enable/mint/revoke and every denial class append to `integrations-audit.jsonl`.
+   Admin routes are operator-token-gated and documented in `openapi/console.yaml`; Settings gains
+   the mint/revoke card.
 4. **Scoped write + approvals.** Add write scopes (`runs:launch`, `chat:ask`, …), every sensitive
    action still funneling through the policy `approval.required_for` gates to the operator. No caller
    self-authorizes.
