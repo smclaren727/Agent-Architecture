@@ -1439,6 +1439,14 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
 4. **Scoped write + approvals.** Add write scopes (`runs:launch`, `chat:ask`, …), every sensitive
    action still funneling through the policy `approval.required_for` gates to the operator. No caller
    self-authorizes.
+
+   Implemented in Overlay `e261c70`: scopes `runs:launch` (run targets/workflow/eval) and
+   `capture:write` (capture inbox) join the central route table. Console launch routes consult no
+   approval gate for any caller — integration and operator launches are governed identically, and
+   sensitive actions gate where tools are invoked (the MCP handler queues `approval.required_for`
+   requests, decided only via the operator-token route). Tests pin that the scope table never maps
+   a control-plane route and that a token holding every scope cannot decide approvals. `chat:ask`
+   has no console route yet and is deliberately absent.
 5. **Publish + version the contract.** Promote `openapi/console.yaml` to the public integration
    contract with a stability/versioning commitment; document discovery (the fixed port) and the
    token/auth scheme.
