@@ -270,9 +270,11 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
 - **Tauri V2 wrap.** Package the Vault web app as a local-first Tauri V2 app, and migrate Overlay's
   own desktop surface to Tauri V2 as well. **✅ done (2026-06-30)** — both apps shipped **model-B
   Tauri v2 wraps**: the window loads the loopback origin of bundled cargo-built Rust sidecars
-  (Vault `src-tauri/` bundles `agent-vault-server`; Overlay `apps/desktop/src-tauri` bundles
-  `agent-overlay-server` plus the runnable `overlay` CLI, and since Phase 8.2 also bundles
-  `agent-runner`). The old Node SEA sidecar/toolchain was retired
+  (Vault `src-tauri/` bundles `agent-vault-server`; Overlay's `apps/desktop/src-tauri` bundle carries
+  the runnable `overlay` CLI and, since Phase 8.2, `agent-runner`; the console/server router is served
+  in-process; `agent-overlay-server` remains a standalone binary for the dev loop, contract tests,
+  and headless runs, and is no longer staged into the `.app`/DMG (per Overlay commit `150146e`)). The old Node
+  SEA sidecar/toolchain was retired
   during the Rust migration. Plans:
   [`Docs/tauri-wrap-build-plan.md`](../Agent-Vault/Docs/tauri-wrap-build-plan.md) (Vault),
   [`docs/desktop-app-build-plan.md`](../Agent-Overlay/docs/desktop-app-build-plan.md) (Overlay).
@@ -723,9 +725,10 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
      detail: installation must not relaunch the new app until the old app and its bundled sidecars
      have exited and released their loopback listeners.
   3. **Overlay shutdown/relaunch and port-collision proof.** Preserve the intentional tray behavior
-     (closing the window hides it; explicit Quit exits), but make actual quit wait for and reap the
-     bundled `agent-overlay-server` and release the single-instance socket and port `4180` before an
-     updater relaunch proceeds. Retain the parent-death watchdog for abnormal termination and add a
+     (closing the window hides it; explicit Quit exits), but make actual quit wait for and reap this
+     launch's in-process console listener (or an identity-verified own orphan) and release the
+     single-instance socket and port `4180` before an updater relaunch proceeds. Retain the
+     parent-death watchdog for abnormal termination and add a
      bounded retry for the narrow case where the prior owned listener is still closing. If an
      unrelated or standalone process owns `4180`, never kill or attach to it: fail with a visible,
      actionable native startup error instead of leaving the main window hidden behind the health
@@ -1386,7 +1389,8 @@ machinery, so this is an access-and-transport change on a stable surface, not a 
 
 **Dependency arrows:** an integration is just another *caller* of Overlay's existing seam — the same
 shape as Claude Code, Emacs, the CLI, and the Runner. `integration ──HTTP──▶ overlay console API`;
-authorization derives from `overlay-core` `Policy`. Overlay still depends on neither sibling, and no
+authorization derives from a console-local integration-scope vocabulary enforced by the central
+route table in the auth layer. Overlay still depends on neither sibling, and no
 caller gains the ability to make Overlay *act* outside doctrine and approval.
 
 **Work (smallest useful first):**
@@ -1459,14 +1463,15 @@ caller gains the ability to make Overlay *act* outside doctrine and approval.
    contract with a stability/versioning commitment; document discovery (the fixed port) and the
    token/auth scheme.
 
-   Implemented in Overlay `0c477d7`: the contract is versioned `1.0.0-beta.1` with declared
+   Implemented in Overlay `140e7ea` + `d1a3879`: the contract is versioned `1.0.0-beta.2` with declared
    security schemes (integration bearer + operator header), per-route security, anonymous
    `/api/health` discovery, restricted-mode denial semantics, and a semver stability commitment
    over the integration-reachable paths and scope vocabulary. `docs/local-integration-api.md` is
    the integrator's guide.
 
 **Guardrail:** an integration token must never reach the control plane, and authorization must be
-expressed as `Policy` scopes, not per-route special cases. If a caller can approve its own work, switch
+expressed as declared integration scopes enforced in one central auth-layer route table. If a caller
+can approve its own work, switch
 workspaces, read secrets, or drive the ungoverned shell, the two planes have merged back into
 "on this machine = authorized" and the design has drifted. The integration plane stays off until
 explicitly enabled.
@@ -1477,12 +1482,14 @@ or reach any control-plane route; a write-scoped token's sensitive action lands 
 rather than executing unattended; and the integration plane is off by default with tokens minted,
 scoped, revoked, and audited from the UI.
 
-All four conditions hold as of Overlay `0c477d7` (packaged-app QA 2026-07-14): the window renders
+All four conditions hold as of Overlay `140e7ea` + `d1a3879` (packaged-app QA 2026-07-14; contract
+`1.0.0-beta.2`): the window renders
 over the in-process `overlay://` scheme with the port busy; read-only tokens read/subscribe and are
-403-denied everywhere else; launch routes are governed identically for every caller and sensitive
+403-denied everywhere else; integration-token launches queue as informed operator approvals by
+default (with an `allowUnattendedRuns` opt-out), while operator launches execute directly; sensitive
 tool actions queue `approval.required_for` approvals that only the operator token can decide (an
-all-scope integration token is test-pinned to 403 on decisions); and the plane is off by default
-with mint/revoke/audit exercised from the Settings card in the packaged app.
+all-scope integration token is test-pinned to 403 on decisions); and the plane is off by default with
+mint/revoke/audit exercised from the Settings card in the packaged app.
 
 ---
 
