@@ -28,10 +28,10 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { commandFromEnv, spawnService, waitFor, tryJson, freePort, assert, log } from "./harness-lib.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const developer = path.resolve(here, "../..");
@@ -62,29 +62,10 @@ if (!process.env.ACCEPTANCE_VAULT_CMD && !existsSync(vaultBin)) {
 const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [overlayBin]);
 const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [vaultBin]);
 
-function commandFromEnv(name, fallback) {
-  const raw = process.env[name];
-  if (!raw) {
-    return fallback;
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`${name} must be a JSON argv array (["command", ...args]): ${error.message}`);
-  }
-  if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every((entry) => typeof entry === "string" && entry.length > 0)) {
-    throw new Error(`${name} must be a non-empty JSON array of strings`);
-  }
-  return parsed;
-}
-
 // Coined tokens so a hit is unambiguous: nothing in the doctrine template contains them.
 const INITIAL_TOKEN = "ELDERBERRYPROTOCOL";
 const EDITED_TOKEN = "MARMALADEDIRECTIVE";
 const VAULT_RELPATH = "notes/standards.md";
-
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "phase5-acceptance-"));
@@ -273,66 +254,6 @@ function assertNoWorldKnowledge(hits, message) {
 
 function formatHits(hits) {
   return hits.length ? hits.map((hit) => `${hit.kind} ${hit.uri}`).join(", ") : "No results found.";
-}
-
-function spawnService(name, command, args, options) {
-  const child = spawn(command, args, { ...options, stdio: ["ignore", "pipe", "pipe"] });
-  const tag = (stream) => (chunk) => {
-    const text = chunk.toString("utf8").trimEnd();
-    if (text) {
-      process.stderr.write(`[${name}:${stream}] ${text}\n`);
-    }
-  };
-  child.stdout.on("data", tag("out"));
-  child.stderr.on("data", tag("err"));
-  child.on("error", (error) => process.stderr.write(`[${name}] spawn error: ${error.message}\n`));
-  return child;
-}
-
-async function waitFor(fn, timeoutMs, label) {
-  const deadline = Date.now() + timeoutMs;
-  let lastError;
-  while (Date.now() < deadline) {
-    try {
-      const value = await fn();
-      if (value) {
-        return value;
-      }
-    } catch (error) {
-      lastError = error;
-    }
-    await delay(400);
-  }
-  throw new Error(`Timed out after ${timeoutMs}ms waiting for ${label}${lastError ? `: ${lastError.message}` : ""}`);
-}
-
-async function tryJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    return undefined;
-  }
-  return response.json();
-}
-
-function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
-    });
-  });
-}
-
-function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
-
-function log(message) {
-  process.stderr.write(`[acceptance] ${message}\n`);
 }
 
 main().catch((error) => {

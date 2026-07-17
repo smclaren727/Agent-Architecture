@@ -19,13 +19,12 @@
 // Rust binaries. Any plane can be substituted without touching the harness (the
 // frozen TS forms remain selectable explicitly). See acceptance/README.md.
 
-import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { commandFromEnv, spawnService, waitFor, tryJson, freePort, assert, log } from "./harness-lib.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const developer = path.resolve(here, "../..");
@@ -65,23 +64,6 @@ if (!process.env.ACCEPTANCE_VAULT_CMD && !existsSync(vaultBin)) {
 const overlayCmd = commandFromEnv("ACCEPTANCE_OVERLAY_CMD", [overlayBin]);
 const runnerCmd = commandFromEnv("ACCEPTANCE_RUNNER_CMD", [runnerBin]);
 const vaultCmd = commandFromEnv("ACCEPTANCE_VAULT_CMD", [vaultBin]);
-
-function commandFromEnv(name, fallback) {
-  const raw = process.env[name];
-  if (!raw) {
-    return fallback;
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`${name} must be a JSON argv array (["command", ...args]): ${error.message}`);
-  }
-  if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every((entry) => typeof entry === "string" && entry.length > 0)) {
-    throw new Error(`${name} must be a non-empty JSON array of strings`);
-  }
-  return parsed;
-}
 
 // OVERLAY_CLI_PATH is consumed by the dispatched triage executor
 // (templates/default-workspace/adapters/triage-capture-harness.mjs), which re-launches
@@ -124,7 +106,6 @@ async function main() {
           HOST: "127.0.0.1",
           PORT: String(port),
           AGENT_VAULT_WORKSPACE: workspace,
-          AGENT_VAULT_UI: path.join(vaultRepo, "ui"),
           AGENT_VAULT_DB: path.join(vaultCwd, "agent-vault.sqlite"),
           AGENT_VAULT_WATCH: "0",
           AGENT_VAULT_WORKSPACE_WATCH: "0"
@@ -198,66 +179,6 @@ async function main() {
     }
     await rm(tempRoot, { recursive: true, force: true });
   }
-}
-
-function spawnService(name, command, args, options) {
-  const child = spawn(command, args, { ...options, stdio: ["ignore", "pipe", "pipe"] });
-  const tag = (stream) => (chunk) => {
-    const text = chunk.toString("utf8").trimEnd();
-    if (text) {
-      process.stderr.write(`[${name}:${stream}] ${text}\n`);
-    }
-  };
-  child.stdout.on("data", tag("out"));
-  child.stderr.on("data", tag("err"));
-  child.on("error", (error) => process.stderr.write(`[${name}] spawn error: ${error.message}\n`));
-  return child;
-}
-
-async function waitFor(fn, timeoutMs, label) {
-  const deadline = Date.now() + timeoutMs;
-  let lastError;
-  while (Date.now() < deadline) {
-    try {
-      const value = await fn();
-      if (value) {
-        return value;
-      }
-    } catch (error) {
-      lastError = error;
-    }
-    await delay(400);
-  }
-  throw new Error(`Timed out after ${timeoutMs}ms waiting for ${label}${lastError ? `: ${lastError.message}` : ""}`);
-}
-
-async function tryJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    return undefined;
-  }
-  return response.json();
-}
-
-function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
-    });
-  });
-}
-
-function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
-
-function log(message) {
-  process.stderr.write(`[acceptance] ${message}\n`);
 }
 
 main().catch((error) => {
