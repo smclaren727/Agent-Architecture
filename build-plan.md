@@ -107,26 +107,8 @@ typed-area write-contract model — not a separate code path.
    Corpus Links panel: workflows ↔ skills/standards, profiles/policies ↔ tools, eval suites ↔
    profiles/workflows, and memory facts/proposals ↔ supersession or non-global memory-scope links.
    It derives from canonical file content and does not introduce a stored graph.)*
-5. **Embedded agent surface** for human+agent co-editing. *(Not built in the Node stack. The chat
-   shipped 2026-07-03: a right-dock Chat executing governed, trajectory-recorded turns through
-   `overlay-core`'s `adapters::turn` API under the canonical `vault-chat` workflow, with read-only,
-   suggest-with-explicit-apply, and governed allow-edits permissions. The knowledge-vault convention
-   checker, managed-note write-time backstop, and browser-session transcript persistence shipped
-   2026-07-04. Direct-provider and supported tool-bearing claude-code/codex chat replies stream
-   over Vault's SSE route; final turn completion owns suggestions and proposals. The
-   in-app MCP client/tool channel to `overlay serve` is not built because spawned-agent MCP re-entry
-   is the shipped tool path; Vault now has local-default/provider-opt-in chunk embeddings and
-   similarity search, Chat can explicitly attach bounded related chunks from that configured
-   embedding index, the Info dock exposes a Summary widget over ordinary note `summary`
-   frontmatter with optional Chat handoff, and deterministic entity candidates over known people,
-   organizations, projects, and areas; Chat also ships a prompt-only "Plan workflow" starter for
-   multi-agent planning over the existing governed turn path. The Chat dock also renders Overlay's
-   passive local-agent catalog as an Agent runtime selector — Direct/API, Claude Code, Codex CLI,
-   and currently unsupported Gemini CLI — without making Vault a host-probing or policy authority.
-   Overlay's console now owns the complementary setup surface for supported local CLIs, writing
-   `profiles/*.yaml` and `adapters/*.yaml` through the canonical file writer rather than storing
-   runtime config in app-private state; see [agent-vault.md](agent-vault.md) and
-   [agent-overlay.md](agent-overlay.md).)*
+5. **Embedded agent surface** for human+agent co-editing. *(Shipped 2026-07-03; see
+   [agent-vault.md](agent-vault.md#what-vault-adds-over-a-plain-markdown-editor).)*
 
 The MVP is a **web build**; the Tauri V2 wrap for local-first polish is Phase 5, not a blocker here.
 
@@ -792,10 +774,8 @@ hardening and should stay visible as the system moves toward production packagin
   returning content; canonical writes realpath-check parents and refuse symlinked final targets.
 - **Done — Runner direct dispatch scoring.** The direct path evaluates Overlay predicates before
   recording run completion.
-- **Done — Vault privileged-origin split (2026-07-07).** Active vault assets are served inertly
-  (attachment treatment covers SVG) from a **separate unprivileged loopback origin**; the
-  IPC-bearing app origin 404s `/assets` and carries a script-restricting CSP, and the asset origin
-  serves no API. See [agent-vault.md](agent-vault.md).
+- **Done — Vault privileged-origin split (2026-07-07).** See
+  [agent-vault.md](agent-vault.md#current-hardening-status).
 - **Done — Runner webhook authentication.** HTTP triggers match route before body drain and cap/time
   out request bodies, and the header/HMAC authentication contract is now doctrine (an `on.auth` block
   in Overlay's trigger schema — [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) enforced

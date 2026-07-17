@@ -120,10 +120,8 @@ they mark the hardening work that keeps the implementation honest against the sy
   doctrine (an `on.auth` header/HMAC block in Overlay's trigger schema —
   [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) and Runner enforces it fail-closed
   (constant-time compares, `401` on mismatch, `503` when the secret env var is unset or empty);
-  Runner bounds HTTP request bodies; Vault serves active vault assets inertly (attachment treatment
-  now covers SVG), gives the app document a script-restricting CSP, and — since 2026-07-07 — serves
-  user-controlled vault assets from a **separate unprivileged loopback origin** (the IPC-bearing app
-  origin 404s `/assets`; the asset origin serves no API), completing the privileged-origin split.
+  Runner bounds HTTP request bodies; Vault serves user-controlled assets inertly from a separate
+  unprivileged loopback origin — see [agent-vault.md](agent-vault.md#current-hardening-status).
   Overlay's Streamable HTTP MCP transport is also bounded for trusted-local use: 5 MiB JSON-RPC
   bodies, 64 live sessions per process, explicit `DELETE /mcp` teardown, and 30-minute idle reaping.
 - **Write safety has to be end-to-end.** The corpus is plain files, but all writers still need unique
@@ -170,22 +168,9 @@ captures the full run as a trajectory (metadata + append-only events + stdout/st
 the run and its predicate-scored outcome for the human to skim over coffee.
 
 **4. LLM-as-editor (Vault review, governed suggestions).**
-A human opens a note in Vault's Chat dock. A read-only, suggest, or allow-edits turn executes
-through `overlay-core` under the `vault-chat` workflow, records a trajectory, and may return
-structured current-note suggestions. Direct-provider and supported tool-bearing claude-code/codex
-replies stream into the dock; final turn completion owns suggestions and proposals. Suggest
-turns require explicit apply; allow-edits turns auto-apply exactly one unambiguous current-note
-suggestion through Vault's normal validated note-save API, while multiple candidates stay in explicit
-review. The turn may explicitly include bounded related chunks from Vault's configured embedding
-index, local feature-hash by default or provider-backed when opted in.
-A tool-bearing turn (claude-code/codex re-entering Overlay over MCP) can also file memory proposals;
-the reply links them for review, and canonical memory still changes only through the proposal queue.
-Vault's runtime selector is display-only over Overlay's passive local-agent catalog: Direct/API plus
-detected Claude Code, Codex CLI, and unsupported Gemini CLI, with no Vault-side host probing or policy
-derivation. Overlay's Agent Runtimes console complements that display by writing supported local-agent
-profile/adapter YAML and exposing lifecycle hook doctrine from `hooks/*.yaml`; installed Codex/Claude
-hooks call Overlay's bounded ingest route, but the local agent process still owns hook execution and
-trust.
+A human opens a note in Vault's Chat dock. A governed `vault-chat` turn runs through `overlay-core`,
+records a trajectory, and returns suggestions or proposals for human review and apply. See
+[agent-vault.md](agent-vault.md#what-vault-adds-over-a-plain-markdown-editor) for the feature detail.
 
 ## Where to read next
 

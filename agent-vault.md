@@ -61,9 +61,11 @@ Vault ships in two stages:
    are **retired**. In release, the shell binds the sidecar to `127.0.0.1:4173`, passes a per-launch
    `AGENT_VAULT_INSTANCE_TOKEN`, and accepts `/api/health` only when the response echoes that token, so
    a stale fixed-port process cannot satisfy a fresh launch gate. In dev, the Tauri window uses
-   `http://localhost:5173` and does not spawn the bundled sidecar. **The Agent Overlay desktop app
-   shipped the same model-B Tauri v2 wrap** (its
-   sidecars likewise now the cargo binaries), so both repos converge on one desktop delivery story.
+   `http://localhost:5173` and does not spawn the bundled sidecar. Both repos converge on cargo-built
+   `externalBin` binaries for desktop delivery, but their transports differ: Vault uses the model-B
+   loopback sidecar, while Overlay's packaged window dispatches into an in-process axum router over
+   the `overlay://localhost` custom scheme. `agent-overlay-server` is not a bundled sidecar;
+   Overlay's `externalBin` entries are `overlay` and `agent-runner`.
    Signed packaging, notarization, auto-updater, and final clean-machine/cross-webview release QA
    remain **Developer ID distribution work**, gated on Apple Developer Program credentials. The
    trusted origin holds privileged IPC, so the app document carries a script-restricting CSP,
@@ -92,7 +94,7 @@ A generic editor would let you type into the files. Vault is *corpus-aware*:
 - **Semantic similarity search over chunks.** Vault's disposable SQLite index now stores rebuildable
   chunk embeddings for the same deterministic markdown chunks exposed by `/api/context`.
   The default backend is local/provider-free feature hashes; the opt-in OpenAI-compatible backend
-  uses the configured `/embeddings` model. `/api/search/semantic` and the Search view's Semantic
+  uses the configured `/embeddings` model. `/api/search/semantic` and the Search view's Related
   mode return chunk-level hits with note ids, paths, line ranges, scores, and the embedding model
   id; the existing full-text `/api/search` contract remains unchanged. Chat can explicitly attach
   bounded related chunks from this same configured embedding index.
