@@ -22,6 +22,11 @@ node Agent-Architecture/acceptance/capture-triage-loop.mjs
 The harness fails fast with a `cargo build` pointer if any of the three Rust binaries (`overlay`,
 `agent-runner`, or `agent-vault-server`) is missing.
 
+With the all-Rust defaults, the triage-capture executor spawns `overlay serve` as a bare `overlay`
+resolved on `PATH` (not via `OVERLAY_CLI_PATH`), so `overlay` must also be installed on `PATH` — a
+native install does this, whereas `cargo build` alone only produces `target/debug/overlay`. See the
+manual-run step 3 and the knobs section below for the same requirement.
+
 A green run prints `PASS — capture → triage → review loop is live across all three planes.` and
 asserts: the capture POST returns 201, a pending proposal appears in Vault, a completed trajectory is
 surfaced, and the proposal links to the run that produced it.
