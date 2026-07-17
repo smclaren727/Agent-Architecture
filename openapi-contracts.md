@@ -23,17 +23,29 @@ generates a typed client. The phased build is [build-plan.md](build-plan.md) →
 | Surface | Spec | Port | Served on the running server | Per-repo guide · ledger |
 | --- | --- | --- | --- | --- |
 | **Vault** (the PKM API — the primary integration target) | [`vault.yaml`](../Agent-Vault/openapi/vault.yaml) | `:4173` | `/openapi.yaml` · `/openapi.json` · `/docs` | [README](../Agent-Vault/openapi/README.md) · [ledger](../Agent-Vault/Docs/openapi-notes.md) |
-| **Overlay console** (the operator API) | [`console.yaml`](../Agent-Overlay/openapi/console.yaml) | `:4180` | `/openapi.yaml` · `/openapi.json` · `/docs` | [README](../Agent-Overlay/openapi/README.md) · [ledger](../Agent-Overlay/docs/openapi-notes.md) |
+| **Overlay console** (the published, versioned local operator + scoped integration API; `1.0.0-beta.2`) | [`console.yaml`](../Agent-Overlay/openapi/console.yaml) | `:4180` | `/openapi.yaml` · `/openapi.json` · `/docs` (authenticated in the packaged desktop app) | [README](../Agent-Overlay/openapi/README.md) · [ledger](../Agent-Overlay/docs/openapi-notes.md) |
 | **Runner** (inbound webhooks) | [`runner-webhooks.yaml`](../Agent-Overlay/openapi/runner-webhooks.yaml) | `:8787` | not served — Runner *receives* webhooks; `agent-runner openapi` emits a concrete spec from active configured HTTP triggers. An Overlay-owned artifact since the Phase 8.2 slice-1 import (the `agent-runner` binary ships from Agent-Overlay) | [README](../Agent-Overlay/openapi/README.md) · [ledger](../Agent-Overlay/docs/openapi-notes.md) |
 
 Vault and the console **serve their own spec**: `GET /openapi.yaml` and `/openapi.json`
-return the embedded contract, and `GET /docs` is a self-contained Redoc explorer — build
-against a running server without leaving it. The Overlay console contract includes operator-only
-surfaces such as Agent Runtimes, Automations, trusted runtime approvals (`GET /api/approvals`,
-`POST /api/approvals/{approvalId}/decision`), and local-agent lifecycle hooks (`GET /api/agents/hooks`,
-`POST /api/agents/hooks/ingest`); the approval decision POST also requires the packaged desktop's
-per-launch operator token, delivered to the webview outside the HTTP API. Those routes are still
-loopback-console APIs, not a public remote control plane. Runner is different in kind: its routes are
+return the embedded contract, and `GET /docs` is a self-contained Redoc explorer. Vault clients can
+build against its running server without leaving it. The packaged desktop app runs the console with
+restricted wire access: only `GET /api/health` is anonymous; `/openapi.yaml`, `/openapi.json`,
+`/docs`, and every other route require the per-launch operator token or a valid scoped integration
+bearer token, and unannotated document routes are operator-only. For offline console client
+generation, use the committed [`console.yaml`](../Agent-Overlay/openapi/console.yaml).
+
+The Overlay console contract includes operator-only surfaces such as Agent Runtimes, Automations,
+trusted runtime approvals (`GET /api/approvals`, `POST /api/approvals/{approvalId}/decision`), and
+local-agent lifecycle hooks (`GET /api/agents/hooks`, `POST /api/agents/hooks/ingest`). It also
+publishes a scoped integration plane, off by default, authenticated with
+`Authorization: Bearer <token>`. Its scope vocabulary is `dashboard:read`, `trajectories:read`,
+`memory:read`, `events:subscribe`, `runs:launch`, and `capture:write`; see the
+[local integration API guide](../Agent-Overlay/docs/local-integration-api.md). The integration-reachable
+paths and these six scope strings form a semantically versioned public compatibility surface:
+additive compatible changes bump the minor version, while breaking changes bump the major version
+and include a deprecation window. The console remains local — a fixed-port, loopback-only surface —
+but it is now a published and authenticated integration API, not open loopback access. Runner is
+different in kind: its routes are
 per-deployment (one path per active configured `http` trigger), so `runner-webhooks.yaml` is a
 **template** of the contract *shape* and
 `agent-runner openapi` generates the concrete live spec for the active HTTP trigger set, intentionally
@@ -52,8 +64,10 @@ is deliberately out of scope for the OpenAPI seam.
 The point of the contracts is polyglot, cross-device integration. Pick your generator and
 point it at the served spec (or the `.yaml` file directly):
 
-1. **Get the spec.** From a running server: `curl http://127.0.0.1:4173/openapi.yaml`
-   (Vault) or `:4180` (console). Or read the committed file in the repo.
+1. **Get the spec.** From a running Vault server:
+   `curl http://127.0.0.1:4173/openapi.yaml`. For the console, generate offline from the committed
+   [`console.yaml`](../Agent-Overlay/openapi/console.yaml); an anonymous request to the packaged
+   desktop app's `:4180/openapi.yaml` returns `403` under restricted wire access.
 2. **TypeScript** — [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript)
    (+ `openapi-fetch`). This is already how both web apps get their types; the Vault and
    console `openapi/README.md` guides have the exact `openapi:gen` command, while Runner (pure
