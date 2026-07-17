@@ -73,7 +73,6 @@ Agent-Overlay/
 │   │                          knowledge_vaults), adapters (execution, sandbox), secrets,
 │   │                          trajectory, memory, search, eval, render, exporters,
 │   │                          workspace_files, internal (file_lock).
-│   │                          feature "ts" → ts-rs type generation (off by default)
 │   ├── overlay-mcp/           [lib] rmcp server: all resources/templates/tools/prompts,
 │   │                          stdio + StreamableHTTP /mcp :3000 — with a tower layer
 │   │                          reproducing today's DNS-rebinding protection
@@ -89,9 +88,13 @@ Agent-Overlay/
 │                              store, cli-installer (installs the native binary — no
 │                              launcher script)
 ├── packages/core/             FROZEN TS dist (tagged ts-core-final; deleted at Vault cutover)
-├── apps/desktop/web/          React SPA — unchanged; ts-rs generated types replace contract-sync
-└── apps/desktop/src-tauri/    externalBin → cargo-built console binary + the Rust `overlay`
-                               bin bundled as a second externalBin/resource; lib.rs env
+├── apps/desktop/web/          React SPA — unchanged; TypeScript types generated from
+│                              openapi/console.yaml via openapi:gen (freshness-guarded by
+│                              openapi:gen:check; conformance-tested single source of truth)
+└── apps/desktop/src-tauri/    externalBin → native `overlay` CLI + `agent-runner` daemon;
+                               the console router is embedded in-process for release startup,
+                               while the standalone server binary remains for the dev loop,
+                               contract tests, and headless runs; lib.rs env
                                re-pointed (OVERLAY_CLI_PATH → native binary)
 ```
 
@@ -118,8 +121,12 @@ Agent-Vault/
 │                              include_str!, sha256 incremental reconcile, one transaction),
 │                              watch (notify + 250ms debounce), overlay integration via the
 │                              overlay-core path dep
-├── web/                       React SPA — unchanged; hand-mirrored types → ts-rs generated
-└── src-tauri/                 unchanged (Rust PTY terminal stays); externalBin → cargo binary
+├── web/                       React SPA — unchanged; hand-mirrored types → TypeScript types
+│                              generated from openapi/vault.yaml via openapi:gen
+│                              (freshness-guarded; conformance-tested source of truth)
+└── src-tauri/                 shell only — Tauri lifecycle / app-data migration; the raw PTY
+                               terminal was removed in the 2026-07-11 terminal-ownership
+                               migration to Overlay (dcddbe7); externalBin → cargo binary
 ```
 
 One binary keeps the Tauri `externalBin` name/contract byte-identical and keeps the
@@ -170,7 +177,7 @@ Agent-Runner/
 | Keychain | **keyring 3**, first-class | Kills the optional-native-addon + can't-load-in-SEA limitation. |
 | MCP | **rmcp** (official SDK) — server in overlay-mcp, client in agent-runner | Official SDK on both sides collapses the wire-compat risk to one library. |
 | Time | **chrono + chrono-tz** | The cron/RRULE hand-ports need zoned civil-time math. |
-| TS type generation | **ts-rs** (`ts` feature) with an explicit per-consumer export/copy step (Overlay web at R1 — atomic swap with contract-sync deletion in the same change; Vault web at R3) | Types generated from the very structs the servers serialize — drift impossible. |
+| TS type generation | **OpenAPI-generated TypeScript** via `pnpm openapi:gen` from each repo's spec (`openapi/console.yaml` for Overlay desktop web; `openapi/vault.yaml` for Agent-Vault web), with `openapi:gen:check` freshness guards in each web SPA | The conformance-tested OpenAPI contract is the single source of truth for server and client shapes. |
 | Errors | **thiserror** in core, **anyhow** at bins; HTTP error bodies match today's JSON exactly | Error body shapes are part of the HTTP contract tests. |
 | Logging | **tracing** → stderr or the configured log dir, **never stdout** | `overlay serve`'s stdio transport must carry only JSON-RPC. |
 
@@ -260,10 +267,12 @@ migrate` flag and rewrite corpus-pinned `server_command: node`; the default work
 updated; and the R0 config snapshots make the divergence deliberate and tested.
 
 **Cutover (one switch):** `~/.local/bin/overlay` → the Rust binary; Tauri externalBin → the
-cargo-built console binary, with the Rust `overlay` bundled as a second externalBin/resource and
-lib.rs env re-pointed (`OVERLAY_CLI_PATH` → native binary); delete `packages/cli`,
+native `overlay` CLI plus the `agent-runner` daemon; embed the console router in-process for release
+startup while retaining the standalone server binary for the dev loop, contract tests, and headless
+runs; lib.rs env re-pointed (`OVERLAY_CLI_PATH` → native binary); delete `packages/cli`,
 `packages/mcp-server`, `apps/desktop/server`, and the SEA/Bun toolchains; freeze `packages/core`
-(tag `ts-core-final`); ts-rs replaces contract-sync atomically. **Runner state-dir re-sync step:**
+(tag `ts-core-final`); the web SPA consumes TypeScript generated from the conformance-tested
+`openapi/console.yaml` contract via `openapi:gen`. **Runner state-dir re-sync step:**
 persisted cron fragments and unit files embed `--overlay-command`/`--overlay-arg` argv and
 `OVERLAY_CLI_PATH` verbatim — any deployment that pinned node paths keeps cron-dispatching the
 deleted TS CLI after R1 unless re-synced. The cutover checklist therefore audits every Runner
@@ -331,7 +340,7 @@ is a debounced full reindex). **Cutover:** Tauri externalBin → the cargo binar
 `HOST`/`PORT`/`AGENT_VAULT_*` + the `/api/health` `"ok":true` gate — verified drop-in); dev loop =
 `cargo run` + the unchanged Vite :5173 proxy; the NixOS unit swaps to the same binary (derived
 SQLite still excluded from Syncthing); delete `server/`, `tools/*.js`, the SEA toolchain, and the
-committed sidecar/Node runtimes; ts-rs types land in web; **then delete Agent-Overlay
+committed sidecar/Node runtimes; OpenAPI-generated TypeScript types land in web; **then delete Agent-Overlay
 `packages/core` — the migration window closes.** **Gate:** the R0-refactored `node --test` suite
 green with `AGENT_VAULT_SERVER_BIN=<rust binary>`; FTS5 ranking goldens; inert-CSP `/assets`
 transcripts (the XSS boundary); Playwright ui-smoke unchanged; acceptance matrix step **R→R→R**;
@@ -364,8 +373,8 @@ created by R3.1):**
   (`AGENT_VAULT_SERVER_BIN=<rust binary>` → the 8 converted suites green) + remaining node-suite parity.
 - **R3.9** — CUTOVER: Tauri externalBin swap (same env + health contract, now including the optional
   packaged-app instance token echoed by `/api/health`), NixOS unit note, delete
-  `server/` + `tools/*.js` + SEA toolchain + committed sidecar binaries + Node cache, ts-rs types
-  for `web/`, retire superseded node suites (fixtures stay), **delete Agent-Overlay
+  `server/` + `tools/*.js` + SEA toolchain + committed sidecar binaries + Node cache,
+  OpenAPI-generated TypeScript types for `web/`, retire superseded node suites (fixtures stay), **delete Agent-Overlay
   `packages/core` (window closes)**, acceptance **R→R→R** default flip, docs + ledgers.
 
 ### R4 — Demolition + the unblocked tail
