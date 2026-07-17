@@ -89,7 +89,7 @@ dependency. The pieces they depend on (module paths in `crates/overlay-core/src/
 | Canonical type schemas (skill, workflow, standard, profile, policy, memory-fact, trigger, …) | `schemas/` | Vault (schema-aware editing, validation), Runner (trigger schema) |
 | Workspace loading + layered (base + project) merge | `loaders/workspace.rs` | Vault (load the corpus), Runner (resolve bindings) |
 | Atomic writes / retry-on-parse reads | `loaders/atomic_write.rs`, `loaders/retry_read.rs` | Vault (safe writes) |
-| Deterministic search index | `search.rs` | Vault (in-app search) |
+| Deterministic search index | `search.rs` | Overlay (`overlay search`, overlay-mcp `Search Overlay` tool) |
 | Memory operations + conflict similarity | `memory/operations.rs`, `memory/similarity.rs` | Vault (proposal queue UI) |
 | Secret resolution (env, keyring, 1password, bitwarden, pass, exec) | `secrets/` | Overlay tools/executors (server-side only) |
 | Canonical file list/read/write with validation rollback | `workspace_files.rs` | Vault (file browser/editor) |
@@ -169,7 +169,7 @@ These Overlay-specific review items are now part of the implementation contract:
   layer root; canonical writes lock per target, realpath-check the parent directory, and refuse to
   follow or replace a symlinked final target.
 
-**Terminal ownership (shipped in Overlay; not yet removed from Vault).** The packaged console now
+**Terminal ownership (shipped in Overlay; removed from Vault 2026-07-11).** The packaged console now
 carries the native-only raw terminal on the existing `xterm.js` + `portable-pty` stack: a lazy-loaded
 bottom dock (toggle button and Ctrl/Cmd+`) whose Rust backend alone selects the user's shell — the
 frontend-supplied working directory is untrusted and must canonicalize to an existing directory (the

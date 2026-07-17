@@ -424,19 +424,13 @@ Vault and Overlay, with Runner distributed as an Overlay-shipped daemon binary.
 
   **Done — terminal ownership correction (completed 2026-07-11).** The packaged app's raw local
   terminal moved from Vault to the Agent Overlay desktop app — a product-boundary migration, not a
-  terminal-engine rewrite. Overlay (`5b6e66b`) carries the existing Tauri-only `xterm.js` +
-  `portable-pty` design as a lazy-loaded, native-only bottom dock labeled an **ungoverned local
-  shell** — commands do not pass through Overlay policy or approvals, are not trajectories, and
-  receive no injected secrets. The Rust backend alone selects the user's shell; the
-  frontend-supplied working directory is validated (canonicalized, must be an existing directory)
-  and opens in the active Overlay workspace with the user's home as the fallback. Proven natively:
+  terminal-engine rewrite. Overlay (`5b6e66b`) owns the terminal under the canonical
+  [terminal-ownership contract](agent-overlay.md#current-hardening-status). Proven natively:
   workspace cwd, PTY resize, kill-on-close/fresh reopen, live light/dark palette sync, and an
   unchanged browser bundle. Vault (`dcddbe7`) then removed its toggle/panel, keyboard shortcut,
   xterm dependencies, PTY module, terminal IPC commands, and capability grants, shrinking the app
   origin's IPC surface to dialog/shortcut/dragging while Native and Engaged Chat, `export-context`,
-  `rebuild-index`, and the asset-origin split stayed untouched (full suites green). Governed work
-  continues through Overlay's Run/approval surfaces. `libghostty-vt` remains a possible future
-  evaluation, not an adopted dependency or part of this migration.
+  `rebuild-index`, and the asset-origin split stayed untouched (full suites green).
 
   **Done — one canonical Overlay product name (2026-07-12, Overlay `3a6fca1`).** **Agent Overlay**
   is now the only human-facing name for the product and packaged application; **Agent-Overlay**,
@@ -787,13 +781,7 @@ hardening and should stay visible as the system moves toward production packagin
 - **Done — Runner trigger reliability.** `debounce_ms` / `max_concurrency` are trigger doctrine, and
   Runner enforces them through the in-process dispatch gate plus state-dir process slots for generated
   cron dispatch. Absent `max_concurrency` means one in-flight run per trigger.
-- **Done — Overlay trusted approval protocol.** Custom shell/HTTP tools that require approval,
-  built-in/custom calls that match `tool:<id>` / `tool:*`, and Overlay-owned rendered
-  shell/network gates (`bash:*`, `bash:<command>`, `network:*`, `network:non-allowlisted`) create a
-  trusted approval request and can run only after the token-bearing desktop console returns a scoped
-  one-use token. Shell/network approvals are additionally bound to the rendered-effect kind/hash;
-  network `default: deny` remains a hard deny for non-allowlisted targets. HTTP tools do not follow
-  redirects, and shell tools drain stdout/stderr before returning bounded tails.
+- **Done — Overlay trusted approval protocol.** The shipped approval contract is documented in [agent-overlay.md](agent-overlay.md#current-hardening-status).
 - **Done — Runner-to-Overlay enforcement.** Runner has `--enforce` pass-through for `overlay run`,
   including generated cron dispatch commands.
 - **Done — write atomicity and serialization.** Overlay, Vault, and Runner use unique temp files and
