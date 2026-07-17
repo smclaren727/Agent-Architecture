@@ -116,11 +116,9 @@ they mark the hardening work that keeps the implementation honest against the sy
 - **Trusted-local is still an exposure boundary.** Local browser/Tauri origins, HTTP trigger ports, MCP
   HTTP/SSE, and any private-network deployment are privileged surfaces. They must default to loopback
   or private-network access, authenticate inbound webhooks before reading unbounded bodies, and keep
-  app-control origins separate from user-controlled assets. **Landed:** the webhook auth contract is
-  doctrine (an `on.auth` header/HMAC block in Overlay's trigger schema —
-  [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) and Runner enforces it fail-closed
-  (constant-time compares, `401` on mismatch, `503` when the secret env var is unset or empty);
-  Runner bounds HTTP request bodies; Vault serves user-controlled assets inertly from a separate
+  app-control origins separate from user-controlled assets. **Landed:** Runner webhooks authenticate
+  via header/HMAC and fail closed — see [agent-runner.md](agent-runner.md#current-hardening-status).
+  Vault serves user-controlled assets inertly from a separate
   unprivileged loopback origin — see [agent-vault.md](agent-vault.md#current-hardening-status).
   Overlay's Streamable HTTP MCP transport is also bounded for trusted-local use: 5 MiB JSON-RPC
   bodies, 64 live sessions per process, explicit `DELETE /mcp` teardown, and 30-minute idle reaping.

@@ -776,11 +776,8 @@ hardening and should stay visible as the system moves toward production packagin
   recording run completion.
 - **Done — Vault privileged-origin split (2026-07-07).** See
   [agent-vault.md](agent-vault.md#current-hardening-status).
-- **Done — Runner webhook authentication.** HTTP triggers match route before body drain and cap/time
-  out request bodies, and the header/HMAC authentication contract is now doctrine (an `on.auth` block
-  in Overlay's trigger schema — [`docs/triggers.md`](../Agent-Overlay/docs/triggers.md)) enforced
-  fail-closed by Runner: constant-time compares, `401` on mismatch, `503` when the secret env var is
-  unset or empty.
+- **Done — Runner webhook authentication.** Runner webhooks authenticate via header/HMAC and fail
+  closed — see [agent-runner.md](agent-runner.md#current-hardening-status).
 - **Done — Vault sidecar launch proof.** The packaged Tauri shell passes a per-launch instance token to
   `agent-vault-server` and accepts `/api/health` only when the token is echoed, so stale fixed-port
   sidecars cannot masquerade as the fresh app.
