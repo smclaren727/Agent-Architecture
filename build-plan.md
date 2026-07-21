@@ -1516,7 +1516,38 @@ what each platform allows (container-scoped, or refresh-on-foreground) and fall 
 watching is unavailable. The plain-file source-of-truth rule is unchanged — this is *how the bytes are
 reached*, not a second source of truth.
 
-### 10.3 — Touch fit-and-finish (frontend)
+### 10.3 — The navigation model: dwell-lenses as tabs, utilities as sheets, the dock as a right drawer
+
+A design pass (2026-07-21) settled how the app's surfaces collapse onto a phone — and because the phone forces
+the question, it resolved the desktop pane-1 layout at the same time. The spine on both form factors is the
+**three-pane frame**: note tree (left) · center · dock (right). Every surface falls into one of two buckets:
+
+- **Dwell-lenses** — surfaces you *work in*: **Notes · Tasks · Projects · Graph**. They share the **center**
+  and never disturb the frame (tree and dock persist). On desktop each is a center-mode (Projects renders its
+  list + detail in the center, like Agent Runs already does); **on mobile they are the bottom tabs.**
+- **Sheets** — surfaces you *summon → act → dismiss* (utilities, launchers, monitors): **Settings · Health ·
+  Conventions · Search (⌘K) · Daily · Capture · Agent Runs · Proposals · Workspace**. They open as **modals
+  over the frame** on both form factors — a centered dialog on desktop, a **bottom / page sheet** on mobile
+  (the native modal form; a centered box is a desktop idiom). *Launcher* sheets (Search, Daily) dismiss and
+  drop you on the note you pick.
+
+On the phone the frame's two side panes become **drawers**, and the Notes tab is **editor-first**:
+
+- **Left drawer** — the note tree, pulled from `☰`. Editor-first means you open a note (the editor is the
+  tab's main surface) and the tree is one pull away — the "stable anchor," matching the desktop's persistent
+  pane-1 tree.
+- **Right drawer** — the **dock** (Info / Properties / Chat), pulled from the open item's `⋯`. Contextual to
+  whatever's open.
+- **Bottom tabs** — the dwell-lenses. Master-detail lenses (Projects) become **list → push → detail** *inside*
+  their tab, the tab bar persisting; Settings and the long tail are summoned as sheets, never tabs (Search
+  rides atop the Notes list rather than spending a slot).
+
+This is the "stable anchor" answer to the pane-1 question the touch pass (10.4) refers to: the frame is
+immovable, dwell-lenses share the center, everything transient floats over it. The **desktop half** of the
+refactor — stop Projects/Workspace overwriting the tree; move Conventions/Capture/the monitors to sheets — is
+tracked as concrete UI/UX backlog items (VAULT-55/56); this phase carries the mobile treatment.
+
+### 10.4 — Touch fit-and-finish (frontend)
 
 The frontend is in better shape than expected: it is **not** hard-desktop-only. Vault already has a responsive
 `PaneMode = drawer | single | dual` model driven by media queries (side panels become tap-to-dismiss overlay
@@ -1538,10 +1569,10 @@ rather than a *touch device*:
   trigger; Overlay's keyboard-only palette would need one if Overlay ever follows to mobile.)
 
 This is the "contextual navigator vs. stable anchor" end of the desktop pane-1 layout question: on a phone
-there is no room for a persistent pane-1 beside a center and a dock, so whatever pane-1 model is chosen must
-degrade cleanly into the existing drawer/stack.
+there is no room for a persistent pane-1 beside a center and a dock, and 10.3's model maps straight onto that existing drawer/stack — tree → left
+drawer, dock → right drawer, dwell-lenses → bottom tabs.
 
-### 10.4 — Mobile project scaffolding
+### 10.5 — Mobile project scaffolding
 
 Run `tauri ios init` / `tauri android init` for Vault; keep the desktop-only setup (native menu,
 global-shortcut, single-instance, tray, vibrancy, transparent/titlebar-Overlay window) behind its existing
