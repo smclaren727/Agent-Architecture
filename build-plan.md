@@ -1458,11 +1458,137 @@ mint/revoke/audit exercised from the Settings card in the packaged app.
 
 ---
 
+## Phase 10 — Mobile readiness (planned)
+
+**Goal:** make the multi-platform bet in the Tauri V2 choice real — a usable **Agent-Vault on iOS/Android**
+for reading, searching, and editing the corpus — while recording honestly which planes cannot follow onto
+a sandboxed mobile device and where their work must instead live.
+
+**Prerequisite:** Phases 5–9 (the shipped Tauri V2 apps, the Rust `overlay-core` base, the Phase 9 scoped-token
+integration seam). A forward-looking track, independent of the UI/UX polish lane.
+
+**Dependency arrows:** unchanged — Vault still `imports ▶ overlay-core` and reads/writes the corpus; Overlay
+depends on neither sibling. Mobile adds no new arrow; it changes *where* a plane runs, not who depends on whom.
+
+**The shape of the problem — split by plane.** A mobile assessment across both repos (2026-07-21) found the
+split is clean and load-bearing:
+
+- **Vault's read / edit / search surface is a realistic mobile target** with bounded work.
+- **The Overlay/Runner "act" plane cannot run on a sandboxed mobile OS at all** and must move off-device (or
+  onto a mobile-native model runtime) — a deliberate later decision, not part of this phase.
+
+Both shells are already **Tauri 2.11.3** and both carry the `#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run()` entry point, but **neither has ever been `tauri ios init` / `tauri android init`-ed** (each
+`src-tauri/gen/` holds only ACL schemas) and every `setup` body is `#[cfg(desktop)]`-gated — so today they
+would *compile* for a mobile target and do nothing.
+
+### 10.1 — Remove Vault's sidecar: adopt Overlay's in-process server (enabling prerequisite)
+
+The single change that unblocks a mobile Vault. Today **Vault ships its entire UI + `/api` as an
+`externalBin` sidecar** (`agent-vault-server`) that binds loopback `127.0.0.1:4173` (plus the `4183` asset
+origin), and the window navigates to that `http://127.0.0.1` origin. `externalBin` sidecars **do not run on
+iOS**, so this packaging is a hard blocker regardless of anything else.
+
+**Overlay already solves this, and Vault should reuse the pattern.** Overlay's desktop shell serves the *same*
+`axum` console router **in-process**, registered against a custom async URI scheme (`overlay://localhost`, via
+`register_asynchronous_uri_scheme_protocol`), keeping the loopback TCP bind only as a secondary transport. That
+in-process / custom-scheme delivery is exactly what ports to a Tauri mobile webview.
+
+**Work:** move `agent-vault-server`'s `axum` app out of the bundled binary and mount it in-process behind a
+custom Vault URI scheme (mirroring Overlay), so the window loads an app-scheme origin rather than a
+spawned-process loopback origin. Preserve the privileged-origin / asset-origin split (the `4183` separation
+exists for a reason — see [agent-vault.md](agent-vault.md)) as scheme/route boundaries rather than two OS
+ports. Keep the standalone `agent-vault-server` binary for the dev loop, contract tests, and headless runs —
+the same arrangement Overlay already keeps for `agent-overlay-server` (Phase 5). On desktop this is a
+transport swap with no user-visible change; on mobile it is the difference between "runs" and "cannot exist."
+
+### 10.2 — Mobile vault filesystem model (bookmarks / SAF)
+
+Today a "vault" is any absolute-path folder anywhere on disk, read/written with unrestricted `std::fs` and
+watched live with `notify`/FSEvents. None of that translates to a sandboxed mobile OS: **iOS** confines the
+app to its container and reaches user folders only through the document picker + **security-scoped bookmarks**
+(with no FSEvents for arbitrary external directories); **Android** uses **scoped storage / the Storage Access
+Framework**, where folders arrive as tree URIs, not `PathBuf`s.
+
+**Work:** introduce a platform storage adapter behind the vault registry so a "vault handle" can be a
+security-scoped bookmark (iOS) or a SAF tree URI (Android) instead of a raw path; confine live watching to
+what each platform allows (container-scoped, or refresh-on-foreground) and fall back cleanly where recursive
+watching is unavailable. The plain-file source-of-truth rule is unchanged — this is *how the bytes are
+reached*, not a second source of truth.
+
+### 10.3 — Touch fit-and-finish (frontend)
+
+The frontend is in better shape than expected: it is **not** hard-desktop-only. Vault already has a responsive
+`PaneMode = drawer | single | dual` model driven by media queries (side panels become tap-to-dismiss overlay
+drawers below ~768 px, so a phone-portrait width already lands in drawer mode), and **all macOS-native chrome —
+titlebar/traffic-light CSS, vibrancy, drag regions, native context menus, the terminal — is correctly gated
+behind `isTauri`/`isMac`**, so it switches off on a mobile webview instead of misrendering. Hover is purely
+cosmetic and degrades on touch. What remains is touch finish, currently tuned for a narrow *desktop window*
+rather than a *touch device*:
+
+- **Hit targets:** base buttons/rows are ~28 px (Vault) / ~26 px (Overlay compact), below the 44 px touch
+  minimum; raise the density tokens and control sizes under a coarse-pointer branch.
+- **Pinch-zoom:** `disablePageZoom()` runs unconditionally and suppresses iOS pinch gestures — gate it off on
+  coarse-pointer / non-Tauri.
+- **Viewport & safe area:** add `viewport-fit=cover` and `env(safe-area-inset-*)` padding for notch /
+  home-indicator, and retire the always-on desktop titlebar band on small screens (the drawers already own
+  navigation there).
+- **Touch reach for pointer-only actions:** give NoteTree row actions (open / convert / delete, today
+  right-click-only) a long-press or a visible kebab. (Vault's ⌘K palette already has an on-screen dock
+  trigger; Overlay's keyboard-only palette would need one if Overlay ever follows to mobile.)
+
+This is the "contextual navigator vs. stable anchor" end of the desktop pane-1 layout question: on a phone
+there is no room for a persistent pane-1 beside a center and a dock, so whatever pane-1 model is chosen must
+degrade cleanly into the existing drawer/stack.
+
+### 10.4 — Mobile project scaffolding
+
+Run `tauri ios init` / `tauri android init` for Vault; keep the desktop-only setup (native menu,
+global-shortcut, single-instance, tray, vibrancy, transparent/titlebar-Overlay window) behind its existing
+`#[cfg(desktop)]` gates and supply mobile equivalents only where a capability has a mobile counterpart (most
+do not). The desktop-only plugins (`global-shortcut`, `single-instance`, `tray-icon`) stay excluded on
+mobile, as they largely already are.
+
+### The execution plane — explicitly off-device (recorded, deferred)
+
+The Runner and the external-CLI executor path are **understood and expected not to run on a mobile device**,
+and this phase does not try to make them. They depend on `fork`/`exec` of external agent CLIs (`claude`,
+`codex`, `gemini`, `/bin/sh`), a long-lived background daemon (`agent-runner`'s `tokio::select!` loop), and
+OS-scheduler projection (launchd/systemd/cron) — all of which sandboxed iOS forbids and Android's
+background-execution + scoped-storage limits break. Two directions are recorded for when this is revisited
+(neither is near-term):
+
+1. **Off-device execution.** The Runner (and, over time, possibly more of Overlay) resides somewhere it can
+   *receive an update, take an action, and push the response back* — a remote runner the mobile app talks to
+   over the existing **Phase 9 scoped-token integration API**, rather than anything running on the phone. The
+   phone becomes a governed client of a remote act-plane, preserving the dependency arrow and the
+   operator/integration split.
+2. **On-device model runtimes.** Mobile platforms now expose on-device inference a native agent path could use
+   *instead of shelling out to a CLI* — Apple's **Foundation Models** framework (Apple Intelligence, via the
+   Apple Developer Program) on iOS, with an equivalent expected on Android (e.g. Gemini Nano via AICore /
+   ML Kit). This is an alternative "act" avenue that keeps a bounded agent capability on-device without a
+   subprocess or a background daemon; scope, capability, and governance are open questions to evaluate when
+   the time comes.
+
+**Guardrail:** mobile changes *where* a plane runs, never *who depends on whom* or *what is authoritative*.
+Vault on mobile stays a reader/editor over plain files — no on-device Runner, no silent canonical writes, no
+second source of truth; the corpus is still the spine. An off-device act-plane must reach the phone only
+through the Phase 9 scoped-token seam, never by collapsing the operator/integration boundary. If "mobile
+support" starts to mean "run the daemon on the phone," the design has drifted.
+
+**Done when (for the in-scope Vault target):** `tauri ios`/`android` builds of Vault launch and render from an
+in-process app-scheme origin with no bundled server sidecar; a user can pick a vault through the platform
+document picker and browse/search/edit it against the sandbox-legal storage adapter; touch targets,
+pinch-zoom, and safe-area render correctly on a phone; and the execution plane's off-device / on-device
+directions are recorded here with no Runner or external-CLI code shipping in the mobile app.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
-                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment) ─▶ Phase 9 (local integration API)
+                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment) ─▶ Phase 9 (local integration API) ┄▶ Phase 10 (mobile readiness, planned)
 
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
@@ -1478,3 +1604,7 @@ standalone native-intelligence path, while Runner becomes an Overlay-shipped dae
 a separate product repo. Phase 9 opens Overlay's console API to third-party callers behind a
 scoped-token auth plane — integrations join the CLI, daemon, and desktop as callers of the same seam,
 none able to reach the operator's control plane.
+Phase 10 is a forward-looking track rather than a gate (hence the dashed arrow): it makes the Tauri V2
+multi-platform bet real for Vault on mobile — removing Vault's server sidecar in favor of Overlay's
+in-process custom-scheme delivery — while recording that the act-plane (Runner and external-CLI executors)
+must run off-device or on a mobile-native model runtime, never on a sandboxed phone.
