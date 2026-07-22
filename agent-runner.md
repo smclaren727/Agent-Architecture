@@ -53,8 +53,8 @@ Agent-Overlay/                  # the crate's home since Phase 8.2 slice 1; over
     tests/fixtures/             # golden tables captured from the pre-port TS implementation
   units/runner/
     overlay-runner.service      # systemd unit (Linux / NixOS node; proven path)
-    com.overlay.runner.plist    # launchd template (macOS; plist-lint-proven, bootstrap operator-run;
-                                #   not yet proven as a second node)
+    com.overlay.runner.plist    # launchd template (macOS; proven as a running node 2026-07-21 —
+                                #   bootstrap remains an operator step)
 ```
 
 Watcher modules are added in order of payoff — **schedule, then file, then http** — and every one of
@@ -192,8 +192,9 @@ These Runner-specific review items are now part of the implementation contract:
   preview|status|install|remove`, marker-delimited block, backup-before-write, byte-idempotent);
   systemd/launchd unit installation and the daemon's launchd bootstrap remain manual operator
   steps. The daemon's NixOS/systemd user unit is proven end-to-end; the launchd daemon template
-  is plist-lint-proven (a macOS-gated test lints shipped templates and a generated trigger plist)
-  but not yet proven as a running second node.
+  is likewise proven as a running node (macOS, 2026-07-21: a bootstrapped `com.overlay.runner`
+  LaunchAgent dispatched a schedule trigger autonomously, trajectory `trigger_id` stamped) — a
+  macOS-gated test also lints shipped templates and a generated trigger plist.
 
 ## How Runner relates to Vault
 
