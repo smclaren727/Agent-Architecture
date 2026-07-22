@@ -1669,12 +1669,20 @@ degradation cache. The adoption flow becomes conform-and-attach.
 An executor session reads the note-contract over MCP and produces a schema-valid typed note (or proposal),
 demonstrating that editor and agents genuinely share one authority.
 
-### 11.4 — Near-term UX honesty (independent; can land before the re-platform)
+### 11.4 — Near-term UX honesty (SHIPPED 2026-07-22; landed ahead of the re-platform as planned)
 
-The presentation half of the same complaint, shippable now: render open-vault note identity as normal note
+The presentation half of the same complaint: render open-vault note identity as normal note
 chrome instead of a "no schema" warning banner (the explanation belongs in the Info tab, once); show a
 note's *actual* YAML frontmatter as read-only properties in open vaults instead of refusing the panel;
 auto-detect `overlay.yaml` and label such a vault an **Overlay workspace** rather than generically "open."
+
+**Shipped** to Agent-Vault `main` cd80f69→434bb0e (three slices, adversarially reviewed, on-device
+verified): quiet loose-note chrome with the posture sentence stated once in the Info dock; loose-note
+frontmatter rendered as read-only YAML in the properties dock; an optional, backward-compatible
+`flavor: "overlay"` on `VaultSummary` (server checks `overlay.yaml` at the vault root), consumed as a
+label in the switcher, Manage vaults, and note chrome. Deferred follow-ups (Health/Conventions still
+print the literal mode token; `flavor` is emitted mode-independently) are tracked in the build-run
+findings list for end-of-run review.
 
 **Guardrail:** one file set, one schema owner. If Vault grows back a code-resident note schema, or Overlay
 grows a vault registry, the model has drifted. "Open" is a posture (no claimed authority), not a tier.
