@@ -1686,12 +1686,81 @@ emits a schema-valid typed note read from the served contract.
 
 ---
 
+## Phase 12 — Multi-node corpus: replication + history-as-memory (planned; direction recorded 2026-07-21)
+
+**Goal:** let Overlay and the Runner daemon run on more than one installation point — an always-on VPS or
+NixOS node listening for events and running schedules, alongside the operator's desktop — while the corpus
+stays **one source of truth as plain files** on every node.
+
+**The decision (recorded 2026-07-21).** Multi-node is a **file-replication design, not a client-server
+design**: every installation point holds the corpus as local plain files, replicated Syncthing-style, and
+each plane keeps reading/writing ordinary files exactly as it does today. And the corpus is **versioned**:
+temporal history is memory infrastructure in its own right — an agent that can read *how a note or fact
+evolved* has a fundamentally richer memory than one that sees only the current state. History is a
+first-class motivation here, not a backup side effect.
+
+**Open trade study (deliberately undecided):** Syncthing vs git-based replication vs a hybrid (sync for
+transport, git for history). The recorded selection criterion: **whichever is most robust long-term — fewest
+sync conflicts, stays current.** Cut the phase when the study lands.
+
+**What makes this tractable (existing rules doing the heavy lifting):**
+
+- **Derived is never authoritative** — indexes, caches, and reconciled state stay node-local and rebuild
+  from the synced files; only the plain-file corpus replicates.
+- **Plain text wins** — the corpus is small, line-oriented, and merge-friendly by construction.
+- **One active runner/state-dir per responsibility** ([agent-runner.md](agent-runner.md) → "Multi-runner,
+  one doctrine") already governs how multiple nodes split trigger duties without double-firing.
+- **Secrets never enter the corpus** (daemon-env / keychain resolution) — so replication never moves them.
+
+**Open questions to resolve in the trade study:** conflict policy for concurrent edits on different nodes
+(and how conflicts surface to the human in Vault); whether trajectories replicate or stay node-local with an
+aggregated read path later; formalizing the per-node trigger-responsibility split as machine-local config;
+how an agent actually consumes history (a served read seam over version history vs. ad-hoc `git log`).
+
+**Guardrail:** replication changes *where* the corpus is read and written, never *what is authoritative*.
+No node's derived state becomes a second source of truth; a node that cannot sync degrades to acting on its
+last-replicated corpus rather than inventing state. If "multi-node" starts to mean "a database service the
+planes query," the design has drifted.
+
+**Done when:** a second always-on node runs the Runner daemon (and Overlay serving) against a replicated
+corpus with the chosen mechanism documented; a written conflict policy exists and has been exercised at
+least once; trigger responsibilities are split across nodes without double-dispatch; and an agent has
+demonstrably answered a "how did this evolve" question from version history through a governed read path.
+
+---
+
+## Recorded direction (2026-07-21) — awaiting phasing
+
+Direction confirmed in operator conversation, recorded here so phases can be cut from it when work starts;
+none of it is sequenced yet.
+
+- **Knowledge-vault agent-writes** *(extends the Phase 5 knowledge-vaults record).* Overlay operates on any
+  folder of markdown — Obsidian, or any third-party markdown app's storage: read/index/serve **and write
+  agent outputs into them**, with the same atomic-write discipline as the corpus. Deliberately **no schema
+  governance inside third-party vaults** (that stays a Vault + write-contract concern, Phase 11), and
+  doctrine never leaves the workspace. The third-party app keeps working untouched when Overlay is absent.
+- **Per-CLI doctrine projection** *(extends `overlay export`).* One authoring point for skills, hooks, slash
+  commands, and workflows; Overlay projects them into each agent CLI's native on-disk format (generated
+  files or symlinks) for the things MCP cannot deliver — hooks and slash commands foremost. MCP stays the
+  primary, live path. Today's exporter covers permissions/policy/profile for Claude Code only; the extension
+  targets **Claude Code and Codex first**, other CLIs (Gemini, Kimi, GLM — or their models via the direct
+  adapter) later.
+- **Doctrine editing surfaces in Vault.** Canonical format stays YAML on disk; Vault grows friendlier,
+  structured editing surfaces over workflows/triggers/policies. Pairs with Phase 11: a write-contract is
+  exactly what a form generator needs.
+- **Open question (parked, unresolved by design):** what "extensible" means for Vault's chat — more
+  providers, user-authored tools, doctrine inheritance from an attached workspace, or Vault as an MCP
+  client. Explicitly not decided; do not infer an answer from adjacent phases.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
                            └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment) ─▶ Phase 9 (local integration API) ┄┬▶ Phase 10 (mobile readiness, planned)
-                                                                                                                                                                                                     └▶ Phase 11 (write-contracts, planned — independent lane)
+                                                                                                                                                                                                     ├▶ Phase 11 (write-contracts, planned — independent lane)
+                                                                                                                                                                                                     └▶ Phase 12 (multi-node corpus, planned — independent lane)
 
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```

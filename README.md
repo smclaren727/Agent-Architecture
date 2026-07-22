@@ -8,7 +8,10 @@
 
 We are building one system out of three planes. The durable value of an agent setup is not the model
 or the runtime — those churn — it is **the memory, policies, skills, workflows, and standards you
-accumulate**, plus a pleasant way to *edit* them and a reliable way to *act* on them. Historically
+accumulate**, plus a pleasant way to *edit* them and a reliable way to *act* on them. Stated as roles:
+**Overlay is a control plane between any LLM runtime and any markdown surface** — Vault is the editor
+built for it, the corpus is what they share, and the Runner is the optional loop that decides *when*
+work happens. Historically
 those planes lived in three product repos; since Phase 8.2 the Runner remains a separate daemon
 process but ships from Agent-Overlay, and the old Agent-Runner repo is an archived historical pointer.
 The planes still do one job each over a single shared corpus of plain markdown/YAML files.
