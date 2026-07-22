@@ -179,6 +179,7 @@ records a trajectory, and returns suggestions or proposals for human review and 
 - **[agent-vault.md](agent-vault.md)** — the Vault repo definition (net-new).
 - **[agent-runner.md](agent-runner.md)** — the Runner daemon role definition.
 - **[build-plan.md](build-plan.md)** — the phased, full-horizon multi-repo build plan.
+- **[non-goals.md](non-goals.md)** — the standing do-not-build list guarding the invariants above.
 - **[openapi-contracts.md](openapi-contracts.md)** — the API-contract seam: the OpenAPI 3.1 specs for the Vault, console, and Runner HTTP surfaces, and how to generate a typed client in any language.
 
 Background and canonical detail:

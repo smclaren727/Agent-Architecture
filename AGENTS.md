@@ -10,6 +10,7 @@ contains **no code**.
 - `README.md` — the whole-system architecture (three planes over one corpus; the dependency arrow).
 - `agent-overlay.md`, `agent-vault.md`, `agent-runner.md` — per-plane role definitions.
 - `build-plan.md` — the phased, multi-repo build plan.
+- `non-goals.md` — the standing do-not-build list: tempting extensions that would reverse the invariants.
 - `rust-migration.md` — the Node/TypeScript → Rust re-platform campaign (crate layout, cutover gates, risks).
 - `openapi-contracts.md` — the OpenAPI 3.1 API-contract seam across the three HTTP surfaces.
 - `overlay-ui-replatform.md`, `phase-5-knowledge-vaults.md` — completed-phase records, kept as history.
@@ -39,6 +40,9 @@ Edits must not contradict the load-bearing rules these docs exist to record:
 - **Three planes, one corpus:** Vault edits, Overlay serves, Runner acts — over one plain-file source
   of truth; nothing derived is authoritative.
 - **Library, not framework**, and **no second source of truth** (edit in place; promote via review).
+
+The tempting-but-wrong extensions of these rules are enumerated in `non-goals.md` — consult it
+before documenting any new capability, and amend it (explicitly) rather than drift past it.
 
 ## Scope
 
