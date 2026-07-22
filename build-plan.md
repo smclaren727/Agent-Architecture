@@ -1651,11 +1651,24 @@ readable/editable-as-open with typed features dormant, against a cached contract
 never change meaning. This is also the future-mobile posture (Phase 10 reads the same way: the corpus is the
 spine; presentation degrades, bytes do not).
 
-### 11.1 — Contract format + note-schema doctrine (Overlay)
+### 11.1 — Contract format + note-schema doctrine (SHIPPED 2026-07-22)
 
 Define the write-contract as a canonical doctrine kind in `overlay-core` (schema-validated, strict), express
 the current Vault managed-note types in it, and serve it over the existing read seams (CLI + `overlay://`
 resources). No new runtime behavior in Overlay — it validates and serves, as ever.
+
+**Shipped** to Agent-Overlay `main` 432edb9→16f73e3 (design-doc gate: two REJECT rounds + a second-model
+opinion before ACCEPT; four implementation slices, zero rejections; full design record and deviations
+ledger in Agent-Overlay `docs/write-contracts.md`). What landed: `contracts/` as a canonical one-file-per-
+declaration doctrine kind — strict-serde YAML, `version:` as the standard `SchemaVersion` literal, a closed
+11-kind field vocabulary with a global field dictionary + per-type ordered membership mirroring Vault's real
+semantics; CLI (`overlay contracts list`) and MCP (`overlay://contracts[/{id}]`) read seams following the
+triggers pattern; and the first real contract, `vault-managed-notes` (13 types, 42 fields, six status
+sets), audited field-by-field against Vault's implementation with zero mismatches — installed in the
+default-workspace template and additively in the operator's corpus, `validate --strict` green on both.
+One deliberate deviation from this phase's wording: **no revision counter** — the 11.2 degradation cache
+keys on workspace source + contract id and detects change via `version` plus a hash of the seam-served
+body (endorsed by both reviewers). Deferred items live in the build-run findings list.
 
 ### 11.2 — Vault re-model: registry, adoption, typed views (Agent-Vault)
 
