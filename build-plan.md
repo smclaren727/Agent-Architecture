@@ -1775,6 +1775,42 @@ none of it is sequenced yet.
 
 ---
 
+## Recorded direction (2026-07-22) — distribution groundwork (no-regret moves)
+
+Recorded from the component-decomposition research pass (two-model adversarial review, 2026-07-22);
+none of it is sequenced yet. Each item stands on its own merits as a codebase improvement today, and
+each is deliberately shaped to become load-bearing if the doctrine-distribution direction (vendored
+"blocks"/packs à la shadcn) is later adopted — the direction itself remains undecided. The boundary
+list for this territory lives in [non-goals.md](non-goals.md); cut no phase from this block that
+crosses it.
+
+- **Reviewed-bulk-write seam in `overlay-core`** *(generalizes Vault's open→managed adoption flow).*
+  Lift the adoption preflight shape — read-only preflight, per-file current→proposed diff,
+  fingerprint-gated atomic apply (409 on change), collision refusal, install receipt — out of the
+  Vault-specific path into a library capability any bulk writer uses: adoption, a future
+  `overlay add`, multi-file agent proposals. One hardened path for every reviewed write instead of
+  one hardened flow.
+- **Installed-vs-active lifecycle across doctrine kinds.** Normalize today's piecemeal pattern
+  (trigger `active` flag, tools inert-until-policy-allows, the singular active policy) into a
+  first-class two-state lifecycle for trigger/tool/policy/hook: **present in the corpus never
+  implies live**. Quarantine is enforced by state, not by assuming the active policy is strict —
+  an existing broad allow rule must not make newly landed doctrine callable. Protects the
+  operator's own drafts today; is the entire activation-quarantine story for third-party doctrine
+  later.
+- **`overlay eval` — carried-proof runner.** The machinery exists (expected-artifact predicates,
+  `overlay run` scoring, eval suites as a canonical type, the `acceptance/` harness pattern); what
+  is missing is convention plus a thin runner: `overlay eval <workflow|suite>` executes a suite
+  against the current corpus and reports pass/fail with model, runtime, and environment identity
+  recorded on the result. Immediate use: regression protection when doctrine is edited or models
+  churn. Later: blocks that carry their own runnable proof.
+- **Vault direction-of-travel rule** *(discipline, not a refactor).* When a view needs new
+  behavior, prefer contract/query-driven rendering over new hardcoded per-view logic — the
+  standing extension of Phase 11's one-schema-owner guardrail. A declarative "surface recipe"
+  seam may eventually fall out of Phase 11 plus this discipline; do not commit to it before
+  contract-rendered views exist.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
