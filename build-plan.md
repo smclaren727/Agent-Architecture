@@ -1615,11 +1615,83 @@ directions are recorded here with no Runner or external-CLI code shipping in the
 
 ---
 
+## Phase 11 — Write-contracts: Overlay-owned vault schemas (planned; direction decided 2026-07-21)
+
+**Goal:** make "managed vault" mean exactly one thing — **a vault with an Overlay-provided write-contract
+attached** — and retire Vault's freestanding note schema. Overlay becomes the sole schema authority for
+every governed interaction with notes; Vault standalone becomes a deliberately **schemaless** editor.
+
+**The decision (recorded 2026-07-21).** Registering the overlay corpus as a vault surfaced the design gap:
+Vault's `managed`/`open` registry modes read as a quality tier, but "managed" is really Vault's *own*
+personal-note schema — a second schema authority sitting beside `overlay-core`'s canonical schemas, invisible
+to agents over the MCP seam. The corpus-seam sentence "each a typed area with its own write-contract"
+([README](README.md)) was prose that never became mechanism. Decided direction, with the standalone fork
+resolved explicitly:
+
+1. **The managed-note schema becomes doctrine.** Note types (task, project, daily — fields, statuses,
+   relationships) move out of Vault's code into the corpus as versioned, `overlay-core`-validated doctrine.
+   The operator edits their own note schema in Vault like any other doctrine file.
+2. **A vault is either open (null contract) or governed by a contract resolved through an Overlay
+   workspace.** Attaching Overlay *is* the act of management. The registry's freestanding `managed` mode
+   retires; adoption becomes "conform files + attach contract."
+3. **Standalone Vault is schemaless (decided — no bundled default contract).** Without an attached
+   workspace, Vault is editor + wiki + search + native chat over open vaults; typed views (Tasks, Projects,
+   Daily, Properties) light up only from an attached contract. A bundled fallback schema was considered and
+   rejected: it silently reintroduces a second schema source.
+4. **One schema, every consumer.** Because the contract is served doctrine, agents read the same note schema
+   over the MCP seam that the editor enforces — an executor session (e.g. capture-triage) can emit
+   schema-valid typed notes instead of loose markdown.
+
+**Dependency arrows:** unchanged. Vault *resolves* its contract from the workspace it references
+(Vault ▶ Overlay, the allowed direction); Overlay remains vault-unaware — a note-contract is just doctrine
+it validates and serves. No watcher, editor, or vault registry enters Overlay.
+
+**Degradation rule (load-bearing):** if the contract source is unreachable, a governed vault degrades to
+readable/editable-as-open with typed features dormant, against a cached contract snapshot — files on disk
+never change meaning. This is also the future-mobile posture (Phase 10 reads the same way: the corpus is the
+spine; presentation degrades, bytes do not).
+
+### 11.1 — Contract format + note-schema doctrine (Overlay)
+
+Define the write-contract as a canonical doctrine kind in `overlay-core` (schema-validated, strict), express
+the current Vault managed-note types in it, and serve it over the existing read seams (CLI + `overlay://`
+resources). No new runtime behavior in Overlay — it validates and serves, as ever.
+
+### 11.2 — Vault re-model: registry, adoption, typed views (Agent-Vault)
+
+Re-key the vaults registry from `mode: managed|open` to a contract reference; migrate the existing managed
+vault by exporting its implicit schema into the operator's corpus as the first real contract; rewire typed
+views, the properties panel, validation-on-save, and templates to read the attached contract; implement the
+degradation cache. The adoption flow becomes conform-and-attach.
+
+### 11.3 — Agent consumption (capture-triage upgrade as proof)
+
+An executor session reads the note-contract over MCP and produces a schema-valid typed note (or proposal),
+demonstrating that editor and agents genuinely share one authority.
+
+### 11.4 — Near-term UX honesty (independent; can land before the re-platform)
+
+The presentation half of the same complaint, shippable now: render open-vault note identity as normal note
+chrome instead of a "no schema" warning banner (the explanation belongs in the Info tab, once); show a
+note's *actual* YAML frontmatter as read-only properties in open vaults instead of refusing the panel;
+auto-detect `overlay.yaml` and label such a vault an **Overlay workspace** rather than generically "open."
+
+**Guardrail:** one file set, one schema owner. If Vault grows back a code-resident note schema, or Overlay
+grows a vault registry, the model has drifted. "Open" is a posture (no claimed authority), not a tier.
+
+**Done when:** the registry has no freestanding `managed` mode; the operator's note schema lives in their
+corpus and validates under `overlay validate --strict`; Vault's typed views run entirely from the attached
+contract (and go dormant without one, degrading per the rule above); and one agent workflow demonstrably
+emits a schema-valid typed note read from the served contract.
+
+---
+
 ## Dependency map (at a glance)
 
 ```
 Phase 0 (done) ─▶ Phase 1 ─┬─▶ Phase 2 (Vault) ─┐
-                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment) ─▶ Phase 9 (local integration API) ┄▶ Phase 10 (mobile readiness, planned)
+                           └─▶ Phase 3 (Runner) ─┴─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6 (Rust re-platform) ─▶ Phase 7 (API contracts) ─▶ Phase 8 (boundary realignment) ─▶ Phase 9 (local integration API) ┄┬▶ Phase 10 (mobile readiness, planned)
+                                                                                                                                                                                                     └▶ Phase 11 (write-contracts, planned — independent lane)
 
 Phase 6:  6.0 contract capture ─▶ 6.1 Overlay ─▶ 6.2 Runner ─▶ 6.3 Vault ─▶ 6.4 demolition + packaging
 ```
