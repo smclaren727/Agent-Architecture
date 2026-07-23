@@ -1615,7 +1615,7 @@ directions are recorded here with no Runner or external-CLI code shipping in the
 
 ---
 
-## Phase 11 — Write-contracts: Overlay-owned vault schemas (planned; direction decided 2026-07-21)
+## Phase 11 — Write-contracts: Overlay-owned vault schemas (COMPLETE 2026-07-23; direction decided 2026-07-21)
 
 **Goal:** make "managed vault" mean exactly one thing — **a vault with an Overlay-provided write-contract
 attached** — and retire Vault's freestanding note schema. Overlay becomes the sole schema authority for
@@ -1691,10 +1691,21 @@ note schema is gone, per this phase's guardrail. Residuals live in the build-run
 operational follow-ups: rebuild + reinstall both desktop apps (installed Overlay predates the contracts
 seam; installed Vault predates the re-model and will full-reindex on first boot after rebuild).
 
-### 11.3 — Agent consumption (capture-triage upgrade as proof)
+### 11.3 — Agent consumption (SHIPPED 2026-07-23)
 
 An executor session reads the note-contract over MCP and produces a schema-valid typed note (or proposal),
 demonstrating that editor and agents genuinely share one authority.
+
+**Shipped** as doctrine + a recorded proof run, no new code. The `typed-note-proof` workflow (operator
+corpus) dispatches a claude-code executor session that reads `overlay://contracts/vault-managed-notes`
+over the MCP seam (trajectory `20260723t182834z-b27aaa14` records the `resource_read`) and emits a
+complete typed-task create payload — contract vocabularies, lowercase-hyphen id, ISO date-only fields —
+with no file-write permissions granted. The payload was submitted **verbatim** to Vault's governed
+`POST /api/notes`, which validated it against the *same* contract through its own resolution seam:
+accepted 201 and indexed into the governed vault (`Tasks/review-build-run-findings-list.md`, defaults
+applied); a negative control with an out-of-vocabulary status was rejected 400 with contract language.
+One authority, two independent consumers, both directions proven. (The proof note is itself the real
+end-of-run findings-review task.)
 
 ### 11.4 — Near-term UX honesty (SHIPPED 2026-07-22; landed ahead of the re-platform as planned)
 
