@@ -1670,12 +1670,26 @@ One deliberate deviation from this phase's wording: **no revision counter** — 
 keys on workspace source + contract id and detects change via `version` plus a hash of the seam-served
 body (endorsed by both reviewers). Deferred items live in the build-run findings list.
 
-### 11.2 — Vault re-model: registry, adoption, typed views (Agent-Vault)
+### 11.2 — Vault re-model: registry, adoption, typed views (SHIPPED 2026-07-23)
 
 Re-key the vaults registry from `mode: managed|open` to a contract reference; migrate the existing managed
 vault by exporting its implicit schema into the operator's corpus as the first real contract; rewire typed
 views, the properties panel, validation-on-save, and templates to read the attached contract; implement the
 degradation cache. The adoption flow becomes conform-and-attach.
+
+**Shipped** to Agent-Vault `main` 434bb0e→97b3b7f (design doc `Docs/governed-vaults.md` + six
+implementation commits across two orchestrated sessions; every slice adversarially reviewed — slice 4's
+gate caught a MAJOR adoption-hysteresis bug that would have left freshly adopted vaults degraded). What
+landed: registry v2 keyed on contract references with old-reader tolerance and a migrated live registry
+(both managed vaults attached to `vault-managed-notes` in the operator's corpus, backups retained); the
+governed / governed-degraded / open state machine with the 11.1-decided cache (version + served-body hash),
+proven on-device including the unreachable-source drill (degraded card names the cached contract version
+and exact failure, recovers cleanly); typed views, properties, validation-on-save, and creation all
+contract-derived, honestly dormant on open vaults; adoption re-built as conform-and-attach with the
+mid-conform failure drill leaving nothing written. Freestanding managed mode is retired — the code-resident
+note schema is gone, per this phase's guardrail. Residuals live in the build-run findings list; owed
+operational follow-ups: rebuild + reinstall both desktop apps (installed Overlay predates the contracts
+seam; installed Vault predates the re-model and will full-reindex on first boot after rebuild).
 
 ### 11.3 — Agent consumption (capture-triage upgrade as proof)
 
